@@ -1,11 +1,11 @@
-const hre = require("hardhat");
+const {ethers} = require("hardhat");
 require("dotenv").config();
 
 async function main() {
   console.log("Deploying AILiquidityProvider to Asset Hub (Westmint)...");
 
   // Get the contract factory
-  const AILiquidityProvider = await hre.ethers.getContractFactory("AILiquidityProvider");
+  const AILiquidityProvider = await ethers.getContractFactory("AILiquidityProvider");
 
   // Check if we have a proxy address in the environment variables
   const proxyAddress = process.env.PROXY_ADDRESS;
@@ -16,18 +16,18 @@ async function main() {
   }
 
   // Initial XCM fee amount - you may want to adjust this based on current network conditions
-  const initialXcmFeeAmount = hre.ethers.parseEther("0.1"); // 0.1 native token as fee
+  const initialXcmFeeAmount = ethers.utils.parseEther("0.1"); // 0.1 native token as fee
 
   console.log(`Using XCM Proxy address: ${proxyAddress}`);
   console.log(`Initial XCM fee amount: ${initialXcmFeeAmount}`);
 
   // Deploy the contract
   const liquidityProvider = await AILiquidityProvider.deploy(proxyAddress, initialXcmFeeAmount);
-  await liquidityProvider.deploymentTransaction().wait();
+  await liquidityProvider.deployed();
 
-  console.log(`AILiquidityProvider deployed to Asset Hub at: ${liquidityProvider.target}`);
+  console.log(`AILiquidityProvider deployed to Asset Hub at: ${liquidityProvider.address}`);
   console.log(`Run this command to save the Asset Hub contract address to your .env file:`);
-  console.log(`echo "ASSET_HUB_ADDRESS=${liquidityProvider.target}" >> .env`);
+  console.log(`echo "ASSET_HUB_ADDRESS=${liquidityProvider.address}" >> .env`);
 
   // Now update the proxy owner to the AILiquidityProvider address
   console.log("\nNext steps:");
