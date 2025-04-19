@@ -3,7 +3,6 @@ pragma solidity >=0.8.0;
 pragma abicoder v2;
 
 import './IReactive.sol';
-import './IAlgebraPool.sol';
 
 /**
  * @title IXCMTransactor
@@ -11,7 +10,7 @@ import './IAlgebraPool.sol';
  */
 interface IXCMTransactor {
     function transactThroughDerivative(
-        uint32 destination,
+        uint32 destination,  // Using uint8 for the parachain ID
         uint16 feeLocation,
         uint64 transactRequiredWeightAtMost,
         bytes memory call,
@@ -78,33 +77,22 @@ contract Ownable {
 /**
  * @title AILiquidityProvider
  * @dev Main contract for managing liquidity on Moonbeam via XCM from Asset Hub
- * Deployed on Asset Hub and communicates with a proxy on Moonbeam
+ * Simplified version with less storage and logic to fit within Asset Hub limits
  */
 contract AILiquidityProvider is Ownable, IReactive {
-    // Tick range size options for positions
+    // Simplified enum for tick ranges
     enum TickRangeSize {
         NARROW,  // ±5% range
         MEDIUM,  // ±10% range
         WIDE,    // ±30% range
         MAXIMUM  // ±100% range
     }
-    
-    // Position information
-    struct Position {
-        address pool;
-        address token0;
-        address token1;
-        int24 bottomTick;
-        int24 topTick;
-        uint128 liquidity;
-        bool active;
-    }
 
     // XCM precompile addresses
     address public constant XCM_TRANSACTOR = 0x0000000000000000000000000000000000000806;
     address public constant ASSET_TRANSFER = 0x0000000000000000000000000000000000000815;
     
-    // Moonbeam parachain ID
+    // Moonbeam parachain ID - must be converted to uint8 when used with transactThroughDerivative
     uint32 public constant MOONBEAM_PARACHAIN_ID = 1287; // Use 1000 for Moonbase Alpha testnet
     
     // XCM proxy contract address on Moonbeam
@@ -124,11 +112,6 @@ contract AILiquidityProvider is Ownable, IReactive {
     // Token balances storage
     mapping(address => uint256) public tokenBalances;
     
-    // Position tracking
-    mapping(bytes32 => Position) public positions;
-    mapping(address => bytes32[]) public userPositions;
-    bytes32[] public allPositionIds;
-    
     // AI agent address
     address public aiAgent;
     
@@ -136,8 +119,6 @@ contract AILiquidityProvider is Ownable, IReactive {
     event TokenDeposited(address indexed token, uint256 amount);
     event TokenWithdrawn(address indexed token, uint256 amount);
     event XCMRequestSent(address indexed pool, address indexed recipient, uint128 liquidityDesired);
-    event PositionCreated(bytes32 indexed positionId, address pool, address recipient, int24 bottomTick, int24 topTick);
-    event PositionRemoved(bytes32 indexed positionId, uint256 amount0, uint256 amount1);
     event AssetsTransferred(address indexed token, uint256 amount, address recipient);
     
     constructor(address _xcmProxyAddress, uint256 _xcmFeeAmount) {
@@ -223,7 +204,7 @@ contract AILiquidityProvider is Ownable, IReactive {
         
         // Transfer to Moonbeam via XCM
         AssetTransferInterface(ASSET_TRANSFER).transferToParachain(
-            MOONBEAM_PARACHAIN_ID,
+            MOONBEAM_PARACHAIN_ID, // This is fine as uint32
             token,
             amount,
             xcmProxyAddress,
@@ -236,7 +217,6 @@ contract AILiquidityProvider is Ownable, IReactive {
     /**
      * @notice Add liquidity to an Algebra pool via XCM
      * @param pool The Algebra pool address on Moonbeam
-     * @param recipient The address to receive the position
      * @param token0 The address of token0 on Moonbeam
      * @param token1 The address of token1 on Moonbeam
      * @param rangeSize The size of the range around current price
@@ -244,7 +224,6 @@ contract AILiquidityProvider is Ownable, IReactive {
      */
     function addLiquidity(
         address pool,
-        address recipient,
         address token0,
         address token1,
         TickRangeSize rangeSize,
@@ -253,14 +232,10 @@ contract AILiquidityProvider is Ownable, IReactive {
         require(pool != address(0), "Invalid pool address");
         require(liquidityDesired > 0, "Liquidity must be greater than 0");
         
-        // Call the proxy's adapter function that handles all the complexity
+        // Create a struct parameter for the new proxy function
         bytes memory proxyCall = abi.encodeWithSignature(
-            "addLiquidityAdapter(address,address,address,uint8,uint128)",
-            pool,
-            token0,
-            token1,
-            uint8(rangeSize),
-            liquidityDesired
+            "addLiquidityAdapter((address,address,address,uint8,uint128,address))",
+            abi.encode(pool, token0, token1, uint8(rangeSize), liquidityDesired, msg.sender)
         );
         
         // Send XCM message to execute the proxy call on Moonbeam
@@ -273,54 +248,29 @@ contract AILiquidityProvider is Ownable, IReactive {
             OVERALL_WEIGHT
         );
         
-        // Create a position ID for tracking
-        bytes32 positionId = keccak256(abi.encodePacked(
-            pool,
-            recipient,
-            token0,
-            token1,
-            block.timestamp
-        ));
-        
-        // Store position information locally (tick information will be updated later)
-        positions[positionId] = Position({
-            pool: pool,
-            token0: token0,
-            token1: token1,
-            bottomTick: 0,  // Will be populated by an event
-            topTick: 0,     // Will be populated by an event
-            liquidity: liquidityDesired,
-            active: true
-        });
-        
-        // Track user positions
-        userPositions[recipient].push(positionId);
-        allPositionIds.push(positionId);
-        
-        emit XCMRequestSent(pool, recipient, liquidityDesired);
-        emit PositionCreated(positionId, pool, recipient, 0, 0);
+        emit XCMRequestSent(pool, msg.sender, liquidityDesired);
     }
     
     /**
      * @notice Remove liquidity from a position via XCM
-     * @param positionId The position ID
-     * @param liquidity The amount of liquidity to remove (0 for all)
+     * @param pool The pool address
+     * @param bottomTick The lower tick of the position
+     * @param topTick The upper tick of the position
+     * @param liquidity The amount of liquidity to remove
      */
-    function removeLiquidity(bytes32 positionId, uint128 liquidity) external onlyOwner {
-        Position storage position = positions[positionId];
-        require(position.active, "Position does not exist or is inactive");
-        
-        // If liquidity is 0, remove all liquidity
-        uint128 liquidityToRemove = liquidity == 0 ? position.liquidity : liquidity;
-        require(liquidityToRemove <= position.liquidity, "Not enough liquidity");
-        
+    function removeLiquidity(
+        address pool,
+        int24 bottomTick,
+        int24 topTick,
+        uint128 liquidity
+    ) external onlyOwner {
         // Prepare the burn call for the proxy to execute on the pool
         bytes memory proxyCall = abi.encodeWithSignature(
             "executeBurn(address,int24,int24,uint128)",
-            position.pool,
-            position.bottomTick,
-            position.topTick,
-            liquidityToRemove
+            pool,
+            bottomTick,
+            topTick,
+            liquidity
         );
         
         // Send XCM message to execute the call on Moonbeam
@@ -332,71 +282,13 @@ contract AILiquidityProvider is Ownable, IReactive {
             xcmFeeAmount,
             OVERALL_WEIGHT
         );
-        
-        // Update position locally
-        position.liquidity -= liquidityToRemove;
-        if (position.liquidity == 0) {
-            position.active = false;
-        }
-        
-        emit PositionRemoved(positionId, 0, 0); // Actual amounts will be updated via event
     }
     
     /**
-     * @notice React to on-chain events (for updating position information)
+     * @notice React to on-chain events
      * @param logData Encoded event data from reactive network
      */
     function react(bytes calldata logData) external override {
-        // This would be used to receive updates from Moonbeam about position changes
-        // Implementation depends on the event monitoring system
-        
-        // Example format: (bytes32 positionId, int24 bottomTick, int24 topTick, uint256 amount0, uint256 amount1)
-        (bytes32 positionId, int24 bottomTick, int24 topTick, uint256 amount0, uint256 amount1) = 
-            abi.decode(logData, (bytes32, int24, int24, uint256, uint256));
-        
-        // Update position with the actual tick information
-        Position storage position = positions[positionId];
-        if (position.active) {
-            position.bottomTick = bottomTick;
-            position.topTick = topTick;
-        }
-    }
-    
-    /**
-     * @notice Get all active positions
-     * @return Array of position IDs
-     */
-    function getActivePositions() external view returns (bytes32[] memory) {
-        uint256 activeCount = 0;
-        
-        // First, count active positions
-        for (uint256 i = 0; i < allPositionIds.length; i++) {
-            if (positions[allPositionIds[i]].active) {
-                activeCount++;
-            }
-        }
-        
-        // Create array of active positions
-        bytes32[] memory activePositions = new bytes32[](activeCount);
-        uint256 index = 0;
-        
-        // Fill array with active position IDs
-        for (uint256 i = 0; i < allPositionIds.length; i++) {
-            if (positions[allPositionIds[i]].active) {
-                activePositions[index] = allPositionIds[i];
-                index++;
-            }
-        }
-        
-        return activePositions;
-    }
-    
-    /**
-     * @notice Get user positions
-     * @param user The user address
-     * @return Array of user's position IDs
-     */
-    function getUserPositions(address user) external view returns (bytes32[] memory) {
-        return userPositions[user];
+        // Left empty - logic moved to proxy to save space
     }
 }

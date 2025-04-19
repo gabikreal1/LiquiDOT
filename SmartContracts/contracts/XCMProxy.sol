@@ -19,11 +19,38 @@ interface IERC20 {
 /**
  * @title XCMProxy
  * @dev Lightweight proxy contract on Moonbeam that executes operations on behalf of the Asset Hub contract
- * This contract only handles pool interactions and has no state management logic
+ * Enhanced with position tracking and management to reduce the size of the AILiquidityProvider contract
  */
 contract XCMProxy is IAlgebraMintCallback {
     // Owner address (Asset Hub contract via XCM)
     address public owner;
+    
+    // Position information
+    struct Position {
+        address pool;
+        address token0;
+        address token1;
+        int24 bottomTick;
+        int24 topTick;
+        uint128 liquidity;
+        bool active;
+        address owner;
+    }
+    
+    // Position tracking
+    mapping(bytes32 => Position) public positions;
+    mapping(address => bytes32[]) public userPositions;
+    bytes32[] public allPositionIds;
+    
+    // Input for addLiquidity to avoid stack too deep
+    struct LiquidityParams {
+        address pool;
+        address token0;
+        address token1;
+        uint8 rangeSize;
+        uint128 liquidityDesired;
+        address positionOwner;
+    }
     
     // Events
     event LiquidityAdded(
@@ -33,7 +60,8 @@ contract XCMProxy is IAlgebraMintCallback {
         int24 topTick,
         uint128 liquidity,
         uint256 amount0,
-        uint256 amount1
+        uint256 amount1,
+        bytes32 positionId
     );
     
     event LiquidityRemoved(
@@ -42,7 +70,8 @@ contract XCMProxy is IAlgebraMintCallback {
         int24 topTick,
         uint128 liquidity,
         uint256 amount0,
-        uint256 amount1
+        uint256 amount1,
+        bytes32 positionId
     );
     
     constructor(address _owner) {
@@ -81,6 +110,14 @@ contract XCMProxy is IAlgebraMintCallback {
         int24 topTick,
         uint128 liquidity
     ) external onlyOwner returns (uint256 amount0, uint256 amount1) {
+        // Create a position ID for tracking removal
+        bytes32 positionId = keccak256(abi.encodePacked(
+            pool,
+            bottomTick,
+            topTick,
+            "burn"
+        ));
+        
         // Call burn on the Algebra pool
         (amount0, amount1) = IAlgebraPool(pool).burn(
             bottomTick,
@@ -94,7 +131,8 @@ contract XCMProxy is IAlgebraMintCallback {
             topTick,
             liquidity,
             amount0,
-            amount1
+            amount1,
+            positionId
         );
         
         return (amount0, amount1);
@@ -102,32 +140,56 @@ contract XCMProxy is IAlgebraMintCallback {
     
     /**
      * @notice Helper to add liquidity with automatic tick range calculation
-     * @param pool The Algebra pool address
-     * @param token0 Token0 address
-     * @param token1 Token1 address
-     * @param rangeSize The tick range size (0=NARROW, 1=MEDIUM, 2=WIDE, 3=MAXIMUM)
-     * @param liquidityDesired The amount of liquidity to add
+     * @param params The liquidity parameters struct to avoid stack too deep
      * @return amount0 The amount of token0 used
      * @return amount1 The amount of token1 used
+     */
+    function addLiquidityAdapter(
+        LiquidityParams calldata params
+    ) external onlyOwner returns (uint256 amount0, uint256 amount1) {
+        return _addLiquidity(params);
+    }
+    
+    /**
+     * @notice Helper function for backwards compatibility
      */
     function addLiquidityAdapter(
         address pool,
         address token0,
         address token1,
         uint8 rangeSize,
-        uint128 liquidityDesired
+        uint128 liquidityDesired,
+        address positionOwner
     ) external onlyOwner returns (uint256 amount0, uint256 amount1) {
+        LiquidityParams memory params = LiquidityParams({
+            pool: pool,
+            token0: token0,
+            token1: token1,
+            rangeSize: rangeSize,
+            liquidityDesired: liquidityDesired,
+            positionOwner: positionOwner
+        });
+        
+        return _addLiquidity(params);
+    }
+    
+    /**
+     * @notice Internal implementation for adding liquidity
+     */
+    function _addLiquidity(
+        LiquidityParams memory params
+    ) internal returns (uint256 amount0, uint256 amount1) {
         // Get the current state of the pool
-        (,int24 currentTick,) = IAlgebraPool(pool).globalState();
-        int24 tickSpacing = IAlgebraPool(pool).tickSpacing();
+        (,int24 currentTick,) = IAlgebraPool(params.pool).globalState();
+        int24 tickSpacing = IAlgebraPool(params.pool).tickSpacing();
         
         // Calculate tick range based on size parameter
         int24 range;
-        if (rangeSize == 0) { // NARROW
+        if (params.rangeSize == 0) { // NARROW
             range = 500;
-        } else if (rangeSize == 1) { // MEDIUM
+        } else if (params.rangeSize == 1) { // MEDIUM
             range = 1000;
-        } else if (rangeSize == 2) { // WIDE
+        } else if (params.rangeSize == 2) { // WIDE
             range = 3000;
         } else { // MAXIMUM
             range = 10000;
@@ -141,34 +203,84 @@ contract XCMProxy is IAlgebraMintCallback {
         bottomTick = (bottomTick / tickSpacing) * tickSpacing;
         topTick = (topTick / tickSpacing) * tickSpacing;
         
+        // Create position ID for tracking
+        bytes32 positionId = keccak256(abi.encodePacked(
+            params.pool,
+            params.positionOwner,
+            params.token0,
+            params.token1,
+            block.timestamp
+        ));
+        
+        // Store position information
+        _storePosition(
+            positionId, 
+            params.pool, 
+            params.token0, 
+            params.token1, 
+            bottomTick, 
+            topTick, 
+            params.liquidityDesired, 
+            params.positionOwner
+        );
+        
         // Approve tokens for the pool
-        IERC20(token0).approve(pool, type(uint256).max);
-        IERC20(token1).approve(pool, type(uint256).max);
+        IERC20(params.token0).approve(params.pool, type(uint256).max);
+        IERC20(params.token1).approve(params.pool, type(uint256).max);
         
         // Pack data for callback
-        bytes memory data = abi.encode(token0, token1);
+        bytes memory data = abi.encode(params.token0, params.token1);
         
         // Call mint on the Algebra pool
-        (amount0, amount1) = IAlgebraPool(pool).mint(
+        (amount0, amount1) = IAlgebraPool(params.pool).mint(
             address(this),  // sender (this contract handles callbacks)
             owner,          // recipient (set to owner)
             bottomTick,
             topTick,
-            liquidityDesired,
+            params.liquidityDesired,
             data
         );
         
         emit LiquidityAdded(
-            pool,
-            owner,
+            params.pool,
+            params.positionOwner,
             bottomTick,
             topTick,
-            liquidityDesired,
+            params.liquidityDesired,
             amount0,
-            amount1
+            amount1,
+            positionId
         );
         
         return (amount0, amount1);
+    }
+    
+    /**
+     * @notice Store position information
+     */
+    function _storePosition(
+        bytes32 positionId,
+        address pool,
+        address token0,
+        address token1,
+        int24 bottomTick,
+        int24 topTick,
+        uint128 liquidity,
+        address positionOwner
+    ) internal {
+        positions[positionId] = Position({
+            pool: pool,
+            token0: token0,
+            token1: token1,
+            bottomTick: bottomTick,
+            topTick: topTick,
+            liquidity: liquidity,
+            active: true,
+            owner: positionOwner
+        });
+        
+        userPositions[positionOwner].push(positionId);
+        allPositionIds.push(positionId);
     }
     
     /**
@@ -189,6 +301,61 @@ contract XCMProxy is IAlgebraMintCallback {
         if (amount1 > 0) {
             IERC20(token1).transfer(msg.sender, amount1);
         }
+    }
+    
+    /**
+     * @notice Find a position by pool and ticks
+     * @param pool The pool address
+     * @param bottomTick The lower tick
+     * @param topTick The upper tick
+     * @return positionId The ID of the position if found
+     */
+    function findPosition(address pool, int24 bottomTick, int24 topTick) external view returns (bytes32) {
+        for (uint256 i = 0; i < allPositionIds.length; i++) {
+            Position storage pos = positions[allPositionIds[i]];
+            if (pos.active && pos.pool == pool && pos.bottomTick == bottomTick && pos.topTick == topTick) {
+                return allPositionIds[i];
+            }
+        }
+        revert("Position not found");
+    }
+    
+    /**
+     * @notice Get all active positions
+     * @return Array of position IDs
+     */
+    function getActivePositions() external view returns (bytes32[] memory) {
+        uint256 activeCount = 0;
+        
+        // First, count active positions
+        for (uint256 i = 0; i < allPositionIds.length; i++) {
+            if (positions[allPositionIds[i]].active) {
+                activeCount++;
+            }
+        }
+        
+        // Create array of active positions
+        bytes32[] memory activePositions = new bytes32[](activeCount);
+        uint256 index = 0;
+        
+        // Fill array with active position IDs
+        for (uint256 i = 0; i < allPositionIds.length; i++) {
+            if (positions[allPositionIds[i]].active) {
+                activePositions[index] = allPositionIds[i];
+                index++;
+            }
+        }
+        
+        return activePositions;
+    }
+    
+    /**
+     * @notice Get user positions
+     * @param user The user address
+     * @return Array of user's position IDs
+     */
+    function getUserPositions(address user) external view returns (bytes32[] memory) {
+        return userPositions[user];
     }
     
     /**

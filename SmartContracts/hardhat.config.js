@@ -7,9 +7,15 @@ const ASSET_PRIVATE_KEY = process.env.ASSET || "0x000000000000000000000000000000
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
+  contractSizer: {
+    alphaSort: true,
+    runOnCompile: true,
+    disambiguatePaths: false,
+  },
   solidity: {
     version: "0.8.17",
     settings: {
+      viaIR: true,
       optimizer: {
         enabled: true,
         runs: 200
