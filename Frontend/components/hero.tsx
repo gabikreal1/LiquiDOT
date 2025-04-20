@@ -28,7 +28,7 @@ export default function Hero() {
             transition={{ duration: 0.5 }}
             className="flex flex-col items-center"
           >
-            <div className="w-64 h-64 relative -ml-4 mt-4 flex items-center justify-center">
+            <div className="w-64 h-64 relative mr-1 mt-0flex items-center justify-center">
               <Image
                 src="/images/logo.png"
                 alt="LiquiDOT Logo"
@@ -37,8 +37,8 @@ export default function Hero() {
                 className="object-contain transform translate-y-2"
               />
             </div>
-            <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400 mt-2">
-              The AI-Powered Liquidity Pool Manager
+            <p className="mx-auto max-w-[700px] text-gray-300 md:text-xl mt-2">
+              The Liquidity Pool Manager
             </p>
           </motion.div>
 
@@ -50,7 +50,7 @@ export default function Hero() {
           >
             <Button
               size="lg"
-              className="rounded-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0"
+              className="rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white border-0"
               asChild
             >
               <a href="#manager">Get Started</a>
@@ -58,7 +58,7 @@ export default function Hero() {
             <Button
               size="lg"
               variant="outline"
-              className="rounded-full border-purple-300 text-purple-500 hover:bg-purple-50"
+              className="rounded-full border-violet-300 text-violet-500 hover:bg-violet-50 hover:text-violet-700"
             >
               Learn More
             </Button>

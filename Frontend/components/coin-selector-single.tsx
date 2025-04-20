@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Badge } from "@/components/ui/badge"
 
 // Sample top coins data
 const topCoins = [
@@ -32,21 +31,17 @@ const topCoins = [
 // Sample all coins data (would be fetched from CoinGecko API in a real app)
 const allCoins = [...topCoins]
 
-export default function CoinSelector({ showAllCoins }: { showAllCoins: boolean }) {
+interface CoinSelectorSingleProps {
+  showAllCoins: boolean;
+  selectedCoin: string | null;
+  onSelectCoin: (value: string) => void;
+}
+
+export default function CoinSelectorSingle({ showAllCoins, selectedCoin, onSelectCoin }: CoinSelectorSingleProps) {
   const [open, setOpen] = useState(false)
-  const [selectedCoins, setSelectedCoins] = useState<string[]>([])
   const coins = showAllCoins ? allCoins : topCoins
-
-  const toggleCoin = (value: string) => {
-    setSelectedCoins((current) =>
-      current.includes(value) ? current.filter((item) => item !== value) : [...current, value],
-    )
-  }
-
-  const removeCoin = (value: string, e: React.MouseEvent) => {
-    e.stopPropagation()
-    setSelectedCoins((current) => current.filter((item) => item !== value))
-  }
+  
+  const selectedCoinData = selectedCoin ? coins.find((c) => c.value === selectedCoin) : null
 
   return (
     <div className="space-y-4">
@@ -58,29 +53,12 @@ export default function CoinSelector({ showAllCoins }: { showAllCoins: boolean }
             aria-expanded={open}
             className="w-full justify-between h-auto min-h-10 py-2 border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-violet-700"
           >
-            {selectedCoins.length > 0 ? (
-              <div className="flex flex-wrap gap-1">
-                {selectedCoins.map((coin) => {
-                  const selectedCoin = coins.find((c) => c.value === coin)
-                  return (
-                    <Badge
-                      key={coin}
-                      variant="secondary"
-                      className="mr-1 mb-1 bg-violet-100 text-violet-700 hover:bg-violet-200"
-                    >
-                      {selectedCoin?.label.split(" ")[0]}
-                      <button
-                        className="ml-1 rounded-full outline-none focus:ring-2 focus:ring-violet-400"
-                        onClick={(e) => removeCoin(coin, e)}
-                      >
-                        ×
-                      </button>
-                    </Badge>
-                  )
-                })}
+            {selectedCoin ? (
+              <div className="flex items-center">
+                <span className="font-medium">{selectedCoinData?.label}</span>
               </div>
             ) : (
-              <span className="text-gray-500">Select coins...</span>
+              <span className="text-gray-500">Select a coin...</span>
             )}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
@@ -95,13 +73,16 @@ export default function CoinSelector({ showAllCoins }: { showAllCoins: boolean }
                   <CommandItem
                     key={coin.value}
                     value={coin.value}
-                    onSelect={() => toggleCoin(coin.value)}
+                    onSelect={() => {
+                      onSelectCoin(coin.value)
+                      setOpen(false)
+                    }}
                     className="text-gray-700 hover:bg-violet-50 aria-selected:bg-violet-100"
                   >
                     <Check
                       className={cn(
                         "mr-2 h-4 w-4 text-violet-500",
-                        selectedCoins.includes(coin.value) ? "opacity-100" : "opacity-0",
+                        selectedCoin === coin.value ? "opacity-100" : "opacity-0",
                       )}
                     />
                     <div className="flex justify-between w-full">
@@ -118,14 +99,6 @@ export default function CoinSelector({ showAllCoins }: { showAllCoins: boolean }
           </Command>
         </PopoverContent>
       </Popover>
-
-      <div className="text-sm text-white">
-        {selectedCoins.length === 0 ? (
-          <p>Select coins to include in your liquidity pool strategy</p>
-        ) : (
-          <p>{selectedCoins.length} coins selected</p>
-        )}
-      </div>
     </div>
   )
-}
+} 

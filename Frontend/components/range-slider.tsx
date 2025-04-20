@@ -38,11 +38,11 @@ const RangeSlider = React.forwardRef<React.ElementRef<typeof SliderPrimitive.Roo
         onPointerUp={() => setIsDragging(false)}
         {...props}
       >
-        <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-purple-100">
+        <SliderPrimitive.Track className="relative h-3 w-full grow overflow-hidden rounded-full bg-gray-800">
           {/* Center line for zero point */}
           {props.min !== undefined && props.min < 0 && props.max !== undefined && props.max > 0 && (
             <span
-              className="absolute top-0 bottom-0 w-[1px] bg-gray-300"
+              className="absolute top-0 bottom-0 w-[2px] bg-gray-600 z-10"
               style={{
                 left: `${(Math.abs(props.min) / (props.max - props.min)) * 100}%`,
               }}
@@ -50,7 +50,7 @@ const RangeSlider = React.forwardRef<React.ElementRef<typeof SliderPrimitive.Roo
           )}
           <span
             ref={rangeRef}
-            className="absolute h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all"
+            className="absolute h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all"
             style={{ left: rangeLeft, width: rangeWidth }}
           />
         </SliderPrimitive.Track>
@@ -59,8 +59,9 @@ const RangeSlider = React.forwardRef<React.ElementRef<typeof SliderPrimitive.Roo
           <SliderPrimitive.Thumb
             key={index}
             className={cn(
-              "block h-5 w-5 rounded-full border-2 border-purple-500 bg-white ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-              isDragging && "scale-110",
+              "block h-6 w-6 rounded-full border-2 border-violet-500 bg-background shadow-md ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+              isDragging && "scale-110 shadow-lg border-fuchsia-500 hover:border-fuchsia-500",
+              !isDragging && "hover:border-fuchsia-500"
             )}
           />
         ))}
