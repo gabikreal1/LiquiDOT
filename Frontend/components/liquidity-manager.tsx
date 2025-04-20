@@ -17,9 +17,15 @@ import RangeSlider from "@/components/range-slider"
 import InvestmentDecisions from "@/components/investment-decisions"
 import { Wallet } from "lucide-react"
 import Image from "next/image"
-import { useAccount, useConnect, useDisconnect } from 'wagmi'
+import { useAccount, useConnect, useDisconnect, useReadContract, useWriteContract, useSimulateContract } from 'wagmi'
 import { injected } from 'wagmi/connectors'
 import { toast } from 'sonner'
+import { parseUnits, formatUnits } from 'viem'
+import { xcmProxyAbi, erc20Abi } from '../lib/abis'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
+// Contract addresses - replace with your actual addresses
+const XCM_PROXY_ADDRESS = "0x..."; // Your XCMProxy address on Moonbeam
 
 // Define types for investment decisions
 interface Token {
@@ -54,6 +60,15 @@ export default function LiquidityManager() {
   const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking')
   const [investmentDecisions, setInvestmentDecisions] = useState<InvestmentDecision[]>([])
   const [showDecisions, setShowDecisions] = useState(false)
+  const [activeTab, setActiveTab] = useState<"strategy" | "direct-deposit">("strategy")
+  
+  // Direct deposit state (from contract.tsx)
+  const [tokenAddress, setTokenAddress] = useState('')
+  const [directDepositAmount, setDirectDepositAmount] = useState('')
+  const [formattedAmount, setFormattedAmount] = useState('0')
+  const [decimals, setDecimals] = useState(18)
+  const [selectedToken, setSelectedToken] = useState<string | null>(null)
+  const [isDirectDepositLoading, setIsDirectDepositLoading] = useState(false)
   
   // Wagmi hooks
   const { address, isConnected } = useAccount()
@@ -87,6 +102,86 @@ export default function LiquidityManager() {
       checkBackendStatus();
     }
   }, [mounted]);
+  
+  // Convert direct deposit input to token units with decimals
+  useEffect(() => {
+    try {
+      if (directDepositAmount && !isNaN(Number(directDepositAmount))) {
+        setFormattedAmount(parseUnits(directDepositAmount, decimals).toString());
+      }
+    } catch (error) {
+      console.error("Error formatting amount:", error);
+    }
+  }, [directDepositAmount, decimals]);
+
+  // Update tokenAddress when selected token changes
+  useEffect(() => {
+    if (selectedToken) {
+      // This would typically come from a mapping of token symbols to addresses
+      // For now, we'll just use a placeholder
+      setTokenAddress('0x...');
+    }
+  }, [selectedToken]);
+  
+  // Prepare approval for direct deposit
+  const { data: approveData, error: simulateApproveError } = useSimulateContract({
+    address: tokenAddress as `0x${string}`,
+    abi: erc20Abi,
+    functionName: 'approve',
+    args: [XCM_PROXY_ADDRESS, BigInt(formattedAmount)],
+    query: {
+      enabled: !!tokenAddress && !!formattedAmount && formattedAmount !== '0',
+    }
+  });
+  
+  // Execute approval for direct deposit
+  const { 
+    writeContract: approveToken, 
+    isPending: isApprovingToken,
+    isSuccess: isApproveSuccess,
+    error: approveError 
+  } = useWriteContract();
+  
+  // Prepare deposit for direct deposit
+  const { data: depositData, error: simulateDepositError } = useSimulateContract({
+    address: XCM_PROXY_ADDRESS as `0x${string}`,
+    abi: xcmProxyAbi,
+    functionName: 'deposit',
+    args: [tokenAddress as `0x${string}`, BigInt(formattedAmount)],
+    query: {
+      enabled: !!tokenAddress && !!formattedAmount && formattedAmount !== '0',
+    }
+  });
+  
+  // Execute deposit for direct deposit
+  const { 
+    writeContract: depositToken,
+    isPending: isDepositingToken,
+    isSuccess: isDepositSuccess,
+    error: depositError
+  } = useWriteContract();
+  
+  // Read user's wallet balance
+  const { data: walletBalance } = useReadContract({
+    address: tokenAddress as `0x${string}`,
+    abi: erc20Abi,
+    functionName: 'balanceOf',
+    args: [address],
+    query: {
+      enabled: !!address && !!tokenAddress,
+    }
+  });
+  
+  // Check current allowance
+  const { data: currentAllowance } = useReadContract({
+    address: tokenAddress as `0x${string}`,
+    abi: erc20Abi,
+    functionName: 'allowance',
+    args: [address, XCM_PROXY_ADDRESS as `0x${string}`],
+    query: {
+      enabled: !!address && !!tokenAddress,
+    }
+  });
   
   const formatAddress = (addr: string | undefined) => {
     if (!addr) return ''
@@ -122,6 +217,13 @@ export default function LiquidityManager() {
     const value = e.target.value
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
       setDepositAmount(value)
+    }
+  }
+  
+  const handleDirectDepositAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      setDirectDepositAmount(value)
     }
   }
   
@@ -217,6 +319,62 @@ export default function LiquidityManager() {
       setIsLoading(false);
     }
   };
+  
+  // Direct deposit logic (from contract.tsx)
+  const handleDirectDepositProcess = async () => {
+    if (!address || !selectedToken || !directDepositAmount) {
+      toast.error("Please connect your wallet and fill in all required fields");
+      return;
+    }
+    
+    if (backendStatus === 'offline') {
+      toast.error("Backend server is not running");
+      return;
+    }
+    
+    // First check if approval is needed
+    if (currentAllowance && BigInt(formattedAmount) > (currentAllowance as bigint)) {
+      setIsDirectDepositLoading(true);
+      try {
+        if (approveData) {
+          approveToken(approveData.request);
+          toast.success("Approving token transfer...");
+          // Note: In a production app, we would wait for the approval transaction to complete
+          // before initiating the deposit
+        }
+      } catch (error) {
+        console.error("Approval error:", error);
+        toast.error("Failed to approve token");
+        setIsDirectDepositLoading(false);
+        return;
+      }
+    } else {
+      // If no approval needed, proceed with deposit
+      initiateDirectDeposit();
+    }
+  };
+
+  const initiateDirectDeposit = async () => {
+    setIsDirectDepositLoading(true);
+    try {
+      if (depositData) {
+        depositToken(depositData.request);
+        toast.success("Deposit initiated!");
+      }
+    } catch (error) {
+      console.error("Deposit error:", error);
+      toast.error("Failed to deposit token");
+    } finally {
+      setIsDirectDepositLoading(false);
+    }
+  };
+  
+  // Call initiateDirectDeposit when approval is successful
+  useEffect(() => {
+    if (isApproveSuccess) {
+      initiateDirectDeposit();
+    }
+  }, [isApproveSuccess]);
 
   return (
     <motion.div
@@ -235,126 +393,196 @@ export default function LiquidityManager() {
           </div>
           <CardDescription className="text-gray-500">Configure your liquidity pool strategy</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-5 pt-5">
-          {/* Coin Selection Toggle */}
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium text-white">Coin Selection</h3>
-            <div className="flex items-center space-x-2">
-              <Label htmlFor="show-all-coins" className="text-gray-300">
-                All Coins
-              </Label>
-              <Switch id="show-all-coins" checked={showAllCoins} onCheckedChange={setShowAllCoins} />
-            </div>
-          </div>
-
-          {/* Coin Selector (only shown when All Coins is not selected) */}
-          {!showAllCoins && (
-            <div className="space-y-4">
-              <CoinSelector showAllCoins={false} onSelectCoins={setSelectedCoins} />
-            </div>
-          )}
-
-          {/* APR Text Field */}
-          <div className="space-y-3">
-            <Label htmlFor="min-apr" className="text-lg font-medium text-white">
-              Minimum Required APR (For Pool Entry)
-            </Label>
-            <div className="flex items-center space-x-2">
-              <Input
-                id="min-apr"
-                type="text"
-                value={aprValue}
-                onChange={handleAprChange}
-                onBlur={validateApr}
-                className="max-w-[120px] border-gray-200 focus:border-violet-400 focus:ring-violet-400"
-              />
-              <span className="text-gray-300">%</span>
-            </div>
-            <p className="text-sm text-gray-300">Enter a value between 10% and 1000%</p>
-          </div>
-
-          {/* Maximum Allocation Field */}
-          <div className="space-y-3">
-            <Label htmlFor="max-allocation" className="text-lg font-medium text-white">
-              Maximum Allocation Per Liquidity Pool
-            </Label>
-            <div className="flex items-center space-x-2">
-              <Input
-                id="max-allocation"
-                type="text"
-                value={maxAllocation}
-                onChange={handleMaxAllocationChange}
-                className="max-w-[120px] border-gray-200 focus:border-violet-400 focus:ring-violet-400"
-              />
-              <span className="text-gray-300">%</span>
-            </div>
-            <p className="text-sm text-gray-300">Maximum percentage of your deposit allocated to a single pool</p>
-          </div>
-
-          {/* Market Cap Slider (conditional) */}
-          {showAllCoins && (
-            <div className="space-y-3">
+        
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "strategy" | "direct-deposit")}>
+          <TabsList className="w-full mb-6">
+            <TabsTrigger value="strategy" className="flex-1">Strategy Settings</TabsTrigger>
+            <TabsTrigger value="direct-deposit" className="flex-1">Direct Deposit</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="strategy" className="mt-0">
+            <CardContent className="space-y-5 pt-5">
+              {/* Coin Selection Toggle */}
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-white">Minimum Market Cap</h3>
-                <span className="font-medium text-violet-400">
-                  {marketCapValue[0] < 1000000
-                    ? `${(marketCapValue[0] / 1000).toFixed(0)}K`
-                    : `${(marketCapValue[0] / 1000000).toFixed(1)}M`}
-                </span>
+                <h3 className="text-lg font-medium text-white">Coin Selection</h3>
+                <div className="flex items-center space-x-2">
+                  <Label htmlFor="show-all-coins" className="text-gray-300">
+                    All Coins
+                  </Label>
+                  <Switch id="show-all-coins" checked={showAllCoins} onCheckedChange={setShowAllCoins} />
+                </div>
               </div>
-              <Slider
-                value={marketCapValue}
-                onValueChange={setMarketCapValue}
-                min={100000}
-                max={10000000}
-                step={10000}
-                className="py-1"
-              />
-            </div>
-          )}
 
-          {/* Stop Loss / Take Profit Range Slider */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-white">Stop Loss / Take Profit</h3>
-              <span className="font-medium text-violet-400">
-                SL: {slTpRange[0]}% / TP: {slTpRange[1]}%
-              </span>
-            </div>
-            <RangeSlider
-              value={slTpRange}
-              onValueChange={setSlTpRange}
-              min={-100}
-              max={100}
-              step={1}
-              className="py-1"
-            />
-            <p className="text-sm text-gray-300">
-              Set Stop Loss (negative %) and Take Profit (positive %) levels for your positions
-            </p>
-          </div>
+              {/* Coin Selector (only shown when All Coins is not selected) */}
+              {!showAllCoins && (
+                <div className="space-y-4">
+                  <CoinSelector showAllCoins={false} onSelectCoins={setSelectedCoins} />
+                </div>
+              )}
 
-          {/* Risk Strategy (only shown when All Coins is selected) */}
-          {showAllCoins && (
-            <div className="space-y-3">
-              <h3 className="text-lg font-medium text-white">Risk Strategy</h3>
-              <RadioGroup value={riskStrategy} onValueChange={setRiskStrategy} className="flex flex-col space-y-2">
+              {/* APR Text Field */}
+              <div className="space-y-3">
+                <Label htmlFor="min-apr" className="text-lg font-medium text-white">
+                  Minimum Required APR (For Pool Entry)
+                </Label>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="market-cap" id="market-cap" className="text-violet-500 border-gray-300" />
-                  <Label htmlFor="market-cap" className="text-gray-300">
-                    Prefer highest market cap coins (lower risk)
-                  </Label>
+                  <Input
+                    id="min-apr"
+                    type="text"
+                    value={aprValue}
+                    onChange={handleAprChange}
+                    onBlur={validateApr}
+                    className="max-w-[120px] border-gray-200 focus:border-violet-400 focus:ring-violet-400"
+                  />
+                  <span className="text-gray-300">%</span>
                 </div>
+                <p className="text-sm text-gray-300">Enter a value between 10% and 1000%</p>
+              </div>
+
+              {/* Maximum Allocation Field */}
+              <div className="space-y-3">
+                <Label htmlFor="max-allocation" className="text-lg font-medium text-white">
+                  Maximum Allocation Per Liquidity Pool
+                </Label>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="apr" id="apr" className="text-violet-500 border-gray-300" />
-                  <Label htmlFor="apr" className="text-gray-300">
-                    Prefer highest APR (higher risk)
-                  </Label>
+                  <Input
+                    id="max-allocation"
+                    type="text"
+                    value={maxAllocation}
+                    onChange={handleMaxAllocationChange}
+                    className="max-w-[120px] border-gray-200 focus:border-violet-400 focus:ring-violet-400"
+                  />
+                  <span className="text-gray-300">%</span>
                 </div>
-              </RadioGroup>
+                <p className="text-sm text-gray-300">Maximum percentage of your deposit allocated to a single pool</p>
+              </div>
+
+              {/* Market Cap Slider (conditional) */}
+              {showAllCoins && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-medium text-white">Minimum Market Cap</h3>
+                    <span className="font-medium text-violet-400">
+                      {marketCapValue[0] < 1000000
+                        ? `${(marketCapValue[0] / 1000).toFixed(0)}K`
+                        : `${(marketCapValue[0] / 1000000).toFixed(1)}M`}
+                    </span>
+                  </div>
+                  <Slider
+                    value={marketCapValue}
+                    onValueChange={setMarketCapValue}
+                    min={100000}
+                    max={10000000}
+                    step={10000}
+                    className="py-1"
+                  />
+                </div>
+              )}
+
+              {/* Stop Loss / Take Profit Range Slider */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium text-white">Stop Loss / Take Profit</h3>
+                  <span className="font-medium text-violet-400">
+                    SL: {slTpRange[0]}% / TP: {slTpRange[1]}%
+                  </span>
+                </div>
+                <RangeSlider
+                  value={slTpRange}
+                  onValueChange={setSlTpRange}
+                  min={-100}
+                  max={100}
+                  step={1}
+                  className="py-1"
+                />
+                <p className="text-sm text-gray-300">
+                  Set Stop Loss (negative %) and Take Profit (positive %) levels for your positions
+                </p>
+              </div>
+
+              {/* Risk Strategy (only shown when All Coins is selected) */}
+              {showAllCoins && (
+                <div className="space-y-3">
+                  <h3 className="text-lg font-medium text-white">Risk Strategy</h3>
+                  <RadioGroup value={riskStrategy} onValueChange={setRiskStrategy} className="flex flex-col space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="market-cap" id="market-cap" className="text-violet-500 border-gray-300" />
+                      <Label htmlFor="market-cap" className="text-gray-300">
+                        Prefer highest market cap coins (lower risk)
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="apr" id="apr" className="text-violet-500 border-gray-300" />
+                      <Label htmlFor="apr" className="text-gray-300">
+                        Prefer highest APR (higher risk)
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              )}
+            </CardContent>
+          </TabsContent>
+          
+          <TabsContent value="direct-deposit" className="mt-0 space-y-5 px-6 py-5">
+            <div className="space-y-5">
+              <div>
+                <label className="block text-lg font-medium text-white mb-2">
+                  Deposit Amount
+                </label>
+                <Input
+                  type="text"
+                  value={directDepositAmount}
+                  onChange={handleDirectDepositAmountChange}
+                  placeholder="0.0"
+                  className="w-full border-gray-200 focus:border-violet-400 focus:ring-violet-400"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-lg font-medium text-white mb-2">
+                  Select Coin
+                </label>
+                <CoinSelectorSingle 
+                  onSelectCoin={(coin) => setSelectedToken(coin)} 
+                  selectedCoin={selectedToken}
+                  showAllCoins={true}
+                />
+              </div>
+              
+              <div className="mt-8">
+                <h3 className="block text-lg font-medium text-white mb-4">
+                  Deposit Tokens
+                </h3>
+                
+                <Button
+                  onClick={handleDirectDepositProcess}
+                  disabled={!address || !selectedToken || !directDepositAmount || isDirectDepositLoading || isApprovingToken || isDepositingToken}
+                  className="w-full bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white border-0"
+                >
+                  {isDirectDepositLoading ? 'Processing...' : 'Deposit'}
+                </Button>
+              </div>
+              
+              {backendStatus === 'offline' && (
+                <div className="w-full p-4 bg-purple-700 text-white text-center rounded-md">
+                  Backend offline
+                </div>
+              )}
+              
+              {(approveError || depositError || simulateDepositError) && (
+                <div className="p-4 bg-red-900/50 text-red-300 rounded-md">
+                  {approveError?.message || depositError?.message || simulateDepositError?.message}
+                </div>
+              )}
+              
+              {isDepositSuccess && (
+                <div className="p-4 bg-green-900/50 text-green-300 rounded-md">
+                  Deposit successful!
+                </div>
+              )}
             </div>
-          )}
-        </CardContent>
+          </TabsContent>
+        </Tabs>
 
         <CardFooter className="flex flex-col space-y-4 w-full border-t border-gray-200 pt-5">
           {!mounted ? (
@@ -374,7 +602,7 @@ export default function LiquidityManager() {
             >
               <Wallet className="mr-2 h-4 w-4" /> Connect Wallet
             </Button>
-          ) : (
+          ) : activeTab === "strategy" ? (
             <div className="space-y-4 w-full">
               <div className="flex items-center justify-center bg-gray-800 px-4 py-3 rounded-lg">
                 <span className="text-violet-400 mr-2">Connected:</span>
@@ -421,7 +649,7 @@ export default function LiquidityManager() {
                  "Deposit into the Vault"}
               </Button>
             </div>
-          )}
+          ) : null}
         </CardFooter>
       </Card>
 
