@@ -1,0 +1,184 @@
+{
+  "timestamp": "2025-04-19T18:35:56.321Z",
+  "userPreferences": {
+    "coinLimit": 15,
+    "minRequiredApr": 5,
+    "minMarketCap": 1000000,
+    "stopLossLevel": 10,
+    "takeProfitLevel": 25,
+    "riskStrategy": "highestMarketCap",
+    "userAddress": "0x1234567890abcdef1234567890abcdef12345678"
+  },
+  "decisions": [
+    {
+      "poolId": "0xb13b281503f6ec8a837ae1a21e86a9cae368fcc5",
+      "pairName": "WGLMR/xcDOT",
+      "token0": {
+        "symbol": "WGLMR",
+        "address": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcDOT",
+        "address": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "approximateAPR": 268585.6366502277,
+      "totalValueLockedUSD": 129307.67992424834,
+      "stopLoss": 10,
+      "takeProfit": 25,
+      "proportion": 16.83857018688656
+    },
+    {
+      "poolId": "0x5daf7f80cc550ee6249a4635c3bb0678e94d3867",
+      "pairName": "xcDOT/xcUSDT",
+      "token0": {
+        "symbol": "xcDOT",
+        "address": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "address": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "approximateAPR": 216780.9245296328,
+      "totalValueLockedUSD": 90941.5491378691,
+      "stopLoss": 10,
+      "takeProfit": 25,
+      "proportion": 16.335016545695193
+    },
+    {
+      "poolId": "0xab8c35164a8e3ef302d18da953923ea31f0fe393",
+      "pairName": "USDC/WGLMR",
+      "token0": {
+        "symbol": "USDC",
+        "address": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "address": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "approximateAPR": 184191.2399759819,
+      "totalValueLockedUSD": 69503.63903118188,
+      "stopLoss": 10,
+      "takeProfit": 25,
+      "proportion": 15.950406127995898
+    },
+    {
+      "poolId": "0x6bb200b706ffa1665127877a11588221c49d9eed",
+      "pairName": "xcDOT/xcLDOT",
+      "token0": {
+        "symbol": "xcDOT",
+        "address": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcLDOT",
+        "address": "0xffffffffa9cfffa9834235fe53f4733f1b8b28d4"
+      },
+      "approximateAPR": 24035.211290823107,
+      "totalValueLockedUSD": 43244.3742189535,
+      "stopLoss": 10,
+      "takeProfit": 25,
+      "proportion": 3.6705493032301044
+    },
+    {
+      "poolId": "0xf50d2fc5c03b14a4e47e22a27bbbf6eaa62ef13f",
+      "pairName": "WGLMR/xcMANTA",
+      "token0": {
+        "symbol": "WGLMR",
+        "address": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcMANTA",
+        "address": "0xffffffff7d3875460d4509eb8d0362c611b4e841"
+      },
+      "approximateAPR": 73739.44430406147,
+      "totalValueLockedUSD": 39325.611110294776,
+      "stopLoss": 10,
+      "takeProfit": 25,
+      "proportion": 11.160945489581337
+    },
+    {
+      "poolId": "0x0aa60133b2604851f3c57067cfac2fcc3aa7fd7b",
+      "pairName": "WGLMR/xcUSDC",
+      "token0": {
+        "symbol": "WGLMR",
+        "address": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcUSDC",
+        "address": "0xffffffff7d2b0b761af01ca8e25242976ac0ad7d"
+      },
+      "approximateAPR": 386573.7806068204,
+      "totalValueLockedUSD": 34675.19121526075,
+      "stopLoss": 10,
+      "takeProfit": 25,
+      "proportion": 14.95560344879677
+    },
+    {
+      "poolId": "0x84fb1f90836f7962011576307476d474874c4d68",
+      "pairName": "xcUSDC/xcUSDT",
+      "token0": {
+        "symbol": "xcUSDC",
+        "address": "0xffffffff7d2b0b761af01ca8e25242976ac0ad7d"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "address": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "approximateAPR": 27348.951207300663,
+      "totalValueLockedUSD": 29172.065071323403,
+      "stopLoss": 10,
+      "takeProfit": 25,
+      "proportion": 4.022585006518523
+    },
+    {
+      "poolId": "0x583af38702c2a53619558acbc758a77d0c0918e9",
+      "pairName": "RMRK/WGLMR",
+      "token0": {
+        "symbol": "RMRK",
+        "address": "0x524d524b4c9366be706d3a90dcf70076ca037ae3"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "address": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "approximateAPR": 21529.336557361647,
+      "totalValueLockedUSD": 28113.983296345716,
+      "stopLoss": 10,
+      "takeProfit": 25,
+      "proportion": 3.155235355102362
+    },
+    {
+      "poolId": "0x1b11d991f32fb59ec4ee744de68ad65d9e85b2d2",
+      "pairName": "STELLA/WGLMR",
+      "token0": {
+        "symbol": "STELLA",
+        "address": "0x0e358838ce72d5e61e0018a2ffac4bec5f4c88d2"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "address": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "approximateAPR": 102435.92277151083,
+      "totalValueLockedUSD": 14413.720493244082,
+      "stopLoss": 10,
+      "takeProfit": 25,
+      "proportion": 13.699724159667138
+    },
+    {
+      "poolId": "0xace7f65df5e89f67e4b278342e74d0cb2a9516c6",
+      "pairName": "xcDOT/xcNCTR",
+      "token0": {
+        "symbol": "xcDOT",
+        "address": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcNCTR",
+        "address": "0xffffffff8a9736b44ebf188972725bed67bf694e"
+      },
+      "approximateAPR": 1560.6784717915418,
+      "totalValueLockedUSD": 12919.116028116772,
+      "stopLoss": 10,
+      "takeProfit": 25,
+      "proportion": 0.21136437652611875
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "timestamp": "2025-04-19T19:20:53.191Z",
+  "userPreferences": {
+    "coinLimit": 15,
+    "minRequiredApr": 5,
+    "minMarketCap": 1000000,
+    "stopLossLevel": 10,
+    "takeProfitLevel": 25,
+    "riskStrategy": "highestMarketCap",
+    "userAddress": "0x1234567890abcdef1234567890abcdef12345678"
+  },
+  "decisions": [
+    {
+      "poolId": "0xb13b281503f6ec8a837ae1a21e86a9cae368fcc5",
+      "pairName": "WGLMR/xcDOT",
+      "token0": {
+        "symbol": "WGLMR",
+        "address": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcDOT",
+        "address": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "approximateAPR": 268585.6366502277,
+      "totalValueLockedUSD": 129307.67992424834,
+      "stopLoss": 10,
+      "takeProfit": 25,
+      "proportion": 34.27769040411133
+    },
+    {
+      "poolId": "0x5daf7f80cc550ee6249a4635c3bb0678e94d3867",
+      "pairName": "xcDOT/xcUSDT",
+      "token0": {
+        "symbol": "xcDOT",
+        "address": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "address": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "approximateAPR": 216780.9245296328,
+      "totalValueLockedUSD": 90941.5491378691,
+      "stopLoss": 10,
+      "takeProfit": 25,
+      "proportion": 33.25262380860771
+    },
+    {
+      "poolId": "0xab8c35164a8e3ef302d18da953923ea31f0fe393",
+      "pairName": "USDC/WGLMR",
+      "token0": {
+        "symbol": "USDC",
+        "address": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "address": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "approximateAPR": 184191.2399759819,
+      "totalValueLockedUSD": 69503.63903118188,
+      "stopLoss": 10,
+      "takeProfit": 25,
+      "proportion": 32.469685787280966
+    }
+  ]
+}

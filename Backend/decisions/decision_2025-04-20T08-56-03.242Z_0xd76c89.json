@@ -1,0 +1,68 @@
+{
+  "timestamp": "2025-04-20T08:56:03.242Z",
+  "userPreferences": {
+    "coinLimit": 10,
+    "minRequiredApr": 10,
+    "minMarketCap": 5000000,
+    "stopLossLevel": 24,
+    "takeProfitLevel": 25,
+    "riskStrategy": "highestMarketCap",
+    "userAddress": "0xd76c897207E7a6021fe5A894078D817824Caa8cc",
+    "allowedCoins": [
+      "STELLA"
+    ]
+  },
+  "decisions": [
+    {
+      "poolId": "0x1b11d991f32fb59ec4ee744de68ad65d9e85b2d2",
+      "pairName": "STELLA/WGLMR",
+      "token0": {
+        "symbol": "STELLA",
+        "address": "0x0e358838ce72d5e61e0018a2ffac4bec5f4c88d2"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "address": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "approximateAPR": 102435.92277151083,
+      "totalValueLockedUSD": 14413.720493244082,
+      "stopLoss": 24,
+      "takeProfit": 25,
+      "proportion": 71.66348615867662
+    },
+    {
+      "poolId": "0x434714e057ed2741f4af15e3ea62c787a4fb5eef",
+      "pairName": "STELLA/USDC",
+      "token0": {
+        "symbol": "STELLA",
+        "address": "0x0e358838ce72d5e61e0018a2ffac4bec5f4c88d2"
+      },
+      "token1": {
+        "symbol": "USDC",
+        "address": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "approximateAPR": 102776.39312950407,
+      "totalValueLockedUSD": 44.09860334948368,
+      "stopLoss": 24,
+      "takeProfit": 25,
+      "proportion": 28.336513841323374
+    },
+    {
+      "poolId": "0xe6706a7d0cd880d6eb34c4078c8c27e99eb652ea",
+      "pairName": "STELLA/xcUSDT",
+      "token0": {
+        "symbol": "STELLA",
+        "address": "0x0e358838ce72d5e61e0018a2ffac4bec5f4c88d2"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "address": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "approximateAPR": 204082.37450897068,
+      "totalValueLockedUSD": 0.4028633889259124,
+      "stopLoss": 24,
+      "takeProfit": 25,
+      "proportion": 0
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "coinLimit": 15,
+  "minRequiredApr": 5,
+  "minMarketCap": 1000000,
+  "stopLossLevel": 10,
+  "takeProfitLevel": 25,
+  "riskStrategy": "highestMarketCap",
+  "userAddress": "0x1234567890abcdef1234567890abcdef12345678"
+} 

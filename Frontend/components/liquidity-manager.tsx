@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
@@ -14,10 +14,30 @@ import { Input } from "@/components/ui/input"
 import CoinSelector from "@/components/coin-selector"
 import CoinSelectorSingle from "@/components/coin-selector-single"
 import RangeSlider from "@/components/range-slider"
+import InvestmentDecisions from "@/components/investment-decisions"
 import { Wallet } from "lucide-react"
 import Image from "next/image"
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { injected } from 'wagmi/connectors'
+import { toast } from 'sonner'
+
+// Define types for investment decisions
+interface Token {
+  symbol: string
+  address: string
+}
+
+interface InvestmentDecision {
+  poolId: string
+  pairName: string
+  token0: Token
+  token1: Token
+  approximateAPR: number
+  totalValueLockedUSD: number
+  stopLoss: number
+  takeProfit: number
+  proportion: number
+}
 
 export default function LiquidityManager() {
   const [showAllCoins, setShowAllCoins] = useState(false)
@@ -28,10 +48,45 @@ export default function LiquidityManager() {
   const [maxAllocation, setMaxAllocation] = useState("20")
   const [depositAmount, setDepositAmount] = useState("")
   const [selectedDepositCoin, setSelectedDepositCoin] = useState<string | null>(null)
+  const [selectedCoins, setSelectedCoins] = useState<string[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking')
+  const [investmentDecisions, setInvestmentDecisions] = useState<InvestmentDecision[]>([])
+  const [showDecisions, setShowDecisions] = useState(false)
   
   // Wagmi hooks
   const { address, isConnected } = useAccount()
   const { connect } = useConnect()
+  
+  // This ensures wallet-related rendering only happens client-side
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+  
+  // Check if backend is running
+  useEffect(() => {
+    if (mounted) {
+      const checkBackendStatus = async () => {
+        try {
+          const response = await fetch('http://localhost:3001/api/health', {
+            method: 'GET',
+            signal: AbortSignal.timeout(3000) // 3 second timeout
+          });
+          if (response.ok) {
+            setBackendStatus('online');
+          } else {
+            setBackendStatus('offline');
+          }
+        } catch (error) {
+          console.error('Backend health check failed:', error);
+          setBackendStatus('offline');
+        }
+      };
+      
+      checkBackendStatus();
+    }
+  }, [mounted]);
   
   const formatAddress = (addr: string | undefined) => {
     if (!addr) return ''
@@ -78,12 +133,97 @@ export default function LiquidityManager() {
     }
   }
 
+  const resetForm = () => {
+    setDepositAmount("");
+    setSelectedDepositCoin(null);
+    setShowDecisions(false);
+  };
+
+  const handleDepositToVault = async () => {
+    if (!address || !selectedDepositCoin || !depositAmount) {
+      toast.error("Please connect your wallet and fill in all required fields");
+      return;
+    }
+    
+    if (backendStatus === 'offline') {
+      toast.error("Backend server is not running. Please start the backend server at http://localhost:3001");
+      return;
+    }
+
+    // Clear previous investment decisions
+    setInvestmentDecisions([]);
+    setShowDecisions(false);
+    setIsLoading(true);
+
+    try {
+      // Create the request payload
+      const payload = {
+        coinLimit: parseInt(maxAllocation, 10),
+        minRequiredApr: parseInt(aprValue, 10),
+        minMarketCap: marketCapValue[0],
+        stopLossLevel: Math.abs(slTpRange[0]),  // Convert negative to positive value
+        takeProfitLevel: slTpRange[1],
+        riskStrategy: riskStrategy === "market-cap" ? "highestMarketCap" : "highestApr",
+        userAddress: address,
+        // When "All Coins" is selected (showAllCoins is true), use an empty array for allowedCoins
+        allowedCoins: showAllCoins 
+          ? [] 
+          : (selectedCoins.length > 0 
+              ? selectedCoins.map(coin => {
+                  // For tokens with 'xc' prefix, ensure 'xc' is lowercase and the rest is uppercase
+                  if (coin.toLowerCase().startsWith('xc')) {
+                    return 'xc' + coin.substring(2).toUpperCase();
+                  }
+                  return coin.toUpperCase();
+                }) 
+              : ["WGLMR", "xcDOT", "xcUSDT", "xcUSDC", "USDC", "xcMANTA", "STELLA"])  // Default allowed coins
+      };
+
+      console.log("Sending request to backend:", payload);
+
+      // Send the POST request to the backend
+      const response = await fetch("http://localhost:3001/api/investmentDecisions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+        // Add a timeout to the fetch request
+        signal: AbortSignal.timeout(10000), // 10 second timeout
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success("Successfully deposited into the vault!");
+        console.log("Investment decisions:", data);
+        // Store the investment decisions from the API response
+        if (data.data && data.data.decisions) {
+          setInvestmentDecisions(data.data.decisions);
+          setShowDecisions(true);
+        }
+      } else {
+        toast.error(`Failed to deposit: ${data.error || data.message || "Unknown error"}`);
+        console.error("API Error:", data);
+      }
+    } catch (error) {
+      console.error("Failed to deposit to vault:", error);
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        toast.error("Failed to connect to the backend. Please ensure the backend server is running at http://localhost:3001");
+      } else {
+        toast.error("An unexpected error occurred. Please try again later.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="w-full max-w-4xl mx-auto"
+      className="w-full max-w-4xl mx-auto space-y-6"
     >
       <Card className="border-2 border-gray-200 shadow-lg">
         <CardHeader className="border-b border-gray-200 pb-4">
@@ -110,7 +250,7 @@ export default function LiquidityManager() {
           {/* Coin Selector (only shown when All Coins is not selected) */}
           {!showAllCoins && (
             <div className="space-y-4">
-              <CoinSelector showAllCoins={false} />
+              <CoinSelector showAllCoins={false} onSelectCoins={setSelectedCoins} />
             </div>
           )}
 
@@ -217,7 +357,16 @@ export default function LiquidityManager() {
         </CardContent>
 
         <CardFooter className="flex flex-col space-y-4 w-full border-t border-gray-200 pt-5">
-          {!isConnected ? (
+          {!mounted ? (
+            // Show a placeholder until the component is mounted
+            <Button
+              className="w-full bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white border-0"
+              size="lg"
+              disabled
+            >
+              Loading...
+            </Button>
+          ) : !isConnected ? (
             <Button
               className="w-full bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white border-0"
               size="lg"
@@ -263,14 +412,26 @@ export default function LiquidityManager() {
                 className="w-full bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white border-0"
                 size="lg"
                 variant="default"
-                disabled={!selectedDepositCoin || !depositAmount}
+                disabled={!selectedDepositCoin || !depositAmount || isLoading || backendStatus === 'offline'}
+                onClick={handleDepositToVault}
               >
-                Deposit into the Vault
+                {isLoading ? "Processing..." : 
+                 backendStatus === 'checking' ? "Checking backend..." :
+                 backendStatus === 'offline' ? "Backend offline" :
+                 "Deposit into the Vault"}
               </Button>
             </div>
           )}
         </CardFooter>
       </Card>
+
+      {showDecisions && investmentDecisions.length > 0 && (
+        <InvestmentDecisions 
+          decisions={investmentDecisions} 
+          depositAmount={depositAmount} 
+          onClose={resetForm}
+        />
+      )}
     </motion.div>
   )
 }

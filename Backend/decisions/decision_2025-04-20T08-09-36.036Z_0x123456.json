@@ -1,0 +1,102 @@
+{
+  "timestamp": "2025-04-20T08:09:36.036Z",
+  "userPreferences": {
+    "coinLimit": 5,
+    "minRequiredApr": 5,
+    "minMarketCap": 10000,
+    "stopLossLevel": 10,
+    "takeProfitLevel": 20,
+    "riskStrategy": "highestApr",
+    "userAddress": "0x1234567890abcdef1234567890abcdef12345678",
+    "allowedCoins": [
+      "xcDOT"
+    ]
+  },
+  "decisions": [
+    {
+      "poolId": "0xc5266f8e5f91d38c52e6eb8673d80ac7cdd48532",
+      "pairName": "xcDOT/xcDED",
+      "token0": {
+        "symbol": "xcDOT",
+        "address": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcDED",
+        "address": "0xffffffff5da2d7214d268375cf8fb1715705fdc6"
+      },
+      "approximateAPR": 1963383.275107948,
+      "totalValueLockedUSD": 191.61642377974692,
+      "stopLoss": 10,
+      "takeProfit": 20,
+      "proportion": 15.321859583996474
+    },
+    {
+      "poolId": "0xab9cb967e3af8935d44e6830737fa70700b2a6ec",
+      "pairName": "d2O/xcDOT",
+      "token0": {
+        "symbol": "d2O",
+        "address": "0xc806b0600cbafa0b197562a9f7e3b9856866e9bf"
+      },
+      "token1": {
+        "symbol": "xcDOT",
+        "address": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "approximateAPR": 691617.126819338,
+      "totalValueLockedUSD": 3123.986925845688,
+      "stopLoss": 10,
+      "takeProfit": 20,
+      "proportion": 23.45981244110962
+    },
+    {
+      "poolId": "0x18521664b60b46525c7fcdf450383d68fd52ee04",
+      "pairName": "SOL/xcDOT",
+      "token0": {
+        "symbol": "SOL",
+        "address": "0x99fec54a5ad36d50a4bba3a41cab983a5bb86a7d"
+      },
+      "token1": {
+        "symbol": "xcDOT",
+        "address": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "approximateAPR": 474986.4169186167,
+      "totalValueLockedUSD": 376.86980930150577,
+      "stopLoss": 10,
+      "takeProfit": 20,
+      "proportion": 17.29384685340987
+    },
+    {
+      "poolId": "0xdd228d01e11041050be93fcfaf3005930782810e",
+      "pairName": "xcDOT/xcASTR",
+      "token0": {
+        "symbol": "xcDOT",
+        "address": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcASTR",
+        "address": "0xffffffffa893ad19e540e172c10d78d4d479b5cf"
+      },
+      "approximateAPR": 389805.9254762863,
+      "totalValueLockedUSD": 1097.1105000805912,
+      "stopLoss": 10,
+      "takeProfit": 20,
+      "proportion": 20.40905244271479
+    },
+    {
+      "poolId": "0x4ff48b9613a34c6e8eb508731a0bcc50a15ee944",
+      "pairName": "xcDOT/xcPINK",
+      "token0": {
+        "symbol": "xcDOT",
+        "address": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcPINK",
+        "address": "0xffffffff30478fafbe935e466da114e14fb3563d"
+      },
+      "approximateAPR": 278357.60894683376,
+      "totalValueLockedUSD": 3184.1544380334103,
+      "stopLoss": 10,
+      "takeProfit": 20,
+      "proportion": 23.515428678769236
+    }
+  ]
+}

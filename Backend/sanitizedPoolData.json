@@ -1,0 +1,4995 @@
+{
+  "pools": [
+    {
+      "id": "0x04d447f10fe0ea56ed9cc700d06c5ae7edbbaa17",
+      "createdAt": "2023-09-24T19:58:54.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "ATH",
+        "name": "Athos Finance Token",
+        "id": "0xcbabee0658725b5b21e1512244734a5d5c6b51d6"
+      },
+      "token0Price": 2.938956807585585e-39,
+      "token1Price": 3.402567868363881e+38,
+      "totalValueLockedUSD": 2.3067051521256964e-19,
+      "totalValueLockedToken0": 1e-18,
+      "totalValueLockedToken1": 0.000380406328591,
+      "volumeUSD": 0.16823030222520324,
+      "txCount": 7,
+      "approximateAPR": 66549533059755750000
+    },
+    {
+      "id": "0xe190d5c55b9a8ac91bc2242423faa9ffe3b7dde9",
+      "createdAt": "2024-03-27T17:57:48.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "id": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "token1": {
+        "symbol": "DDG",
+        "name": "DOTDOGE",
+        "id": "0xc2749f2dbccb9fdc4e0d456de3037d852392b967"
+      },
+      "token0Price": 2.938956807585585e-27,
+      "token1Price": 3.4025678683638805e+26,
+      "totalValueLockedUSD": 0.000001,
+      "totalValueLockedToken0": 0.000001,
+      "totalValueLockedToken1": 3.3020019528839795,
+      "volumeUSD": 1.199999,
+      "txCount": 2,
+      "approximateAPR": 109499908.74999999
+    },
+    {
+      "id": "0x60d8c85213740ce8da164c2b9de97c8946095050",
+      "createdAt": "2024-09-13T13:41:36.000Z",
+      "fee": 0.2505,
+      "token0": {
+        "symbol": "FPOC",
+        "name": "FPOC",
+        "id": "0x4f61d85da4f86e9ad4ab3ffa2979c372a4a2781e"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 3.4025678654032522e+38,
+      "token1Price": 2.938956810142818e-39,
+      "totalValueLockedUSD": 0.00009156073861863855,
+      "totalValueLockedToken0": 0.2627851269194618,
+      "totalValueLockedToken1": 0.000550000000000003,
+      "volumeUSD": 25.1943475745709,
+      "txCount": 11,
+      "approximateAPR": 25159060.743346006
+    },
+    {
+      "id": "0xcbbb929b87e66ad5640f12d009f2249158a1d08f",
+      "createdAt": "2023-06-26T17:49:18.000Z",
+      "fee": 0.2732,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcEQ",
+        "name": "Equilibrium Token",
+        "id": "0xffffffff8f6267e040d8a0638c576dfba4f0f6d6"
+      },
+      "token0Price": 2.938956807585585e-48,
+      "token1Price": 3.4025678683638808e+47,
+      "totalValueLockedUSD": 0.0001387447504488584,
+      "totalValueLockedToken0": 0.000550000000000004,
+      "totalValueLockedToken1": 29.23080395,
+      "volumeUSD": 13.703400604512797,
+      "txCount": 10,
+      "approximateAPR": 9848846.15136839
+    },
+    {
+      "id": "0xc3457eafed83b76d57cedfb89db18610c0b3ba3d",
+      "createdAt": "2023-03-07T21:44:54.000Z",
+      "fee": 0.89,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "mbXEN",
+        "name": "XEN Crypto",
+        "id": "0xb564a5767a00ee9075cac561c427643286f8f4e1"
+      },
+      "token0Price": 2.938956807585585e-39,
+      "token1Price": 3.402567868363881e+38,
+      "totalValueLockedUSD": 0.0003848304605508469,
+      "totalValueLockedToken0": 0.001787272181202951,
+      "totalValueLockedToken1": 29996615.00318988,
+      "volumeUSD": 2.369543624132895,
+      "txCount": 23,
+      "approximateAPR": 2000221.721528371
+    },
+    {
+      "id": "0xc5266f8e5f91d38c52e6eb8673d80ac7cdd48532",
+      "createdAt": "2024-04-17T11:08:42.000Z",
+      "fee": 0.8743,
+      "token0": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcDED",
+        "name": "DED",
+        "id": "0xffffffff5da2d7214d268375cf8fb1715705fdc6"
+      },
+      "token0Price": 2.938956807585585e-39,
+      "token1Price": 3.402567868363881e+38,
+      "totalValueLockedUSD": 191.61642377974692,
+      "totalValueLockedToken0": 54.8154711189,
+      "totalValueLockedToken1": 2220164.6059712437,
+      "volumeUSD": 1178920.3783697078,
+      "txCount": 9053,
+      "approximateAPR": 1963383.275107948
+    },
+    {
+      "id": "0x5e778efc3701af4a5962ac816372a30693d9afe1",
+      "createdAt": "2024-04-17T13:33:24.000Z",
+      "fee": 0.89,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcDED",
+        "name": "DED",
+        "id": "0xffffffff5da2d7214d268375cf8fb1715705fdc6"
+      },
+      "token0Price": 0.0015630460903472464,
+      "token1Price": 639.7763995416411,
+      "totalValueLockedUSD": 0.008160967017929633,
+      "totalValueLockedToken0": 0.013916576821306169,
+      "totalValueLockedToken1": 24.6634449536,
+      "volumeUSD": 39.21058092503235,
+      "txCount": 13,
+      "approximateAPR": 1560790.183995642
+    },
+    {
+      "id": "0x80147017c469b97da3eefc10679c81d1a9d99b66",
+      "createdAt": "2023-02-21T08:23:42.000Z",
+      "fee": 0.3396,
+      "token0": {
+        "symbol": "STELLA",
+        "name": "StellaSwap",
+        "id": "0x0e358838ce72d5e61e0018a2ffac4bec5f4c88d2"
+      },
+      "token1": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token0Price": 3.402567865403252e+30,
+      "token1Price": 2.938956810142818e-31,
+      "totalValueLockedUSD": 0.002790844071822213,
+      "totalValueLockedToken0": 0.1419650735738683,
+      "totalValueLockedToken1": 8e-10,
+      "volumeUSD": 29.213947877984822,
+      "txCount": 33,
+      "approximateAPR": 1297523.4739300096
+    },
+    {
+      "id": "0x86c50c9bc4e3f15d6d6eb47393cb07bd701bcf04",
+      "createdAt": "2023-01-03T13:47:18.000Z",
+      "fee": 0.4579,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcaUSD",
+        "name": "Acala Dollar",
+        "id": "0xffffffff52c56a9257bb97f4b2b6f7b2d624ecda"
+      },
+      "token0Price": 3.3738852024513584,
+      "token1Price": 0.2963941983780099,
+      "totalValueLockedUSD": 294.30111799446485,
+      "totalValueLockedToken0": 1674.9485322891317,
+      "totalValueLockedToken1": 863.202834184845,
+      "volumeUSD": 2281306.7834482593,
+      "txCount": 19639,
+      "approximateAPR": 1295553.3091064258
+    },
+    {
+      "id": "0xd03c52270034441de29aeed388e31ac2f158ca81",
+      "createdAt": "2023-10-20T13:13:18.000Z",
+      "fee": 0.2548,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcvFIL",
+        "name": "Bifrost Voucher FIL",
+        "id": "0xffffffffcd0ad0ea6576b7b285295c85e94cf4c1"
+      },
+      "token0Price": 2.938956807585585e-39,
+      "token1Price": 3.402567868363881e+38,
+      "totalValueLockedUSD": 0.000041610399047145625,
+      "totalValueLockedToken0": 0.000250000000000001,
+      "totalValueLockedToken1": 0.27250324981551016,
+      "volumeUSD": 0.48637510943090717,
+      "txCount": 4,
+      "approximateAPR": 1087080.6087690275
+    },
+    {
+      "id": "0x4f73203a3037a34a3502da2ca0dc4bf40b78ebfe",
+      "createdAt": "2023-10-03T15:29:54.000Z",
+      "fee": 0.89,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcOTP",
+        "name": "OriginTrail Parachain Token",
+        "id": "0xffffffffb3229c8e7657eabea704d5e75246e544"
+      },
+      "token0Price": 2.9389568075855847e-45,
+      "token1Price": 3.402567868363881e+44,
+      "totalValueLockedUSD": 0.3260238437036839,
+      "totalValueLockedToken0": 0.3386680876268923,
+      "totalValueLockedToken1": 5.749514156626,
+      "volumeUSD": 814.0146981110931,
+      "txCount": 29,
+      "approximateAPR": 811083.8510379804
+    },
+    {
+      "id": "0x0fc66f6592cb5589311eadde716380ec7e5adb00",
+      "createdAt": "2023-03-08T16:02:18.000Z",
+      "fee": 0.1935,
+      "token0": {
+        "symbol": "ZOO",
+        "name": "ZooDAO",
+        "id": "0x7cd3e6e1a69409def0d78d17a492e8e143f40ec5"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 2.938956807585585e-39,
+      "token1Price": 3.402567868363881e+38,
+      "totalValueLockedUSD": 0.00004019895257259803,
+      "totalValueLockedToken0": 1e-18,
+      "totalValueLockedToken1": 0.000105788622873357,
+      "volumeUSD": 0.4603364228784614,
+      "txCount": 6,
+      "approximateAPR": 808787.5087822787
+    },
+    {
+      "id": "0x99935dec67026d0dd08410329a3f7a3cae4370fd",
+      "createdAt": "2023-03-13T10:12:24.000Z",
+      "fee": 0.27,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcINTR",
+        "name": "Interlay",
+        "id": "0xffffffff4c1cbcd97597339702436d4f18a375ab"
+      },
+      "token0Price": 0.06915062438687082,
+      "token1Price": 14.461185403119275,
+      "totalValueLockedUSD": 6.198869465250806,
+      "totalValueLockedToken0": 47.7302132003731,
+      "totalValueLockedToken1": 843.6892397774,
+      "volumeUSD": 47380.43785442303,
+      "txCount": 1517,
+      "approximateAPR": 753257.053843199
+    },
+    {
+      "id": "0xab9cb967e3af8935d44e6830737fa70700b2a6ec",
+      "createdAt": "2023-07-18T08:02:42.000Z",
+      "fee": 0.89,
+      "token0": {
+        "symbol": "d2O",
+        "name": "Deuterium",
+        "id": "0xc806b0600cbafa0b197562a9f7e3b9856866e9bf"
+      },
+      "token1": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token0Price": 4.712651108302821,
+      "token1Price": 0.21219478739645814,
+      "totalValueLockedUSD": 3123.986925845688,
+      "totalValueLockedToken0": 1975.2991491676005,
+      "totalValueLockedToken1": 386.7806136758,
+      "volumeUSD": 6651078.5343222115,
+      "txCount": 35580,
+      "approximateAPR": 691617.126819338
+    },
+    {
+      "id": "0x18521664b60b46525c7fcdf450383d68fd52ee04",
+      "createdAt": "2023-12-07T12:49:36.000Z",
+      "fee": 0.2709,
+      "token0": {
+        "symbol": "SOL",
+        "name": "Wrapped SOL",
+        "id": "0x99fec54a5ad36d50a4bba3a41cab983a5bb86a7d"
+      },
+      "token1": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token0Price": 2.938956807585585e-38,
+      "token1Price": 3.4025678683638806e+37,
+      "totalValueLockedUSD": 376.86980930150577,
+      "totalValueLockedToken0": 5.702047274,
+      "totalValueLockedToken1": 78.9462757521,
+      "volumeUSD": 1810383.8586237105,
+      "txCount": 6769,
+      "approximateAPR": 474986.4169186167
+    },
+    {
+      "id": "0x1103258b909ad741df79c2c91aa133852eb0003d",
+      "createdAt": "2023-01-21T00:45:06.000Z",
+      "fee": 0.5316,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "name": "Tether USD",
+        "id": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "token0Price": 3.402567865403252e+26,
+      "token1Price": 2.938956810142818e-27,
+      "totalValueLockedUSD": 50.77476260001747,
+      "totalValueLockedToken0": 105.24561325134931,
+      "totalValueLockedToken1": 36.469343,
+      "volumeUSD": 122956.97761804114,
+      "txCount": 7385,
+      "approximateAPR": 469875.839362975
+    },
+    {
+      "id": "0xe981289be7d91962d26e964abd843f23b703f651",
+      "createdAt": "2024-05-30T08:27:54.000Z",
+      "fee": 0.705,
+      "token0": {
+        "symbol": "LOVE",
+        "name": "LOVE",
+        "id": "0x1bbe8cacf46251d814b555bded3f45562ead7484"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 7.446842120740796,
+      "token1Price": 0.13428510820913203,
+      "totalValueLockedUSD": 0.08642272935789329,
+      "totalValueLockedToken0": 2.8653240375758133,
+      "totalValueLockedToken1": 0.17295175465846035,
+      "volumeUSD": 156.77509045279604,
+      "txCount": 37,
+      "approximateAPR": 466800.23242150876
+    },
+    {
+      "id": "0x66fbdaf49ac804467c79f2eecc1543d01f342a24",
+      "createdAt": "2023-10-01T18:45:24.000Z",
+      "fee": 0.57,
+      "token0": {
+        "symbol": "ATH",
+        "name": "Athos Finance Token",
+        "id": "0xcbabee0658725b5b21e1512244734a5d5c6b51d6"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "name": "Tether USD",
+        "id": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "token0Price": 3.402567865403252e+26,
+      "token1Price": 2.938956810142818e-27,
+      "totalValueLockedUSD": 0.02958833033717502,
+      "totalValueLockedToken0": 4.833503452202236,
+      "totalValueLockedToken1": 0.029583,
+      "volumeUSD": 59.57865890713701,
+      "txCount": 81,
+      "approximateAPR": 418926.64588972257
+    },
+    {
+      "id": "0x10446fb9fcc9c5411d5caf0bcff6c1ff5230137d",
+      "createdAt": "2023-07-06T08:35:12.000Z",
+      "fee": 0.27,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcCFG",
+        "name": "Centrifuge",
+        "id": "0xffffffff44bd9d2ffee20b25d1cf9e78edb6eae3"
+      },
+      "token0Price": 1.4959640813990802,
+      "token1Price": 0.6684652475511067,
+      "totalValueLockedUSD": 3.153028422636846,
+      "totalValueLockedToken0": 29.38941812339004,
+      "totalValueLockedToken1": 13.368745371100184,
+      "volumeUSD": 13377.307366896915,
+      "txCount": 2173,
+      "approximateAPR": 418116.63718057505
+    },
+    {
+      "id": "0xdd228d01e11041050be93fcfaf3005930782810e",
+      "createdAt": "2023-02-28T09:50:00.000Z",
+      "fee": 0.3051,
+      "token0": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcASTR",
+        "name": "Astar",
+        "id": "0xffffffffa893ad19e540e172c10d78d4d479b5cf"
+      },
+      "token0Price": 0.0069475787086102705,
+      "token1Price": 143.9350372181722,
+      "totalValueLockedUSD": 1097.1105000805912,
+      "totalValueLockedToken0": 175.8369599642,
+      "totalValueLockedToken1": 18184.67137435712,
+      "volumeUSD": 3840287.4766743104,
+      "txCount": 22992,
+      "approximateAPR": 389805.9254762863
+    },
+    {
+      "id": "0x0aa60133b2604851f3c57067cfac2fcc3aa7fd7b",
+      "createdAt": "2024-02-02T10:27:00.000Z",
+      "fee": 0.5,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcUSDC",
+        "name": "USD Coin",
+        "id": "0xffffffff7d2b0b761af01ca8e25242976ac0ad7d"
+      },
+      "token0Price": 12.47175844658951,
+      "token1Price": 0.08018115523023596,
+      "totalValueLockedUSD": 34675.19121526075,
+      "totalValueLockedToken0": 150550.72087391172,
+      "totalValueLockedToken1": 24638.690434,
+      "volumeUSD": 73449423.3498507,
+      "txCount": 215961,
+      "approximateAPR": 386573.7806068204
+    },
+    {
+      "id": "0x909648c41d2bd216ac4a380c5bc7ea32e5cedda8",
+      "createdAt": "2023-02-14T12:04:36.000Z",
+      "fee": 0.89,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcPHA",
+        "name": "Phala Token",
+        "id": "0xffffffff63d24ecc8eb8a7b5d0803e900f7b6ced"
+      },
+      "token0Price": 3.4025678654032526e+32,
+      "token1Price": 2.938956810142818e-33,
+      "totalValueLockedUSD": 3.7183481852497238,
+      "totalValueLockedToken0": 3.2449632227536194,
+      "totalValueLockedToken1": 6.55807086535,
+      "volumeUSD": 4005.2347696816105,
+      "txCount": 639,
+      "approximateAPR": 349913.57724174217
+    },
+    {
+      "id": "0xd72b0608ab56a926d549ab8183a4061f0ef80c52",
+      "createdAt": "2023-02-14T12:11:30.000Z",
+      "fee": 0.2753,
+      "token0": {
+        "symbol": "xcPHA",
+        "name": "Phala Token",
+        "id": "0xffffffff63d24ecc8eb8a7b5d0803e900f7b6ced"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "name": "Tether USD",
+        "id": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "token0Price": 3.4025678654032526e+32,
+      "token1Price": 2.938956810142818e-33,
+      "totalValueLockedUSD": 0.00003866496688405114,
+      "totalValueLockedToken0": 0.000389766923,
+      "totalValueLockedToken1": 0.000003,
+      "volumeUSD": 0.12518124987029852,
+      "txCount": 7,
+      "approximateAPR": 325327.455738249
+    },
+    {
+      "id": "0xa3f5142b4b737c855f3ae01ca12bcb56deac15fb",
+      "createdAt": "2023-09-07T01:04:18.000Z",
+      "fee": 0.57,
+      "token0": {
+        "symbol": "CP",
+        "name": "Cypress",
+        "id": "0x6021d2c27b6fbd6e7608d1f39b41398caee2f824"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "name": "Tether USD",
+        "id": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "token0Price": 3.402567865403252e+26,
+      "token1Price": 2.938956810142818e-27,
+      "totalValueLockedUSD": 0.8060744671804974,
+      "totalValueLockedToken0": 15.48022213520442,
+      "totalValueLockedToken1": 0.535606,
+      "volumeUSD": 1230.3903280198283,
+      "txCount": 201,
+      "approximateAPR": 317567.07124083274
+    },
+    {
+      "id": "0x4cc7f3a2d35a2f3eb5312c6fde200fa496c3fa88",
+      "createdAt": "2023-05-24T07:58:42.000Z",
+      "fee": 0.2784,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "d2O",
+        "name": "Deuterium",
+        "id": "0xc806b0600cbafa0b197562a9f7e3b9856866e9bf"
+      },
+      "token0Price": 10.922095805659403,
+      "token1Price": 0.09155751952677792,
+      "totalValueLockedUSD": 3704.8593916171285,
+      "totalValueLockedToken0": 15146.406240102324,
+      "totalValueLockedToken1": 3407.076521771681,
+      "volumeUSD": 11332371.122821746,
+      "txCount": 75341,
+      "approximateAPR": 310821.5730459925
+    },
+    {
+      "id": "0x05148fcd032e6a04b8067a4b506b8338435b74fe",
+      "createdAt": "2023-02-12T14:11:00.000Z",
+      "fee": 0.1648,
+      "token0": {
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "id": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "token1": {
+        "symbol": "xcPHA",
+        "name": "Phala Token",
+        "id": "0xffffffff63d24ecc8eb8a7b5d0803e900f7b6ced"
+      },
+      "token0Price": 0.19213470294726281,
+      "token1Price": 5.2046818438337,
+      "totalValueLockedUSD": 0.0001222408824462392,
+      "totalValueLockedToken0": 0.000031,
+      "totalValueLockedToken1": 0.000471900006,
+      "volumeUSD": 0.620985,
+      "txCount": 12,
+      "approximateAPR": 305572.8081513796
+    },
+    {
+      "id": "0x7c0b3bf935b457738d87926110300b3c5d76c77b",
+      "createdAt": "2023-05-19T08:00:24.000Z",
+      "fee": 0.6331,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcACA",
+        "name": "Acala",
+        "id": "0xffffffffa922fef94566104a6e5a35a4fcddaa9f"
+      },
+      "token0Price": 0.5072074070157241,
+      "token1Price": 1.971580040369952,
+      "totalValueLockedUSD": 1.9340153634500434,
+      "totalValueLockedToken0": 10.240366411116486,
+      "totalValueLockedToken1": 33.999018316471,
+      "volumeUSD": 2488.9337244837157,
+      "txCount": 576,
+      "approximateAPR": 297384.67921386816
+    },
+    {
+      "id": "0xac6ccde03b940ebcea55115b3f573cb93cfc96c0",
+      "createdAt": "2023-10-24T10:44:36.000Z",
+      "fee": 0.3005,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "stDOT",
+        "name": "Stella stDOT",
+        "id": "0xbc7e02c4178a7df7d3e564323a5c359dc96c4db4"
+      },
+      "token0Price": 65.83087722568473,
+      "token1Price": 0.015190440142119779,
+      "totalValueLockedUSD": 1928.433084048533,
+      "totalValueLockedToken0": 16116.578378179034,
+      "totalValueLockedToken1": 193.519162365,
+      "volumeUSD": 5081412.624590376,
+      "txCount": 25197,
+      "approximateAPR": 289012.9010992467
+    },
+    {
+      "id": "0x7e71d586ad01c0bf7953eb82e7b76c1338b0068c",
+      "createdAt": "2023-01-25T03:20:12.000Z",
+      "fee": 0.3005,
+      "token0": {
+        "symbol": "WETH",
+        "name": "Wrapped Ether",
+        "id": "0xab3f0245b83feb11d15aaffefd7ad465a59817ed"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 0.0000419803770547587,
+      "token1Price": 23820.653127903355,
+      "totalValueLockedUSD": 7792.5797061697685,
+      "totalValueLockedToken0": 2.7295384554946485,
+      "totalValueLockedToken1": 52135.52821457455,
+      "volumeUSD": 20453550.611329105,
+      "txCount": 90304,
+      "approximateAPR": 287888.8185321861
+    },
+    {
+      "id": "0x4ff48b9613a34c6e8eb508731a0bcc50a15ee944",
+      "createdAt": "2024-03-21T19:59:12.000Z",
+      "fee": 0.3683,
+      "token0": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcPINK",
+        "name": "PINK",
+        "id": "0xffffffff30478fafbe935e466da114e14fb3563d"
+      },
+      "token0Price": 0.00005223936611187028,
+      "token1Price": 19142.651881696,
+      "totalValueLockedUSD": 3184.1544380334103,
+      "totalValueLockedToken0": 540.4583507586,
+      "totalValueLockedToken1": 6162475.361143291,
+      "volumeUSD": 6593296.976396024,
+      "txCount": 28972,
+      "approximateAPR": 278357.60894683376
+    },
+    {
+      "id": "0xb13b281503f6ec8a837ae1a21e86a9cae368fcc5",
+      "createdAt": "2023-01-20T17:53:24.000Z",
+      "fee": 0.3004,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token0Price": 55.62172608753225,
+      "token1Price": 0.017978586252902218,
+      "totalValueLockedUSD": 129307.67992424834,
+      "totalValueLockedToken0": 1009025.4688181675,
+      "totalValueLockedToken1": 16810.10985544,
+      "volumeUSD": 316748313.0822657,
+      "txCount": 513178,
+      "approximateAPR": 268585.6366502277
+    },
+    {
+      "id": "0x58858919a3604997876a03743ef20baa447b700e",
+      "createdAt": "2023-06-11T04:05:36.000Z",
+      "fee": 1.0366,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "mbDXN",
+        "name": "DBXen Token on Moonbeam",
+        "id": "0xc418b123885d732ed042b16e12e259741863f723"
+      },
+      "token0Price": 2.938956807585585e-39,
+      "token1Price": 3.402567868363881e+38,
+      "totalValueLockedUSD": 0.6612196285346792,
+      "totalValueLockedToken0": 1.6556944120524348,
+      "totalValueLockedToken1": 13.038600193886777,
+      "volumeUSD": 457.5327568678931,
+      "txCount": 84,
+      "approximateAPR": 261806.56000701274
+    },
+    {
+      "id": "0x358bbdce06aef3a7a383609ff18482e492f85b3c",
+      "createdAt": "2024-07-29T11:43:18.000Z",
+      "fee": 0.6256,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcNCTR",
+        "name": "Apillon",
+        "id": "0xffffffff8a9736b44ebf188972725bed67bf694e"
+      },
+      "token0Price": 2.938956807585585e-39,
+      "token1Price": 3.402567868363881e+38,
+      "totalValueLockedUSD": 0.00012544787712509848,
+      "totalValueLockedToken0": 1e-18,
+      "totalValueLockedToken1": 0.006369825172569168,
+      "volumeUSD": 0.1417549861094574,
+      "txCount": 5,
+      "approximateAPR": 258026.69036718085
+    },
+    {
+      "id": "0x0d28aa03641af700c7bb36adf40d8fb1447d7ddf",
+      "createdAt": "2023-07-18T03:30:18.000Z",
+      "fee": 0.3,
+      "token0": {
+        "symbol": "CP",
+        "name": "Cypress",
+        "id": "0x6021d2c27b6fbd6e7608d1f39b41398caee2f824"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 6.883889352451957,
+      "token1Price": 0.14526671606710417,
+      "totalValueLockedUSD": 124.6155165396675,
+      "totalValueLockedToken0": 4325.050730189082,
+      "totalValueLockedToken1": 315.06843702619324,
+      "volumeUSD": 289525.27825093846,
+      "txCount": 9954,
+      "approximateAPR": 254406.66498690867
+    },
+    {
+      "id": "0x1dd244befd04efdec753bee3c991525a802493eb",
+      "createdAt": "2023-07-19T12:02:36.000Z",
+      "fee": 0.2739,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcRMRK",
+        "name": "xcRMRK",
+        "id": "0xecf2adaff1de8a512f6e8bfe67a2c836edb25da3"
+      },
+      "token0Price": 2.938956807585585e-47,
+      "token1Price": 3.402567868363881e+46,
+      "totalValueLockedUSD": 320.58133330289553,
+      "totalValueLockedToken0": 904.6103294969226,
+      "totalValueLockedToken1": 96.9794767275,
+      "volumeUSD": 812957.5282336377,
+      "txCount": 2438,
+      "approximateAPR": 253521.34078273078
+    },
+    {
+      "id": "0x96d00d9974daea113ac61253c18a9e58438b29e9",
+      "createdAt": "2023-07-09T21:40:24.000Z",
+      "fee": 0.2513,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "axlWMAI",
+        "name": "Axelar Wrapped WMAI",
+        "id": "0xbfe3acdca835bb60a6b51ee6b947779a02ece911"
+      },
+      "token0Price": 3.036741874628985,
+      "token1Price": 0.3293002965957307,
+      "totalValueLockedUSD": 1.6849952517374847,
+      "totalValueLockedToken0": 9.122871814175125,
+      "totalValueLockedToken1": 5.208219074617965,
+      "volumeUSD": 4605.003296649581,
+      "txCount": 408,
+      "approximateAPR": 250678.22858728233
+    },
+    {
+      "id": "0x27827a07f37acc312993b3a2db0140e0f6ff02ee",
+      "createdAt": "2024-08-01T08:27:36.000Z",
+      "fee": 0.27,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "BRLA",
+        "name": "BRLA Token",
+        "id": "0xfeb25f3fddad13f82c4d6dbc1481516f62236429"
+      },
+      "token0Price": 1.9644559139795017,
+      "token1Price": 0.5090468016532106,
+      "totalValueLockedUSD": 0.23842789084801055,
+      "totalValueLockedToken0": 1.2470342824519307,
+      "totalValueLockedToken1": 1.0388067707522906,
+      "volumeUSD": 577.0923337295203,
+      "txCount": 287,
+      "approximateAPR": 238531.02624347934
+    },
+    {
+      "id": "0x44d7a6e4cf5e8f73df40cd2dfde189c1770f4072",
+      "createdAt": "2024-10-18T08:40:06.000Z",
+      "fee": 0.4934,
+      "token0": {
+        "symbol": "sIESTA",
+        "name": "SIESTACOIN",
+        "id": "0x7f0cc7dca86124593924bea6b5dd382bd843fa74"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 6120124.935065318,
+      "token1Price": 1.6339535722064918e-7,
+      "totalValueLockedUSD": 0.05903724870050663,
+      "totalValueLockedToken0": 13569.6,
+      "totalValueLockedToken1": 0.36065430921888425,
+      "volumeUSD": 76.19295358307953,
+      "txCount": 41,
+      "approximateAPR": 232423.85961005365
+    },
+    {
+      "id": "0x3ceb7d674236adbfe9fa1ada6c48e4a92e6441b4",
+      "createdAt": "2023-03-07T14:56:12.000Z",
+      "fee": 0.2141,
+      "token0": {
+        "symbol": "stDOT",
+        "name": "Liquid staked DOT",
+        "id": "0xfa36fe1da08c89ec72ea1f0143a35bfd5daea108"
+      },
+      "token1": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token0Price": 0.9881816436815382,
+      "token1Price": 1.0119597003182854,
+      "totalValueLockedUSD": 3.1226740513634277,
+      "totalValueLockedToken0": 0.3476494563,
+      "totalValueLockedToken1": 0.2969779425,
+      "volumeUSD": 9256.6515410517,
+      "txCount": 189,
+      "approximateAPR": 231652.393991283
+    },
+    {
+      "id": "0x6889417ebf34f2c066cb714d06be0c58de91eb0f",
+      "createdAt": "2023-12-09T03:12:06.000Z",
+      "fee": 0.2719,
+      "token0": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcHDX",
+        "name": "HydraDX",
+        "id": "0xffffffff345dc44ddae98df024eb494321e73fcc"
+      },
+      "token0Price": 3.402567865403252e+40,
+      "token1Price": 2.938956810142818e-41,
+      "totalValueLockedUSD": 0.1288225804210408,
+      "totalValueLockedToken0": 0.0192462221,
+      "totalValueLockedToken1": 0.060321238217,
+      "volumeUSD": 293.28087266860246,
+      "txCount": 9,
+      "approximateAPR": 225940.36070040156
+    },
+    {
+      "id": "0xe72de1bdf5bc660799625917c68ff48731ea3c9b",
+      "createdAt": "2023-03-18T21:29:54.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcASTR",
+        "name": "Astar",
+        "id": "0xffffffffa893ad19e540e172c10d78d4d479b5cf"
+      },
+      "token0Price": 3.4025678654032522e+38,
+      "token1Price": 2.938956810142818e-39,
+      "totalValueLockedUSD": 3.483434628930811,
+      "totalValueLockedToken0": 3.987217842617709,
+      "totalValueLockedToken1": 24.904333833274293,
+      "volumeUSD": 8575.99629587688,
+      "txCount": 626,
+      "approximateAPR": 224651.74328216413
+    },
+    {
+      "id": "0x323b8452765605c05a84091c06f77ce77e3705f5",
+      "createdAt": "2023-09-25T20:22:24.000Z",
+      "fee": 0.27,
+      "token0": {
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "id": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "token1": {
+        "symbol": "d2O",
+        "name": "Deuterium",
+        "id": "0xc806b0600cbafa0b197562a9f7e3b9856866e9bf"
+      },
+      "token0Price": 2.938956807585585e-27,
+      "token1Price": 3.4025678683638805e+26,
+      "totalValueLockedUSD": 2528.478512086176,
+      "totalValueLockedToken0": 1684.802285,
+      "totalValueLockedToken1": 1670.1608702005174,
+      "volumeUSD": 5686403.969162,
+      "txCount": 26772,
+      "approximateAPR": 221633.32948340898
+    },
+    {
+      "id": "0x5daf7f80cc550ee6249a4635c3bb0678e94d3867",
+      "createdAt": "2023-01-21T16:13:18.000Z",
+      "fee": 0.3004,
+      "token0": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "name": "Tether USD",
+        "id": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "token0Price": 0.26851875005141684,
+      "token1Price": 3.7241347198604076,
+      "totalValueLockedUSD": 90941.5491378691,
+      "totalValueLockedToken0": 10439.7997735116,
+      "totalValueLockedToken1": 52317.538861,
+      "volumeUSD": 179800385.78939763,
+      "txCount": 363700,
+      "approximateAPR": 216780.9245296328
+    },
+    {
+      "id": "0x81c8b2cf19b55f90846619a0be06958773093720",
+      "createdAt": "2024-11-21T19:14:24.000Z",
+      "fee": 0.3,
+      "token0": {
+        "symbol": "WELL",
+        "name": "WELL",
+        "id": "0x511ab53f793683763e5a8829738301368a2411e3"
+      },
+      "token1": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token0Price": 99.45930373163021,
+      "token1Price": 0.01005436356862388,
+      "totalValueLockedUSD": 0.0005568530507794264,
+      "totalValueLockedToken0": 0.011161883608841343,
+      "totalValueLockedToken1": 3e-10,
+      "volumeUSD": 1.1009656564681038,
+      "txCount": 6,
+      "approximateAPR": 216494.70935737118
+    },
+    {
+      "id": "0x4a416a8a6a7cca18e88cc8b3ff79470afb0cb1ae",
+      "createdAt": "2024-04-29T16:42:12.000Z",
+      "fee": 0.2716,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcSTINK",
+        "name": "STINK",
+        "id": "0xffffffff54c556bd1d0f64ec6c78f1b477525e56"
+      },
+      "token0Price": 0.0006872828628359933,
+      "token1Price": 1455.004997321795,
+      "totalValueLockedUSD": 11.193847808257678,
+      "totalValueLockedToken0": 35.3811947490851,
+      "totalValueLockedToken1": 45479.851050279,
+      "volumeUSD": 24029.973223187986,
+      "txCount": 445,
+      "approximateAPR": 212812.1988357018
+    },
+    {
+      "id": "0x79eb71c1592a678c234ea221ed3fdc10cee89f88",
+      "createdAt": "2023-04-04T18:57:00.000Z",
+      "fee": 0.8136,
+      "token0": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcIBTC",
+        "name": "interBTC",
+        "id": "0xffffffff5ac1f9a51a93f5c527385edf7fe98a52"
+      },
+      "token0Price": 20887.21071516032,
+      "token1Price": 0.00004787618670760006,
+      "totalValueLockedUSD": 3129.6838350606185,
+      "totalValueLockedToken0": 204.2933617633,
+      "totalValueLockedToken1": 0.01279378,
+      "volumeUSD": 2230578.8796111187,
+      "txCount": 14454,
+      "approximateAPR": 211651.29173247825
+    },
+    {
+      "id": "0x4e855d0fde22ce095071469f6bb5ca4ca508bba6",
+      "createdAt": "2023-01-24T16:32:24.000Z",
+      "fee": 0.0104,
+      "token0": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcaUSD",
+        "name": "Acala Dollar",
+        "id": "0xffffffff52c56a9257bb97f4b2b6f7b2d624ecda"
+      },
+      "token0Price": 0.09783460918493077,
+      "token1Price": 10.221331779531733,
+      "totalValueLockedUSD": 0.007721906658725008,
+      "totalValueLockedToken0": 0.0000559605,
+      "totalValueLockedToken1": 0.01574268457,
+      "volumeUSD": 427.02956658392475,
+      "txCount": 14,
+      "approximateAPR": 209922.79580600734
+    },
+    {
+      "id": "0xfca72101b086f721066b6c6565ce5e3619567cec",
+      "createdAt": "2024-01-24T23:55:12.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "mbFENIX",
+        "name": "FENIX",
+        "id": "0xc3e8abfa04b0ec442c2a4d65699a40f7fced8055"
+      },
+      "token0Price": 0.000009364761602309225,
+      "token1Price": 106783.28423794723,
+      "totalValueLockedUSD": 0.04936959459153573,
+      "totalValueLockedToken0": 0.17214708330056122,
+      "totalValueLockedToken1": 21526.084340875786,
+      "volumeUSD": 113.18431586818436,
+      "txCount": 146,
+      "approximateAPR": 209198.97982598664
+    },
+    {
+      "id": "0xe6706a7d0cd880d6eb34c4078c8c27e99eb652ea",
+      "createdAt": "2023-08-01T23:33:30.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "STELLA",
+        "name": "StellaSwap",
+        "id": "0x0e358838ce72d5e61e0018a2ffac4bec5f4c88d2"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "name": "Tether USD",
+        "id": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "token0Price": 30.673532848881006,
+      "token1Price": 0.032601396289325076,
+      "totalValueLockedUSD": 0.4028633889259124,
+      "totalValueLockedToken0": 11.194420083215304,
+      "totalValueLockedToken1": 0.244758,
+      "volumeUSD": 901.0116933121224,
+      "txCount": 151,
+      "approximateAPR": 204082.37450897068
+    },
+    {
+      "id": "0x91b28e51ac195beb239769510e9399efee1d518c",
+      "createdAt": "2024-05-02T11:25:30.000Z",
+      "fee": 0.57,
+      "token0": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcSTINK",
+        "name": "STINK",
+        "id": "0xffffffff54c556bd1d0f64ec6c78f1b477525e56"
+      },
+      "token0Price": 0.00004384570166584126,
+      "token1Price": 22807.25275241899,
+      "totalValueLockedUSD": 0.3761854856943048,
+      "totalValueLockedToken0": 0.0115268214,
+      "totalValueLockedToken1": 2281.5958753538,
+      "volumeUSD": 360.6266412073823,
+      "txCount": 111,
+      "approximateAPR": 199445.155532038
+    },
+    {
+      "id": "0xf2a5a42bdaabc617a75d39ad7f63d9c933ebf68b",
+      "createdAt": "2024-01-18T13:17:24.000Z",
+      "fee": 0.3286,
+      "token0": {
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "id": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "token1": {
+        "symbol": "xcMANTA",
+        "name": "Manta",
+        "id": "0xffffffff7d3875460d4509eb8d0362c611b4e841"
+      },
+      "token0Price": 1.8321441209000517,
+      "token1Price": 0.5458085903792023,
+      "totalValueLockedUSD": 6.915718189089563,
+      "totalValueLockedToken0": 2.41428,
+      "totalValueLockedToken1": 2.5767130954888047,
+      "volumeUSD": 11201.509845,
+      "txCount": 43,
+      "approximateAPR": 194267.29843026225
+    },
+    {
+      "id": "0xa12f92f2938b8ef381f7fc91919d4853ca06e78d",
+      "createdAt": "2023-06-19T10:12:06.000Z",
+      "fee": 0.2729,
+      "token0": {
+        "symbol": "FRAX",
+        "name": "Frax",
+        "id": "0x322e86852e492a7ee17f28a78c663da38fb33bfb"
+      },
+      "token1": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token0Price": 5.251260435487698,
+      "token1Price": 0.19043047136684765,
+      "totalValueLockedUSD": 0.4831745707857399,
+      "totalValueLockedToken0": 0.2804113516465218,
+      "totalValueLockedToken1": 0.039177636,
+      "volumeUSD": 930.2148178050086,
+      "txCount": 181,
+      "approximateAPR": 191767.7549309986
+    },
+    {
+      "id": "0x0f838b767d1fdda0173f2e2b38d9d8befa970271",
+      "createdAt": "2023-02-02T22:12:06.000Z",
+      "fee": 0.2769,
+      "token0": {
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "id": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "token1": {
+        "symbol": "MAI",
+        "name": "Mai Stablecoin",
+        "id": "0xdfa46478f9e5ea86d57387849598dbfb2e964b02"
+      },
+      "token0Price": 0.9005914128943555,
+      "token1Price": 1.1103814512134436,
+      "totalValueLockedUSD": 0.025345196878723004,
+      "totalValueLockedToken0": 0.000005,
+      "totalValueLockedToken1": 0.028046073091486937,
+      "volumeUSD": 47.61829,
+      "txCount": 12,
+      "approximateAPR": 189886.43749322038
+    },
+    {
+      "id": "0xab8c35164a8e3ef302d18da953923ea31f0fe393",
+      "createdAt": "2023-01-03T13:49:18.000Z",
+      "fee": 0.3009,
+      "token0": {
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "id": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 0.0665151741662281,
+      "token1Price": 15.034163445184697,
+      "totalValueLockedUSD": 69503.63903118188,
+      "totalValueLockedToken0": 49819.28721,
+      "totalValueLockedToken1": 295937.76259216736,
+      "volumeUSD": 116563200.40787633,
+      "txCount": 351373,
+      "approximateAPR": 184191.2399759819
+    },
+    {
+      "id": "0x9cd3129e3abc25912a410cc41379cbec82bff128",
+      "createdAt": "2024-09-13T10:53:42.000Z",
+      "fee": 0.2775,
+      "token0": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcUSDC",
+        "name": "USD Coin",
+        "id": "0xffffffff7d2b0b761af01ca8e25242976ac0ad7d"
+      },
+      "token0Price": 0.25846344217017836,
+      "token1Price": 3.869019121634915,
+      "totalValueLockedUSD": 0.6775479147176994,
+      "totalValueLockedToken0": 0.1576139237,
+      "totalValueLockedToken1": 0.069291,
+      "volumeUSD": 1227.6474607140274,
+      "txCount": 20,
+      "approximateAPR": 183522.5811725516
+    },
+    {
+      "id": "0x7f3dbc2e681fc6588b159cf297d361806f90a289",
+      "createdAt": "2023-11-16T08:01:00.000Z",
+      "fee": 0.2726,
+      "token0": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcZTG",
+        "name": "Zeitgeist",
+        "id": "0xffffffff71815ab6142e0e20c7259126c6b40612"
+      },
+      "token0Price": 0.004047594154846155,
+      "token1Price": 247.06034294537835,
+      "totalValueLockedUSD": 570.1965411662353,
+      "totalValueLockedToken0": 50.6749044189,
+      "totalValueLockedToken1": 18346.3337469296,
+      "volumeUSD": 1025883.9914715876,
+      "txCount": 8128,
+      "approximateAPR": 179016.2231757079
+    },
+    {
+      "id": "0xa833cb06aa22599367d2bd53dd65b0ce995e19e9",
+      "createdAt": "2023-06-13T10:50:18.000Z",
+      "fee": 0.2686,
+      "token0": {
+        "symbol": "WBTC",
+        "name": "Wrapped BTC",
+        "id": "0xe57ebd2d67b462e9926e04a8e33f01cd0d64346d"
+      },
+      "token1": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token0Price": 0.0001689905847519145,
+      "token1Price": 5917.489435686866,
+      "totalValueLockedUSD": 0.002254383765357915,
+      "totalValueLockedToken0": 3e-8,
+      "totalValueLockedToken1": 0.0002724749,
+      "volumeUSD": 4.07883384048077,
+      "txCount": 16,
+      "approximateAPR": 177380.97524997342
+    },
+    {
+      "id": "0xf1c87c107c824467ef87f66b634057dfce602740",
+      "createdAt": "2024-03-27T20:18:30.000Z",
+      "fee": 0.2736,
+      "token0": {
+        "symbol": "HOHOHO",
+        "name": "HOHOHO",
+        "id": "0x409a5a0ad94f20b22538f89f7b171f1a5ef9b836"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 0.5214133222197346,
+      "token1Price": 1.9178643072310664,
+      "totalValueLockedUSD": 0.14873860942887213,
+      "totalValueLockedToken0": 0.1187253362379124,
+      "totalValueLockedToken1": 0.07485580729708285,
+      "volumeUSD": 260.7905295025797,
+      "txCount": 15,
+      "approximateAPR": 175096.3353647585
+    },
+    {
+      "id": "0xea320fa79c64bbef71760c6d2bbd0fde913e2389",
+      "createdAt": "2024-03-27T21:13:18.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "HOHOHO",
+        "name": "HOHOHO",
+        "id": "0x409a5a0ad94f20b22538f89f7b171f1a5ef9b836"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "name": "Tether USD",
+        "id": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "token0Price": 3.402567865403252e+26,
+      "token1Price": 2.938956810142818e-27,
+      "totalValueLockedUSD": 0.1832537877934443,
+      "totalValueLockedToken0": 0.1945056964335137,
+      "totalValueLockedToken1": 0.000004,
+      "volumeUSD": 349.99143803428615,
+      "txCount": 11,
+      "approximateAPR": 174275.89958809633
+    },
+    {
+      "id": "0xf1842709e82076df7006dd2547db7d5f9a2c1f3a",
+      "createdAt": "2023-08-11T01:48:18.000Z",
+      "fee": 0.2741,
+      "token0": {
+        "symbol": "CP",
+        "name": "Cypress",
+        "id": "0x6021d2c27b6fbd6e7608d1f39b41398caee2f824"
+      },
+      "token1": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token0Price": 399.9756688023981,
+      "token1Price": 0.0025001520792356864,
+      "totalValueLockedUSD": 0.17228948342833922,
+      "totalValueLockedToken0": 8.479067850737556,
+      "totalValueLockedToken1": 0.0221579979,
+      "volumeUSD": 299.597014195548,
+      "txCount": 27,
+      "approximateAPR": 173972.5030470702
+    },
+    {
+      "id": "0x57af00a61ddc0ccad7b89e71fbbb06e661cd6f70",
+      "createdAt": "2023-05-22T11:51:24.000Z",
+      "fee": 0.2709,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "MAI",
+        "name": "Mai Stablecoin",
+        "id": "0xdfa46478f9e5ea86d57387849598dbfb2e964b02"
+      },
+      "token0Price": 2.412481864774072,
+      "token1Price": 0.41451088797869556,
+      "totalValueLockedUSD": 6.617578067170114,
+      "totalValueLockedToken0": 20.83006444836747,
+      "totalValueLockedToken1": 6.202914463021227,
+      "volumeUSD": 11569.891901063389,
+      "txCount": 901,
+      "approximateAPR": 172874.9619161671
+    },
+    {
+      "id": "0xbf5751b25fba42dec3925a53264850578eae7c8d",
+      "createdAt": "2023-10-04T04:25:24.000Z",
+      "fee": 0.2719,
+      "token0": {
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "id": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "token1": {
+        "symbol": "xcRMRK",
+        "name": "xcRMRK",
+        "id": "0xecf2adaff1de8a512f6e8bfe67a2c836edb25da3"
+      },
+      "token0Price": 1.6220358385985514,
+      "token1Price": 0.6165091893801841,
+      "totalValueLockedUSD": 0.00358700031712046,
+      "totalValueLockedToken0": 0.003587,
+      "totalValueLockedToken1": 2e-10,
+      "volumeUSD": 6.246373,
+      "txCount": 6,
+      "approximateAPR": 172821.81879569704
+    },
+    {
+      "id": "0x9a2e449f27a4cb293787d1171dd3a38360723ae5",
+      "createdAt": "2024-01-15T11:04:48.000Z",
+      "fee": 0.2534,
+      "token0": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcFIL",
+        "name": "Bifrost Filecoin Native Token",
+        "id": "0xffffffff6c57e17d210df507c82807149ffd70b2"
+      },
+      "token0Price": 0.7855679369927128,
+      "token1Price": 1.2729643776299853,
+      "totalValueLockedUSD": 0.002020790044397136,
+      "totalValueLockedToken0": 0.0002702523,
+      "totalValueLockedToken1": 1e-18,
+      "volumeUSD": 3.7317315049296966,
+      "txCount": 4,
+      "approximateAPR": 170800.31623246736
+    },
+    {
+      "id": "0x92becf3b6f73285e84fb74a4520a0934201541f6",
+      "createdAt": "2023-07-03T08:35:00.000Z",
+      "fee": 0.2709,
+      "token0": {
+        "symbol": "xcINTR",
+        "name": "Interlay",
+        "id": "0xffffffff4c1cbcd97597339702436d4f18a375ab"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "name": "Tether USD",
+        "id": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "token0Price": 51.9228312795036,
+      "token1Price": 0.019259350373575398,
+      "totalValueLockedUSD": 0.816977071165413,
+      "totalValueLockedToken0": 17.0156806488,
+      "totalValueLockedToken1": 0.49676,
+      "volumeUSD": 1379.1324923532454,
+      "txCount": 99,
+      "approximateAPR": 166916.0089776134
+    },
+    {
+      "id": "0x70b73813b818c4e46a2e6cef2940d91697b74631",
+      "createdAt": "2025-01-02T09:21:18.000Z",
+      "fee": 0.3004,
+      "token0": {
+        "symbol": "FLUB",
+        "name": "FLUBER",
+        "id": "0x5f684c1ba1cd7a42569801d8f34b0297e3cebab0"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 9938.967898528239,
+      "token1Price": 0.00010061406880568352,
+      "totalValueLockedUSD": 0.03930982305833518,
+      "totalValueLockedToken0": 660.4988413909083,
+      "totalValueLockedToken1": 0.0831359781064515,
+      "volumeUSD": 59.594961694352506,
+      "txCount": 21,
+      "approximateAPR": 166226.8782090955
+    },
+    {
+      "id": "0xfae131d91f8c42f32c4335d67484bba69365d19f",
+      "createdAt": "2024-05-02T13:16:54.000Z",
+      "fee": 0.2504,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "XHNY",
+        "name": "XHONEY",
+        "id": "0xf3829af0c018c8c1685b3d3d33b21cc98935fc87"
+      },
+      "token0Price": 3.402567865403252e+26,
+      "token1Price": 2.938956810142818e-27,
+      "totalValueLockedUSD": 0.2873641694597445,
+      "totalValueLockedToken0": 0.9901580747222399,
+      "totalValueLockedToken1": 0.000003,
+      "volumeUSD": 522.480174862839,
+      "txCount": 10,
+      "approximateAPR": 166174.5030758035
+    },
+    {
+      "id": "0xe371d55f24e69be0bb2f45a4e262c26c9f97b264",
+      "createdAt": "2024-07-29T11:30:30.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "axlUSDC",
+        "name": "Axelar Wrapped USDC",
+        "id": "0xca01a1d0993565291051daff390892518acfad3a"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "name": "Tether USD",
+        "id": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "token0Price": 1.0008534656532395,
+      "token1Price": 0.9991472621292444,
+      "totalValueLockedUSD": 0.4898148567570816,
+      "totalValueLockedToken0": 0.204049,
+      "totalValueLockedToken1": 0.284994,
+      "volumeUSD": 888.9394590358143,
+      "txCount": 25,
+      "approximateAPR": 165604.8699177096
+    },
+    {
+      "id": "0x0c7d12c939f36ca010617cd777f57d2284ce174c",
+      "createdAt": "2023-06-16T15:35:48.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "d2O",
+        "name": "Deuterium",
+        "id": "0xc806b0600cbafa0b197562a9f7e3b9856866e9bf"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "name": "Tether USD",
+        "id": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "token0Price": 3.402567865403252e+26,
+      "token1Price": 2.938956810142818e-27,
+      "totalValueLockedUSD": 1.693653239130694,
+      "totalValueLockedToken0": 0.8260134708661887,
+      "totalValueLockedToken1": 0.868115,
+      "volumeUSD": 3072.513656671342,
+      "txCount": 121,
+      "approximateAPR": 165539.71302600563
+    },
+    {
+      "id": "0x426978c8fa1b4dda56c837ae9f2c282142f6e9fa",
+      "createdAt": "2023-08-02T13:00:06.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "TFA",
+        "name": "Take Flight Alpha",
+        "id": "0xe065ffaf3f7ded69bb5cf5fdd1fd1dda2eee8493"
+      },
+      "token0Price": 3.4025678654032522e+38,
+      "token1Price": 2.938956810142818e-39,
+      "totalValueLockedUSD": 0.054159248742630776,
+      "totalValueLockedToken0": 0.266172620168678,
+      "totalValueLockedToken1": 0.01629158245433527,
+      "volumeUSD": 96.64858803198331,
+      "txCount": 16,
+      "approximateAPR": 162837.99835976245
+    },
+    {
+      "id": "0x897bbb715edbc1a75db38311c18ffb3cbed25f5b",
+      "createdAt": "2024-06-05T23:49:06.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "id": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "token1": {
+        "symbol": "xcUSDC",
+        "name": "USD Coin",
+        "id": "0xffffffff7d2b0b761af01ca8e25242976ac0ad7d"
+      },
+      "token0Price": 0.9954443265251135,
+      "token1Price": 1.0045765226175827,
+      "totalValueLockedUSD": 2704.314376104813,
+      "totalValueLockedToken0": 1352.455587,
+      "totalValueLockedToken1": 1338.900468,
+      "volumeUSD": 4721931.770431,
+      "txCount": 16919,
+      "approximateAPR": 159329.21033849838
+    },
+    {
+      "id": "0x3f0e847646f9fe312035d254c46fed9811f6dbc2",
+      "createdAt": "2023-10-23T14:40:24.000Z",
+      "fee": 0.2709,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcvDOT",
+        "name": "Bifrost Voucher DOT",
+        "id": "0xffffffff15e1b7e3df971dd813bc394deb899abf"
+      },
+      "token0Price": 26.779763739205407,
+      "token1Price": 0.03734162891571766,
+      "totalValueLockedUSD": 0.012613316653644905,
+      "totalValueLockedToken0": 0.026042578020644518,
+      "totalValueLockedToken1": 0.0010267866,
+      "volumeUSD": 20.276940049614456,
+      "txCount": 30,
+      "approximateAPR": 158955.29080501013
+    },
+    {
+      "id": "0x480ae89348e1fa37e9b06abdf97ad1a552dc7586",
+      "createdAt": "2025-01-13T18:07:06.000Z",
+      "fee": 0.3006,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "FLARE",
+        "name": "Flare Token",
+        "id": "0xe3e43888fa7803cdc7bea478ab327cf1a0dc11a7"
+      },
+      "token0Price": 0.00047023788656657084,
+      "token1Price": 2126.583222167556,
+      "totalValueLockedUSD": 0.03841644500118592,
+      "totalValueLockedToken0": 0.12499318241922067,
+      "totalValueLockedToken1": 123.10758279640984,
+      "volumeUSD": 55.23138191131229,
+      "txCount": 19,
+      "approximateAPR": 157743.17461545966
+    },
+    {
+      "id": "0x0e62bf1f00cd226fcfd1f6d8c3952134c707e9ab",
+      "createdAt": "2023-10-09T16:23:24.000Z",
+      "fee": 0.8112,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcBNC",
+        "name": "BNC",
+        "id": "0xffffffff7cc06abdf7201b350a1265c62c8601d2"
+      },
+      "token0Price": 1.8893207287727998,
+      "token1Price": 0.5292907576627002,
+      "totalValueLockedUSD": 1.402038235420372,
+      "totalValueLockedToken0": 11.311045934751618,
+      "totalValueLockedToken1": 5.159522894961,
+      "volumeUSD": 734.8308930717623,
+      "txCount": 264,
+      "approximateAPR": 155184.50493798175
+    },
+    {
+      "id": "0xc75247c065aa9411faa30195bb84078b99f1934d",
+      "createdAt": "2023-10-23T14:29:48.000Z",
+      "fee": 0.3,
+      "token0": {
+        "symbol": "xcvDOT",
+        "name": "Bifrost Voucher DOT",
+        "id": "0xffffffff15e1b7e3df971dd813bc394deb899abf"
+      },
+      "token1": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token0Price": 0.6743722769910833,
+      "token1Price": 1.4828604824353155,
+      "totalValueLockedUSD": 10513.081473032871,
+      "totalValueLockedToken0": 676.1773564683,
+      "totalValueLockedToken1": 1866.8450376591,
+      "volumeUSD": 14632985.615941184,
+      "txCount": 19467,
+      "approximateAPR": 152411.25345177372
+    },
+    {
+      "id": "0xac8daa0d4a17f7ec4452ac71fbfe9569dbab52e8",
+      "createdAt": "2023-03-08T16:05:24.000Z",
+      "fee": 0.2734,
+      "token0": {
+        "symbol": "FRAX",
+        "name": "Frax",
+        "id": "0x322e86852e492a7ee17f28a78c663da38fb33bfb"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 0.25599173207970305,
+      "token1Price": 3.906376162526413,
+      "totalValueLockedUSD": 0.10823151777068282,
+      "totalValueLockedToken0": 0.06428346500600349,
+      "totalValueLockedToken1": 0.16388764333504027,
+      "volumeUSD": 162.7844967847515,
+      "txCount": 292,
+      "approximateAPR": 150089.62318227178
+    },
+    {
+      "id": "0xcfa9aaa37bad0b4a56f3afeb6bf186f8170b29a9",
+      "createdAt": "2023-11-16T08:02:48.000Z",
+      "fee": 0.2781,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcZTG",
+        "name": "Zeitgeist",
+        "id": "0xffffffff71815ab6142e0e20c7259126c6b40612"
+      },
+      "token0Price": 0.14841353333040516,
+      "token1Price": 6.737930009211176,
+      "totalValueLockedUSD": 0.0853587332383721,
+      "totalValueLockedToken0": 0.2179398778193922,
+      "totalValueLockedToken1": 0.2064240307,
+      "volumeUSD": 121.03475477447908,
+      "txCount": 32,
+      "approximateAPR": 143931.54478061898
+    },
+    {
+      "id": "0x4d2cad7164fd38f3d6ee225c98727a641801cff3",
+      "createdAt": "2023-03-08T16:09:18.000Z",
+      "fee": 0.2728,
+      "token0": {
+        "symbol": "ZOO",
+        "name": "ZooDAO",
+        "id": "0x7cd3e6e1a69409def0d78d17a492e8e143f40ec5"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "name": "Tether USD",
+        "id": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "token0Price": 3.402567865403252e+26,
+      "token1Price": 2.938956810142818e-27,
+      "totalValueLockedUSD": 0.001242,
+      "totalValueLockedToken0": 16.28318172362022,
+      "totalValueLockedToken1": 0.001242,
+      "volumeUSD": 1.7819650298080383,
+      "txCount": 8,
+      "approximateAPR": 142861.37032853943
+    },
+    {
+      "id": "0x416bd9798d5214cae6f837c0a53a73beb3ced465",
+      "createdAt": "2023-02-07T11:13:00.000Z",
+      "fee": 0.3,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "WBTC",
+        "name": "Wrapped BTC",
+        "id": "0xe57ebd2d67b462e9926e04a8e33f01cd0d64346d"
+      },
+      "token0Price": 1224685.2961681443,
+      "token1Price": 8.165362996753936e-7,
+      "totalValueLockedUSD": 9904.587694773136,
+      "totalValueLockedToken0": 43261.91357981026,
+      "totalValueLockedToken1": 0.08437402,
+      "volumeUSD": 12698363.818375032,
+      "txCount": 65911,
+      "approximateAPR": 140386.5441916222
+    },
+    {
+      "id": "0xe6308c8b231f1eb691261cff767eb386104538fd",
+      "createdAt": "2023-12-26T14:44:48.000Z",
+      "fee": 0.2793,
+      "token0": {
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "id": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "token1": {
+        "symbol": "mbDXN",
+        "name": "DBXen Token on Moonbeam",
+        "id": "0xc418b123885d732ed042b16e12e259741863f723"
+      },
+      "token0Price": 0.002538134037119618,
+      "token1Price": 393.99022485622635,
+      "totalValueLockedUSD": 6.988133604168598,
+      "totalValueLockedToken0": 5.550731,
+      "totalValueLockedToken1": 587.1340127031572,
+      "volumeUSD": 9261.409136,
+      "txCount": 2554,
+      "approximateAPR": 135107.56621793017
+    },
+    {
+      "id": "0x34983cd4448562d9dd2b67ed687cff16a5a939b1",
+      "createdAt": "2023-01-21T21:36:48.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "id": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "token1": {
+        "symbol": "axlUSDC",
+        "name": "Axelar Wrapped USDC",
+        "id": "0xca01a1d0993565291051daff390892518acfad3a"
+      },
+      "token0Price": 1.0001689750942062,
+      "token1Price": 0.9998310534535524,
+      "totalValueLockedUSD": 7.574901200944008,
+      "totalValueLockedToken0": 1.899197,
+      "totalValueLockedToken1": 5.702343,
+      "volumeUSD": 11082.290559,
+      "txCount": 118,
+      "approximateAPR": 133501.28096492184
+    },
+    {
+      "id": "0x4db233d68c9dbb95337d1c48dc52d9264c419bbb",
+      "createdAt": "2023-12-07T12:53:42.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "SOL",
+        "name": "Wrapped SOL",
+        "id": "0x99fec54a5ad36d50a4bba3a41cab983a5bb86a7d"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 0.0044153727179150806,
+      "token1Price": 226.48144650225487,
+      "totalValueLockedUSD": 0.03713164187865561,
+      "totalValueLockedToken0": 0.000176064,
+      "totalValueLockedToken1": 0.04067454443400562,
+      "volumeUSD": 53.68921374976292,
+      "txCount": 29,
+      "approximateAPR": 131939.78253576878
+    },
+    {
+      "id": "0xd67425e31982426a74f5579e886446b2a7efa466",
+      "createdAt": "2023-01-21T23:20:12.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "id": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "token1": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token0Price": 3.4025678654032524e+42,
+      "token1Price": 2.938956810142818e-43,
+      "totalValueLockedUSD": 0.4448582709701879,
+      "totalValueLockedToken0": 0.076079,
+      "totalValueLockedToken1": 0.038864214,
+      "volumeUSD": 640.9355844052619,
+      "txCount": 202,
+      "approximateAPR": 131469.67448628048
+    },
+    {
+      "id": "0xf7970d9134373126737204cfac3da2f01ef7d66b",
+      "createdAt": "2023-08-02T19:19:48.000Z",
+      "fee": 0.2719,
+      "token0": {
+        "symbol": "BEPRO",
+        "name": "BEPRO Network",
+        "id": "0x4edf8e0778967012d46968ceadb75436d0426f88"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 483.3202738424789,
+      "token1Price": 0.002069021421447581,
+      "totalValueLockedUSD": 0.0835282543843364,
+      "totalValueLockedToken0": 118.82974431459118,
+      "totalValueLockedToken1": 0.021012406893336565,
+      "volumeUSD": 106.54674711801458,
+      "txCount": 88,
+      "approximateAPR": 126592.75804989859
+    },
+    {
+      "id": "0xfd6f6e8ab476151d5fda98c62f70f1085a329fc2",
+      "createdAt": "2023-10-04T13:44:18.000Z",
+      "fee": 0.2719,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "TRAC",
+        "name": "Trace Token",
+        "id": "0xed80fef95392bb8c0e29cf75be356e491d0d7661"
+      },
+      "token0Price": 3.4025678654032522e+38,
+      "token1Price": 2.938956810142818e-39,
+      "totalValueLockedUSD": 2.4029659375168073,
+      "totalValueLockedToken0": 9.177258395702978,
+      "totalValueLockedToken1": 0.49080845132218986,
+      "volumeUSD": 2902.597287956347,
+      "txCount": 71,
+      "approximateAPR": 119878.48410576186
+    },
+    {
+      "id": "0x9139de5f21b83f6db9f0246b4a4a74310b1aa1cb",
+      "createdAt": "2023-01-22T10:29:54.000Z",
+      "fee": 0.1575,
+      "token0": {
+        "symbol": "LDO",
+        "name": "Lido DAO Token",
+        "id": "0x9fda7ceec4c18008096c2fe2b85f05dc300f94d0"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 0.15850054435835834,
+      "token1Price": 6.309126596682671,
+      "totalValueLockedUSD": 0.08308947418037652,
+      "totalValueLockedToken0": 0.016140924900537586,
+      "totalValueLockedToken1": 0.11257726955309005,
+      "volumeUSD": 166.33925708948922,
+      "txCount": 103,
+      "approximateAPR": 115085.9135439131
+    },
+    {
+      "id": "0x947b88c789a0601cfdb19722605d4352ad276373",
+      "createdAt": "2024-08-15T08:15:18.000Z",
+      "fee": 0.2833,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcWIFD",
+        "name": "dog wif dots",
+        "id": "0xffffffff2e1d1ac9ea1686255befe995b31abc96"
+      },
+      "token0Price": 0.00014487081935182016,
+      "token1Price": 6902.701347822783,
+      "totalValueLockedUSD": 0.316811122054508,
+      "totalValueLockedToken0": 1.1961019634932342,
+      "totalValueLockedToken1": 5474.3192005529,
+      "volumeUSD": 338.2228282521722,
+      "txCount": 27,
+      "approximateAPR": 110393.10178632059
+    },
+    {
+      "id": "0x4977dff8adadcb6b35b9af3b5548564ae69c6d41",
+      "createdAt": "2023-03-08T16:14:18.000Z",
+      "fee": 0.2516,
+      "token0": {
+        "symbol": "ZOO",
+        "name": "ZooDAO",
+        "id": "0x7cd3e6e1a69409def0d78d17a492e8e143f40ec5"
+      },
+      "token1": {
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "id": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "token0Price": 3.402567865403252e+26,
+      "token1Price": 2.938956810142818e-27,
+      "totalValueLockedUSD": 0.005292443580634537,
+      "totalValueLockedToken0": 0.02700866755819664,
+      "totalValueLockedToken1": 0.001694,
+      "volumeUSD": 6.342358,
+      "txCount": 22,
+      "approximateAPR": 110052.01958188243
+    },
+    {
+      "id": "0xd14efe86b66124b322b0b7e0ec4ca22d9201d8cd",
+      "createdAt": "2023-03-14T22:06:42.000Z",
+      "fee": 0.01,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcIBTC",
+        "name": "interBTC",
+        "id": "0xffffffff5ac1f9a51a93f5c527385edf7fe98a52"
+      },
+      "token0Price": 3.4025678654032523e+28,
+      "token1Price": 2.938956810142818e-29,
+      "totalValueLockedUSD": 0.004342626348543011,
+      "totalValueLockedToken0": 0.008432015707263232,
+      "totalValueLockedToken1": 3e-8,
+      "volumeUSD": 130.40653865263053,
+      "txCount": 20,
+      "approximateAPR": 109607.37302250245
+    },
+    {
+      "id": "0x2f7daf9b66a7bee6f9e046973e2e3d01d810207c",
+      "createdAt": "2023-02-12T14:06:42.000Z",
+      "fee": 0.3006,
+      "token0": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcPHA",
+        "name": "Phala Token",
+        "id": "0xffffffff63d24ecc8eb8a7b5d0803e900f7b6ced"
+      },
+      "token0Price": 0.027467815218337566,
+      "token1Price": 36.406244619426374,
+      "totalValueLockedUSD": 1888.233063354856,
+      "totalValueLockedToken0": 252.6225745266,
+      "totalValueLockedToken1": 9673.195556030374,
+      "volumeUSD": 1882211.4832873945,
+      "txCount": 12848,
+      "approximateAPR": 109369.10582843625
+    },
+    {
+      "id": "0x4bef7954a8acf28bb0b838663cd2ed213b0e1460",
+      "createdAt": "2024-06-19T07:10:24.000Z",
+      "fee": 0.2719,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "axlUSDC",
+        "name": "Axelar Wrapped USDC",
+        "id": "0xca01a1d0993565291051daff390892518acfad3a"
+      },
+      "token0Price": 15.031164913787904,
+      "token1Price": 0.06652844312038066,
+      "totalValueLockedUSD": 35.315677543575184,
+      "totalValueLockedToken0": 267.6121920723251,
+      "totalValueLockedToken1": 17.208643,
+      "volumeUSD": 37129.06082429366,
+      "txCount": 1626,
+      "approximateAPR": 104339.438012174
+    },
+    {
+      "id": "0x7fd757059e032977f79d96765dac18f0d687538f",
+      "createdAt": "2023-01-20T22:27:00.000Z",
+      "fee": 0.5753,
+      "token0": {
+        "symbol": "wstDOT",
+        "name": "Wrapped liquid staked DOT",
+        "id": "0x191cf2602ca2e534c5ccae7bcbf4c46a704bb949"
+      },
+      "token1": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token0Price": 0.8713308111360935,
+      "token1Price": 1.147669733721616,
+      "totalValueLockedUSD": 1.0436556501971068,
+      "totalValueLockedToken0": 0.1150278587,
+      "totalValueLockedToken1": 0.1007357561,
+      "volumeUSD": 518.2883153255085,
+      "txCount": 46,
+      "approximateAPR": 104280.0972992528
+    },
+    {
+      "id": "0x434714e057ed2741f4af15e3ea62c787a4fb5eef",
+      "createdAt": "2023-01-03T14:45:24.000Z",
+      "fee": 0.27,
+      "token0": {
+        "symbol": "STELLA",
+        "name": "StellaSwap",
+        "id": "0x0e358838ce72d5e61e0018a2ffac4bec5f4c88d2"
+      },
+      "token1": {
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "id": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "token0Price": 28.711472414429913,
+      "token1Price": 0.034829283067259784,
+      "totalValueLockedUSD": 44.09860334948368,
+      "totalValueLockedToken0": 628.448758968572,
+      "totalValueLockedToken1": 36.423408,
+      "volumeUSD": 45989.806132,
+      "txCount": 718,
+      "approximateAPR": 102776.39312950407
+    },
+    {
+      "id": "0x1b11d991f32fb59ec4ee744de68ad65d9e85b2d2",
+      "createdAt": "2023-01-10T09:04:18.000Z",
+      "fee": 0.3,
+      "token0": {
+        "symbol": "STELLA",
+        "name": "StellaSwap",
+        "id": "0x0e358838ce72d5e61e0018a2ffac4bec5f4c88d2"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 3.764641218674464,
+      "token1Price": 0.26562956253029113,
+      "totalValueLockedUSD": 14413.720493244082,
+      "totalValueLockedToken0": 289822.7656217272,
+      "totalValueLockedToken1": 145758.7840382886,
+      "volumeUSD": 13483860.81548944,
+      "txCount": 124759,
+      "approximateAPR": 102435.92277151083
+    },
+    {
+      "id": "0xde419feec1d1365f11a032edca62ba96634519cd",
+      "createdAt": "2023-01-30T23:39:18.000Z",
+      "fee": 0.89,
+      "token0": {
+        "symbol": "WELL",
+        "name": "WELL",
+        "id": "0x511ab53f793683763e5a8829738301368a2411e3"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 3.5270992717645897,
+      "token1Price": 0.28351909684121396,
+      "totalValueLockedUSD": 0.1382799214046568,
+      "totalValueLockedToken0": 1.9956604822348172,
+      "totalValueLockedToken1": 0.03006028194367889,
+      "volumeUSD": 38.715575924673665,
+      "txCount": 71,
+      "approximateAPR": 90951.41732346037
+    },
+    {
+      "id": "0x6abcb12f9b636f6edab1b17981cb9ef365b09cf2",
+      "createdAt": "2023-12-05T11:46:42.000Z",
+      "fee": 0.3,
+      "token0": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcSUB",
+        "name": "Subsocial",
+        "id": "0xffffffff43b4560bc0c451a3386e082bff50ac90"
+      },
+      "token0Price": 0.0001046291162782215,
+      "token1Price": 9557.569016839241,
+      "totalValueLockedUSD": 1299.475711194793,
+      "totalValueLockedToken0": 52.1964057449,
+      "totalValueLockedToken1": 4338710.170833393,
+      "volumeUSD": 879856.0466709168,
+      "txCount": 4965,
+      "approximateAPR": 74140.85256113208
+    },
+    {
+      "id": "0xf50d2fc5c03b14a4e47e22a27bbbf6eaa62ef13f",
+      "createdAt": "2024-01-18T14:55:00.000Z",
+      "fee": 0.3009,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcMANTA",
+        "name": "Manta",
+        "id": "0xffffffff7d3875460d4509eb8d0362c611b4e841"
+      },
+      "token0Price": 2.757723726129674,
+      "token1Price": 0.36261790494998186,
+      "totalValueLockedUSD": 39325.611110294776,
+      "totalValueLockedToken0": 81742.17239421203,
+      "totalValueLockedToken1": 184748.56193617624,
+      "volumeUSD": 26403426.34371555,
+      "txCount": 114179,
+      "approximateAPR": 73739.44430406147
+    },
+    {
+      "id": "0x33c465cfd6932e70a3664593f87616ba9166b0a7",
+      "createdAt": "2023-10-11T14:30:30.000Z",
+      "fee": 0.5,
+      "token0": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcBNC",
+        "name": "BNC",
+        "id": "0xffffffff7cc06abdf7201b350a1265c62c8601d2"
+      },
+      "token0Price": 0.036354766792643003,
+      "token1Price": 27.50670924953827,
+      "totalValueLockedUSD": 4268.149967925768,
+      "totalValueLockedToken0": 96.0077289209,
+      "totalValueLockedToken1": 29440.527466154537,
+      "volumeUSD": 1721660.829670824,
+      "txCount": 16939,
+      "approximateAPR": 73615.75946864435
+    },
+    {
+      "id": "0xe64eb9f0d5d22115388aa069114678bf68daff72",
+      "createdAt": "2024-08-30T19:05:48.000Z",
+      "fee": 0.2502,
+      "token0": {
+        "symbol": "xcBTC",
+        "name": "xcBTC",
+        "id": "0x7283d643eb01fe020d8fa9c336845881170be1b0"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "name": "Tether USD",
+        "id": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "token0Price": 0.9959903940144847,
+      "token1Price": 1.0040257476473784,
+      "totalValueLockedUSD": 0.005733423995834268,
+      "totalValueLockedToken0": 0.004593027922130766,
+      "totalValueLockedToken1": 0.001176,
+      "volumeUSD": 4.540982519077216,
+      "txCount": 8,
+      "approximateAPR": 72329.57947833516
+    },
+    {
+      "id": "0xd9d1064e32704bdd540f90d3a9ecaf037748b966",
+      "createdAt": "2023-10-23T20:04:42.000Z",
+      "fee": 0.1,
+      "token0": {
+        "symbol": "stDOT",
+        "name": "Stella stDOT",
+        "id": "0xbc7e02c4178a7df7d3e564323a5c359dc96c4db4"
+      },
+      "token1": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token0Price": 0.8381055714292752,
+      "token1Price": 1.1931671069727359,
+      "totalValueLockedUSD": 10938.690527017949,
+      "totalValueLockedToken0": 770.6197615846,
+      "totalValueLockedToken1": 2078.0875852232,
+      "volumeUSD": 16312901.92986786,
+      "txCount": 32777,
+      "approximateAPR": 54432.559269276404
+    },
+    {
+      "id": "0x5beeb5db3a1d3882227852a4e04f1b692949e0b9",
+      "createdAt": "2024-01-18T18:33:18.000Z",
+      "fee": 0.3098,
+      "token0": {
+        "symbol": "xcMANTA",
+        "name": "Manta",
+        "id": "0xffffffff7d3875460d4509eb8d0362c611b4e841"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "name": "Tether USD",
+        "id": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "token0Price": 2.1584931055440504,
+      "token1Price": 0.4632861682214866,
+      "totalValueLockedUSD": 2979.198687744779,
+      "totalValueLockedToken0": 5227.796243663304,
+      "totalValueLockedToken1": 599.341339,
+      "volumeUSD": 1080467.1641938016,
+      "txCount": 13616,
+      "approximateAPR": 41009.68022982999
+    },
+    {
+      "id": "0x06159391efcb8d050506f4fd787a191f7598540a",
+      "createdAt": "2023-01-21T22:37:42.000Z",
+      "fee": 0.2515,
+      "token0": {
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "id": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "name": "Tether USD",
+        "id": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "token0Price": 2.938956807585585e-39,
+      "token1Price": 3.402567868363881e+38,
+      "totalValueLockedUSD": 9.359054,
+      "totalValueLockedToken0": 0.494296,
+      "totalValueLockedToken1": 8.864758,
+      "volumeUSD": 3511.7536413161542,
+      "txCount": 463,
+      "approximateAPR": 34444.742480246365
+    },
+    {
+      "id": "0x91c21f8475e312999a9ff7cc3331b4da70b8b85c",
+      "createdAt": "2024-01-04T00:55:00.000Z",
+      "fee": 0.302,
+      "token0": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcPEN",
+        "name": "Pendulum",
+        "id": "0xffffffff2257622f345e1acde0d4f46d7d1d77d0"
+      },
+      "token0Price": 0.003312154968926418,
+      "token1Price": 301.9182403545973,
+      "totalValueLockedUSD": 3018.2365960320894,
+      "totalValueLockedToken0": 58.8583561662,
+      "totalValueLockedToken1": 262244.80704826664,
+      "volumeUSD": 897971.7687839785,
+      "txCount": 9139,
+      "approximateAPR": 32795.11891254187
+    },
+    {
+      "id": "0x84fb1f90836f7962011576307476d474874c4d68",
+      "createdAt": "2024-02-02T02:58:30.000Z",
+      "fee": 0.05,
+      "token0": {
+        "symbol": "xcUSDC",
+        "name": "USD Coin",
+        "id": "0xffffffff7d2b0b761af01ca8e25242976ac0ad7d"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "name": "Tether USD",
+        "id": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "token0Price": 0.9990563157922678,
+      "token1Price": 1.0009445755887985,
+      "totalValueLockedUSD": 29172.065071323403,
+      "totalValueLockedToken0": 4661.653737,
+      "totalValueLockedToken1": 24506.00805,
+      "volumeUSD": 43716459.41105882,
+      "txCount": 63752,
+      "approximateAPR": 27348.951207300663
+    },
+    {
+      "id": "0x14a0af6dbf1a7f891f98207c0b50661e2c2aa6eb",
+      "createdAt": "2023-07-06T08:27:36.000Z",
+      "fee": 0.3017,
+      "token0": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcCFG",
+        "name": "Centrifuge",
+        "id": "0xffffffff44bd9d2ffee20b25d1cf9e78edb6eae3"
+      },
+      "token0Price": 0.0367467383827377,
+      "token1Price": 27.213299574630117,
+      "totalValueLockedUSD": 9718.277354830874,
+      "totalValueLockedToken0": 290.7301630199,
+      "totalValueLockedToken1": 65134.788959382866,
+      "volumeUSD": 2314439.1879087915,
+      "txCount": 19771,
+      "approximateAPR": 26225.553283413723
+    },
+    {
+      "id": "0x6bb200b706ffa1665127877a11588221c49d9eed",
+      "createdAt": "2023-11-24T14:29:36.000Z",
+      "fee": 0.3,
+      "token0": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcLDOT",
+        "name": "Acala Liquid DOT",
+        "id": "0xffffffffa9cfffa9834235fe53f4733f1b8b28d4"
+      },
+      "token0Price": 0.16577805807364707,
+      "token1Price": 6.03216138263454,
+      "totalValueLockedUSD": 43244.3742189535,
+      "totalValueLockedToken0": 11289.9494712308,
+      "totalValueLockedToken1": 1622.2841405703,
+      "volumeUSD": 9492124.85380795,
+      "txCount": 6113,
+      "approximateAPR": 24035.211290823107
+    },
+    {
+      "id": "0x583af38702c2a53619558acbc758a77d0c0918e9",
+      "createdAt": "2024-01-23T09:07:00.000Z",
+      "fee": 0.5,
+      "token0": {
+        "symbol": "RMRK",
+        "name": "RMRK",
+        "id": "0x524d524b4c9366be706d3a90dcf70076ca037ae3"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 0.3499475339015763,
+      "token1Price": 2.8575712160362094,
+      "totalValueLockedUSD": 28113.983296345716,
+      "totalValueLockedToken0": 145735.6939357793,
+      "totalValueLockedToken1": 2715.839829667269,
+      "volumeUSD": 3316577.580027784,
+      "txCount": 5601,
+      "approximateAPR": 21529.336557361647
+    },
+    {
+      "id": "0xf695afac08a35289aaf1ff77c4c0f3ed011e271a",
+      "createdAt": "2023-01-20T22:47:18.000Z",
+      "fee": 0.01,
+      "token0": {
+        "symbol": "wstDOT",
+        "name": "Wrapped liquid staked DOT",
+        "id": "0x191cf2602ca2e534c5ccae7bcbf4c46a704bb949"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 100001750782.98541,
+      "token1Price": 9.999824924766646e-12,
+      "totalValueLockedUSD": 8.2567457346919145e-19,
+      "totalValueLockedToken0": 1e-10,
+      "totalValueLockedToken1": 2e-18,
+      "volumeUSD": 4.126309748592393e-15,
+      "txCount": 4,
+      "approximateAPR": 18240.879719816407
+    },
+    {
+      "id": "0x6ec891c3f2246251a533b199ae0186993b8de682",
+      "createdAt": "2023-08-06T17:12:54.000Z",
+      "fee": 0.2709,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcNODL",
+        "name": "Nodle",
+        "id": "0xffffffffe896ba7cb118b9fa571c6dc0a99deff1"
+      },
+      "token0Price": 0.023441990184814764,
+      "token1Price": 42.65849410037631,
+      "totalValueLockedUSD": 2.3921475124324303,
+      "totalValueLockedToken0": 2.6113474733080126,
+      "totalValueLockedToken1": 98.14441254417,
+      "volumeUSD": 418.93366876522543,
+      "txCount": 43,
+      "approximateAPR": 17316.462530724646
+    },
+    {
+      "id": "0xd3c255da9134aad0689275bd81de5d532e6f7071",
+      "createdAt": "2023-03-06T14:47:30.000Z",
+      "fee": 0.0126,
+      "token0": {
+        "symbol": "xcEQD",
+        "name": "Equilibrium Dollar",
+        "id": "0xffffffff8cda1707baf23834d211b08726b1e499"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "name": "Tether USD",
+        "id": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "token0Price": 0.9941952191283407,
+      "token1Price": 1.0058386730895252,
+      "totalValueLockedUSD": 0.09855353982059138,
+      "totalValueLockedToken0": 0.041190432,
+      "totalValueLockedToken1": 0.057071,
+      "volumeUSD": 370.01316185325425,
+      "txCount": 18,
+      "approximateAPR": 17266.66068474967
+    },
+    {
+      "id": "0xc79b80c300ec6b14deba1cb6693b18314d41d9f7",
+      "createdAt": "2023-02-18T15:46:30.000Z",
+      "fee": 0.0105,
+      "token0": {
+        "symbol": "WETH",
+        "name": "Wrapped Ether",
+        "id": "0xab3f0245b83feb11d15aaffefd7ad465a59817ed"
+      },
+      "token1": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token0Price": 0.003472453830905856,
+      "token1Price": 287.98079073066634,
+      "totalValueLockedUSD": 0.07689640329783719,
+      "totalValueLockedToken0": 0.000017583910067147,
+      "totalValueLockedToken1": 0.0070946971,
+      "volumeUSD": 233.60904542742924,
+      "txCount": 91,
+      "approximateAPR": 11643.023967361609
+    },
+    {
+      "id": "0x70419f443b58cc979ae472e571709a55455b2f53",
+      "createdAt": "2023-01-24T21:28:54.000Z",
+      "fee": 0.2709,
+      "token0": {
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "id": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "token1": {
+        "symbol": "WETH",
+        "name": "Wrapped Ether",
+        "id": "0xab3f0245b83feb11d15aaffefd7ad465a59817ed"
+      },
+      "token0Price": 1768.8548538384632,
+      "token1Price": 0.000565337510779911,
+      "totalValueLockedUSD": 6.513706348474796,
+      "totalValueLockedToken0": 0.265002,
+      "totalValueLockedToken1": 0.004139237482214022,
+      "volumeUSD": 315.504939,
+      "txCount": 129,
+      "approximateAPR": 4789.386171548291
+    },
+    {
+      "id": "0x9b5a74b324c98f3a007cf7508868706150c6a422",
+      "createdAt": "2024-03-21T19:42:18.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcPINK",
+        "name": "PINK",
+        "id": "0xffffffff30478fafbe935e466da114e14fb3563d"
+      },
+      "token0Price": 0.007647640586381842,
+      "token1Price": 130.75928303700627,
+      "totalValueLockedUSD": 36.55832941045968,
+      "totalValueLockedToken0": 5.186969718110643,
+      "totalValueLockedToken1": 26522.6695280637,
+      "volumeUSD": 1823.3602955425374,
+      "txCount": 358,
+      "approximateAPR": 4551.127736177496
+    },
+    {
+      "id": "0xaac5653e9b9d339c4db3aac540b56b10ba2ce972",
+      "createdAt": "2024-10-14T10:04:48.000Z",
+      "fee": 0.3019,
+      "token0": {
+        "symbol": "SIESTA",
+        "name": "Siesta",
+        "id": "0x7d7193502a34f84e0a649f6f3f6c33cdc2c136db"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 66013.33914411825,
+      "token1Price": 0.000015148453524170795,
+      "totalValueLockedUSD": 3.7472189107964926,
+      "totalValueLockedToken0": 1357685.1990089396,
+      "totalValueLockedToken1": 1.650696011530128,
+      "volumeUSD": 64.93568190835944,
+      "txCount": 68,
+      "approximateAPR": 1909.5468491985876
+    },
+    {
+      "id": "0xb8a088f10f1fe0631582ef5a536d2d717f4ea4d7",
+      "createdAt": "2023-03-08T16:08:06.000Z",
+      "fee": 0.27,
+      "token0": {
+        "symbol": "FRAX",
+        "name": "Frax",
+        "id": "0x322e86852e492a7ee17f28a78c663da38fb33bfb"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "name": "Tether USD",
+        "id": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "token0Price": 1.0028627526871299,
+      "token1Price": 0.9971454192715212,
+      "totalValueLockedUSD": 1.6713614181549203,
+      "totalValueLockedToken0": 1.0588274181549204,
+      "totalValueLockedToken1": 0.612534,
+      "volumeUSD": 31.340402490164255,
+      "txCount": 129,
+      "approximateAPR": 1847.9525923335643
+    },
+    {
+      "id": "0x926f54ed0066c1fc09e0ee97bf98a0fc56ebbf2e",
+      "createdAt": "2023-10-18T08:07:54.000Z",
+      "fee": 0.57,
+      "token0": {
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "id": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "token1": {
+        "symbol": "axlWMAI",
+        "name": "Axelar Wrapped WMAI",
+        "id": "0xbfe3acdca835bb60a6b51ee6b947779a02ece911"
+      },
+      "token0Price": 0.20780076856008065,
+      "token1Price": 4.812301739446521,
+      "totalValueLockedUSD": 0.10948996921256836,
+      "totalValueLockedToken0": 0.012231,
+      "totalValueLockedToken1": 0.4740238586032796,
+      "volumeUSD": 0.855416,
+      "txCount": 10,
+      "approximateAPR": 1625.4392989597343
+    },
+    {
+      "id": "0xace7f65df5e89f67e4b278342e74d0cb2a9516c6",
+      "createdAt": "2024-07-29T11:34:24.000Z",
+      "fee": 0.3003,
+      "token0": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcNCTR",
+        "name": "Apillon",
+        "id": "0xffffffff8a9736b44ebf188972725bed67bf694e"
+      },
+      "token0Price": 0.0024937458461724202,
+      "token1Price": 401.0031742147548,
+      "totalValueLockedUSD": 12919.116028116772,
+      "totalValueLockedToken0": 686.0966501996,
+      "totalValueLockedToken1": 1115228.3147504663,
+      "volumeUSD": 183949.258592174,
+      "txCount": 3115,
+      "approximateAPR": 1560.6784717915418
+    },
+    {
+      "id": "0x45fbaf7de8f1d5b82189ba13ad47d103672c524d",
+      "createdAt": "2024-06-30T11:35:30.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcWIFD",
+        "name": "dog wif dots",
+        "id": "0xffffffff2e1d1ac9ea1686255befe995b31abc96"
+      },
+      "token0Price": 0.000009816341601402862,
+      "token1Price": 101870.94547087574,
+      "totalValueLockedUSD": 2553.426360002114,
+      "totalValueLockedToken0": 698.667312889,
+      "totalValueLockedToken1": 962430.4213301984,
+      "volumeUSD": 41108.30162704303,
+      "txCount": 844,
+      "approximateAPR": 1469.058431536115
+    },
+    {
+      "id": "0x6c769cf9c3572010a5dd78478d698f07830ef00b",
+      "createdAt": "2023-10-17T08:58:12.000Z",
+      "fee": 0.57,
+      "token0": {
+        "symbol": "xcOTP",
+        "name": "OriginTrail Parachain Token",
+        "id": "0xffffffffb3229c8e7657eabea704d5e75246e544"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "name": "Tether USD",
+        "id": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "token0Price": 26.675019633148295,
+      "token1Price": 0.03748825731911846,
+      "totalValueLockedUSD": 0.09420214800513474,
+      "totalValueLockedToken0": 0.729909417764,
+      "totalValueLockedToken1": 0.071141,
+      "volumeUSD": 0.5823392806557666,
+      "txCount": 22,
+      "approximateAPR": 1286.124466438157
+    },
+    {
+      "id": "0xb2108db7be20cdf40217ad590c72bc9eb5e9fb3c",
+      "createdAt": "2024-03-21T20:23:06.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "id": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "token1": {
+        "symbol": "xcPINK",
+        "name": "PINK",
+        "id": "0xffffffff30478fafbe935e466da114e14fb3563d"
+      },
+      "token0Price": 3.4025678654032524e+42,
+      "token1Price": 2.938956810142818e-43,
+      "totalValueLockedUSD": 0.0000025915349439235974,
+      "totalValueLockedToken0": 0.000002,
+      "totalValueLockedToken1": 1e-10,
+      "volumeUSD": 0.000029,
+      "txCount": 4,
+      "approximateAPR": 1021.112991821582
+    },
+    {
+      "id": "0xc0796da7d1a47b51dbbe74edaf4461aa5855f2c0",
+      "createdAt": "2024-03-26T12:31:00.000Z",
+      "fee": 0.89,
+      "token0": {
+        "symbol": "CELR",
+        "name": "Celer Network",
+        "id": "0x3795c36e7d12a8c252a20c5a7b455f7c57b60283"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 11.302046379446876,
+      "token1Price": 0.08847955197021055,
+      "totalValueLockedUSD": 0.27223472538970717,
+      "totalValueLockedToken0": 3.6788152295003966,
+      "totalValueLockedToken1": 2.4,
+      "volumeUSD": 0.7871735993399265,
+      "txCount": 3,
+      "approximateAPR": 939.3119976869905
+    },
+    {
+      "id": "0xb78f5dd1559bc384d89e1835ba90fb25ebada801",
+      "createdAt": "2023-10-16T15:01:12.000Z",
+      "fee": 0.89,
+      "token0": {
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "id": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "token1": {
+        "symbol": "xcOTP",
+        "name": "OriginTrail Parachain Token",
+        "id": "0xffffffffb3229c8e7657eabea704d5e75246e544"
+      },
+      "token0Price": 0.0315945341214806,
+      "token1Price": 31.65104432795281,
+      "totalValueLockedUSD": 0.13978437183040385,
+      "totalValueLockedToken0": 0.08751,
+      "totalValueLockedToken1": 1.65453846002,
+      "volumeUSD": 0.357472,
+      "txCount": 9,
+      "approximateAPR": 830.7422187430989
+    },
+    {
+      "id": "0x41fcc3a91e2063e70dbe86311bd30252ea1bb26f",
+      "createdAt": "2023-03-08T16:16:00.000Z",
+      "fee": 0.2509,
+      "token0": {
+        "symbol": "FRAX",
+        "name": "Frax",
+        "id": "0x322e86852e492a7ee17f28a78c663da38fb33bfb"
+      },
+      "token1": {
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "id": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "token0Price": 0.9960211752626564,
+      "token1Price": 1.0039947190242158,
+      "totalValueLockedUSD": 2130.026756859052,
+      "totalValueLockedToken0": 537.1770238590519,
+      "totalValueLockedToken1": 1592.849733,
+      "volumeUSD": 18268.521011,
+      "txCount": 866,
+      "approximateAPR": 785.4379040162308
+    },
+    {
+      "id": "0xc5bf04581ef52c8ad6582f8f640f943936a1fcdb",
+      "createdAt": "2023-10-20T13:15:06.000Z",
+      "fee": 0.57,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcFIL",
+        "name": "Bifrost Filecoin Native Token",
+        "id": "0xffffffff6c57e17d210df507c82807149ffd70b2"
+      },
+      "token0Price": 22.611938143984837,
+      "token1Price": 0.04422442665605899,
+      "totalValueLockedUSD": 4.3064584402823645,
+      "totalValueLockedToken0": 24.741253215620926,
+      "totalValueLockedToken1": 0.07474906326691079,
+      "volumeUSD": 10.345792877173542,
+      "txCount": 11,
+      "approximateAPR": 499.817248429042
+    },
+    {
+      "id": "0x7d62efb965b9ac192ad73ee439bb68b16428757d",
+      "createdAt": "2023-12-19T08:12:24.000Z",
+      "fee": 0.27,
+      "token0": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcNODL",
+        "name": "Nodle",
+        "id": "0xffffffffe896ba7cb118b9fa571c6dc0a99deff1"
+      },
+      "token0Price": 0.0010687156426344466,
+      "token1Price": 935.7025948782237,
+      "totalValueLockedUSD": 0.46664696839698505,
+      "totalValueLockedToken0": 0.0397554143,
+      "totalValueLockedToken1": 86.9365972956,
+      "volumeUSD": 2.1667924962213747,
+      "txCount": 19,
+      "approximateAPR": 457.59945947180427
+    },
+    {
+      "id": "0xc0365b1c9b71fc3f944e3a4693a51d5975a51dd8",
+      "createdAt": "2023-12-09T11:32:42.000Z",
+      "fee": 0.2784,
+      "token0": {
+        "symbol": "L-Swing",
+        "name": "LemoSwing",
+        "id": "0x76f4955f090a948876dea4b1762a2fa60c850364"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 16.960369334277832,
+      "token1Price": 0.05896098017034013,
+      "totalValueLockedUSD": 81.80535538173979,
+      "totalValueLockedToken0": 9111.182646317,
+      "totalValueLockedToken1": 729.9917264918471,
+      "volumeUSD": 303.667495447824,
+      "txCount": 193,
+      "approximateAPR": 377.2060652194655
+    },
+    {
+      "id": "0x98b9be8770d1c0a73e1ac49bcf7d2fd0bd174e48",
+      "createdAt": "2023-10-16T15:03:24.000Z",
+      "fee": 0.27,
+      "token0": {
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "id": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "token1": {
+        "symbol": "TRAC",
+        "name": "Trace Token",
+        "id": "0xed80fef95392bb8c0e29cf75be356e491d0d7661"
+      },
+      "token0Price": 3.4025678654032523e+50,
+      "token1Price": 2.938956810142818e-51,
+      "totalValueLockedUSD": 0.3063410892550273,
+      "totalValueLockedToken0": 0.305941,
+      "totalValueLockedToken1": 0.001283725586152093,
+      "volumeUSD": 0.374448,
+      "txCount": 9,
+      "approximateAPR": 120.46000910207451
+    },
+    {
+      "id": "0x33a1461386bbd81d969093e6c95a1670515b128a",
+      "createdAt": "2023-11-22T15:44:48.000Z",
+      "fee": 0.2736,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "xcLDOT",
+        "name": "Acala Liquid DOT",
+        "id": "0xffffffffa9cfffa9834235fe53f4733f1b8b28d4"
+      },
+      "token0Price": 3.402567865403252e+30,
+      "token1Price": 2.938956810142818e-31,
+      "totalValueLockedUSD": 2.4828791007201705,
+      "totalValueLockedToken0": 8.705404266961683,
+      "totalValueLockedToken1": 1e-10,
+      "volumeUSD": 0.8354826430229212,
+      "txCount": 5,
+      "approximateAPR": 33.603987660390075
+    },
+    {
+      "id": "0x50da914ee50dfe6281a0a11f6ecbbebf596ea34f",
+      "createdAt": "2024-03-27T07:30:54.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "axlATOM",
+        "name": "Axelar Wrapped ATOM",
+        "id": "0x27292cf0016e5df1d8b37306b2a98588acbd6fca"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 0.03774295527049634,
+      "token1Price": 26.495010600870984,
+      "totalValueLockedUSD": 0.05280488155597693,
+      "totalValueLockedToken0": 0.000963,
+      "totalValueLockedToken1": 0.1499751463700149,
+      "volumeUSD": 0.015044996645093569,
+      "txCount": 2,
+      "approximateAPR": 25.99865587065967
+    },
+    {
+      "id": "0x3909a2e64f27c257f1189cb628e164b696acb49c",
+      "createdAt": "2023-05-01T09:28:42.000Z",
+      "fee": 0.01,
+      "token0": {
+        "symbol": "MPEPE",
+        "name": "MoonPepe",
+        "id": "0x176b1618edef17c75fc084457252c896dd2487b1"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 9009236.307029767,
+      "token1Price": 1.1099719953174228e-7,
+      "totalValueLockedUSD": 5.41145944088136,
+      "totalValueLockedToken0": 304754.824471805,
+      "totalValueLockedToken1": 16.13136735780642,
+      "volumeUSD": 2.0525361575587464,
+      "txCount": 2,
+      "approximateAPR": 1.3844244897212514
+    },
+    {
+      "id": "0x6563ff035fe2c0dfa1f499e9389670b9c8f51b58",
+      "createdAt": "2023-10-04T11:40:42.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "TRAC",
+        "name": "Trace Token",
+        "id": "0xed80fef95392bb8c0e29cf75be356e491d0d7661"
+      },
+      "token1": {
+        "symbol": "xcOTP",
+        "name": "OriginTrail Parachain Token",
+        "id": "0xffffffffb3229c8e7657eabea704d5e75246e544"
+      },
+      "token0Price": 0.15880010159520846,
+      "token1Price": 6.297225190378426,
+      "totalValueLockedUSD": 53141.267119306714,
+      "totalValueLockedToken0": 29.244606312555817,
+      "totalValueLockedToken1": 1681976.6012367578,
+      "volumeUSD": 0,
+      "txCount": 190,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xac7f862a09b58f6c2df35ae38dbdbc593991d939",
+      "createdAt": "2024-06-10T15:03:24.000Z",
+      "fee": 0.05,
+      "token0": {
+        "symbol": "axlUSDC",
+        "name": "Axelar Wrapped USDC",
+        "id": "0xca01a1d0993565291051daff390892518acfad3a"
+      },
+      "token1": {
+        "symbol": "xcUSDC",
+        "name": "USD Coin",
+        "id": "0xffffffff7d2b0b761af01ca8e25242976ac0ad7d"
+      },
+      "token0Price": 0.9984340796877462,
+      "token1Price": 1.0015683762645036,
+      "totalValueLockedUSD": 14612.328659499753,
+      "totalValueLockedToken0": 8452.730607,
+      "totalValueLockedToken1": 6155.469625,
+      "volumeUSD": 0,
+      "txCount": 40861,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x01212b597da18e06f0b72204be7ff71a61680f12",
+      "createdAt": "2023-10-12T18:21:18.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "xcFIL",
+        "name": "Bifrost Filecoin Native Token",
+        "id": "0xffffffff6c57e17d210df507c82807149ffd70b2"
+      },
+      "token1": {
+        "symbol": "xcvFIL",
+        "name": "Bifrost Voucher FIL",
+        "id": "0xffffffffcd0ad0ea6576b7b285295c85e94cf4c1"
+      },
+      "token0Price": 0.9338394117371396,
+      "token1Price": 1.0708479289172297,
+      "totalValueLockedUSD": 568.7217239887885,
+      "totalValueLockedToken0": 2.9552963323014687,
+      "totalValueLockedToken1": 156.77200354831558,
+      "volumeUSD": 0,
+      "txCount": 369,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x61b600a9f0e4b53cf3f6a837c2815964e2291f9c",
+      "createdAt": "2023-04-08T04:58:18.000Z",
+      "fee": 0.0108,
+      "token0": {
+        "symbol": "WBTC",
+        "name": "Wrapped BTC",
+        "id": "0xe57ebd2d67b462e9926e04a8e33f01cd0d64346d"
+      },
+      "token1": {
+        "symbol": "xcIBTC",
+        "name": "interBTC",
+        "id": "0xffffffff5ac1f9a51a93f5c527385edf7fe98a52"
+      },
+      "token0Price": 0.9824358942268365,
+      "token1Price": 1.0178781189453447,
+      "totalValueLockedUSD": 279.5271670538213,
+      "totalValueLockedToken0": 0.00184845,
+      "totalValueLockedToken1": 0.0016813,
+      "volumeUSD": 0,
+      "txCount": 16462,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xda6381c6c5a20bc03d0dac2bf9d165d5775f41f7",
+      "createdAt": "2023-03-08T10:37:30.000Z",
+      "fee": 0.57,
+      "token0": {
+        "symbol": "FRAX",
+        "name": "Frax",
+        "id": "0x322e86852e492a7ee17f28a78c663da38fb33bfb"
+      },
+      "token1": {
+        "symbol": "ZOO",
+        "name": "ZooDAO",
+        "id": "0x7cd3e6e1a69409def0d78d17a492e8e143f40ec5"
+      },
+      "token0Price": 2.938956807585585e-39,
+      "token1Price": 3.402567868363881e+38,
+      "totalValueLockedUSD": 152.63585184017538,
+      "totalValueLockedToken0": 152.63585184017538,
+      "totalValueLockedToken1": 6933.1497545898355,
+      "volumeUSD": 0,
+      "txCount": 2359,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x5313fe843897934cf3939da37de70ac6233fb0ae",
+      "createdAt": "2023-06-23T06:59:36.000Z",
+      "fee": 0.2689,
+      "token0": {
+        "symbol": "axlWMAI",
+        "name": "Axelar Wrapped WMAI",
+        "id": "0xbfe3acdca835bb60a6b51ee6b947779a02ece911"
+      },
+      "token1": {
+        "symbol": "MAI",
+        "name": "Mai Stablecoin",
+        "id": "0xdfa46478f9e5ea86d57387849598dbfb2e964b02"
+      },
+      "token0Price": 2.938956807585585e-39,
+      "token1Price": 3.402567868363881e+38,
+      "totalValueLockedUSD": 95.42437067750896,
+      "totalValueLockedToken0": 20.59677676597371,
+      "totalValueLockedToken1": 59.56637635414607,
+      "volumeUSD": 0,
+      "txCount": 462,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x9873bea5533484a0ad6224f20cf16054562951f1",
+      "createdAt": "2023-11-22T03:05:00.000Z",
+      "fee": 0.2507,
+      "token0": {
+        "symbol": "CP",
+        "name": "Cypress",
+        "id": "0x6021d2c27b6fbd6e7608d1f39b41398caee2f824"
+      },
+      "token1": {
+        "symbol": "stDOT",
+        "name": "Stella stDOT",
+        "id": "0xbc7e02c4178a7df7d3e564323a5c359dc96c4db4"
+      },
+      "token0Price": 293.9308452869357,
+      "token1Price": 0.003402160800863885,
+      "totalValueLockedUSD": 93.53689400731182,
+      "totalValueLockedToken0": 2633.600989880364,
+      "totalValueLockedToken1": 7.671471926,
+      "volumeUSD": 0,
+      "txCount": 5123,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xd9c11bc306e4ed1ae0e88d6fca6746626fe7d915",
+      "createdAt": "2023-11-05T02:38:12.000Z",
+      "fee": 0.2719,
+      "token0": {
+        "symbol": "CP",
+        "name": "Cypress",
+        "id": "0x6021d2c27b6fbd6e7608d1f39b41398caee2f824"
+      },
+      "token1": {
+        "symbol": "xcvDOT",
+        "name": "Bifrost Voucher DOT",
+        "id": "0xffffffff15e1b7e3df971dd813bc394deb899abf"
+      },
+      "token0Price": 538.9166181530574,
+      "token1Price": 0.001855574621964971,
+      "totalValueLockedUSD": 52.39957132725207,
+      "totalValueLockedToken0": 1738.3641568929247,
+      "totalValueLockedToken1": 3.6304675031,
+      "volumeUSD": 0,
+      "txCount": 2616,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xe71243b09b829def15935522d2173b595216197b",
+      "createdAt": "2024-07-26T14:27:42.000Z",
+      "fee": 0.05,
+      "token0": {
+        "symbol": "BRLA",
+        "name": "BRLA Token",
+        "id": "0xfeb25f3fddad13f82c4d6dbc1481516f62236429"
+      },
+      "token1": {
+        "symbol": "xcUSDC",
+        "name": "USD Coin",
+        "id": "0xffffffff7d2b0b761af01ca8e25242976ac0ad7d"
+      },
+      "token0Price": 5.791128015263575,
+      "token1Price": 0.17267793033832396,
+      "totalValueLockedUSD": 48.03392247770613,
+      "totalValueLockedToken0": 297.62509142209393,
+      "totalValueLockedToken1": 9.521612,
+      "volumeUSD": 0,
+      "txCount": 1978,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xb9defb3cda9ffce6018f4273484e6d899abf06a9",
+      "createdAt": "2023-12-09T11:39:00.000Z",
+      "fee": 0.2784,
+      "token0": {
+        "symbol": "L-Swing",
+        "name": "LemoSwing",
+        "id": "0x76f4955f090a948876dea4b1762a2fa60c850364"
+      },
+      "token1": {
+        "symbol": "mbXEN",
+        "name": "XEN Crypto",
+        "id": "0xb564a5767a00ee9075cac561c427643286f8f4e1"
+      },
+      "token0Price": 6.104794174298183e-8,
+      "token1Price": 16380568.639154186,
+      "totalValueLockedUSD": 29.304137360023585,
+      "totalValueLockedToken0": 7698.857824972,
+      "totalValueLockedToken1": 167598521524.99057,
+      "volumeUSD": 0,
+      "txCount": 110,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xbcce2af9f3b9ed453b8d001db900c61382e6e342",
+      "createdAt": "2023-12-13T15:45:48.000Z",
+      "fee": 0.27,
+      "token0": {
+        "symbol": "STELLA",
+        "name": "StellaSwap",
+        "id": "0x0e358838ce72d5e61e0018a2ffac4bec5f4c88d2"
+      },
+      "token1": {
+        "symbol": "FRAX",
+        "name": "Frax",
+        "id": "0x322e86852e492a7ee17f28a78c663da38fb33bfb"
+      },
+      "token0Price": 56.815700810303,
+      "token1Price": 0.01760076855055987,
+      "totalValueLockedUSD": 18.138227908596747,
+      "totalValueLockedToken0": 721.134740556575,
+      "totalValueLockedToken1": 5.368380459071073,
+      "volumeUSD": 0,
+      "txCount": 589,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x5025ed95b4d10493f7b9d37e1ecbb012171e7630",
+      "createdAt": "2023-08-22T01:05:12.000Z",
+      "fee": 0.2709,
+      "token0": {
+        "symbol": "CP",
+        "name": "Cypress",
+        "id": "0x6021d2c27b6fbd6e7608d1f39b41398caee2f824"
+      },
+      "token1": {
+        "symbol": "xcIBTC",
+        "name": "interBTC",
+        "id": "0xffffffff5ac1f9a51a93f5c527385edf7fe98a52"
+      },
+      "token0Price": 2415866.0591234434,
+      "token1Price": 4.1393023268965216e-7,
+      "totalValueLockedUSD": 17.46065288962529,
+      "totalValueLockedToken0": 459.254625370961,
+      "totalValueLockedToken1": 0.00023902,
+      "volumeUSD": 0,
+      "txCount": 954,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x19b90b041843189e9857074e07651c80eaee24bb",
+      "createdAt": "2023-12-09T11:45:48.000Z",
+      "fee": 0.4897,
+      "token0": {
+        "symbol": "STELLA",
+        "name": "StellaSwap",
+        "id": "0x0e358838ce72d5e61e0018a2ffac4bec5f4c88d2"
+      },
+      "token1": {
+        "symbol": "L-Swing",
+        "name": "LemoSwing",
+        "id": "0x76f4955f090a948876dea4b1762a2fa60c850364"
+      },
+      "token0Price": 0.24710234075098886,
+      "token1Price": 4.046906220964231,
+      "totalValueLockedUSD": 14.22083913237082,
+      "totalValueLockedToken0": 449.7984699486037,
+      "totalValueLockedToken1": 2318.553818271,
+      "volumeUSD": 0,
+      "txCount": 24,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x604187547ea93caf91f97264c1a34057b33ebe8a",
+      "createdAt": "2023-09-12T02:00:48.000Z",
+      "fee": 0.2533,
+      "token0": {
+        "symbol": "CP",
+        "name": "Cypress",
+        "id": "0x6021d2c27b6fbd6e7608d1f39b41398caee2f824"
+      },
+      "token1": {
+        "symbol": "xcINTR",
+        "name": "Interlay",
+        "id": "0xffffffff4c1cbcd97597339702436d4f18a375ab"
+      },
+      "token0Price": 1.2149049664899134,
+      "token1Price": 0.8231096485589208,
+      "totalValueLockedUSD": 13.072528373493057,
+      "totalValueLockedToken0": 470.1178277023031,
+      "totalValueLockedToken1": 328.6378389221,
+      "volumeUSD": 0,
+      "txCount": 946,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xfac71866f0abc8f817f0dd48e4483b1b95dde3ce",
+      "createdAt": "2023-11-14T03:54:48.000Z",
+      "fee": 0.2719,
+      "token0": {
+        "symbol": "CP",
+        "name": "Cypress",
+        "id": "0x6021d2c27b6fbd6e7608d1f39b41398caee2f824"
+      },
+      "token1": {
+        "symbol": "xcBNC",
+        "name": "BNC",
+        "id": "0xffffffff7cc06abdf7201b350a1265c62c8601d2"
+      },
+      "token0Price": 20.162743807863638,
+      "token1Price": 0.04959642445141775,
+      "totalValueLockedUSD": 4.888025889717279,
+      "totalValueLockedToken0": 162.45925583659056,
+      "totalValueLockedToken1": 7.492761593709,
+      "volumeUSD": 0,
+      "txCount": 555,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x88c92b492bc40fb36e96c525e9bfa4287f259937",
+      "createdAt": "2024-01-07T12:10:30.000Z",
+      "fee": 0.2708,
+      "token0": {
+        "symbol": "STELLA",
+        "name": "StellaSwap",
+        "id": "0x0e358838ce72d5e61e0018a2ffac4bec5f4c88d2"
+      },
+      "token1": {
+        "symbol": "mbDXN",
+        "name": "DBXen Token on Moonbeam",
+        "id": "0xc418b123885d732ed042b16e12e259741863f723"
+      },
+      "token0Price": 0.174066109250611,
+      "token1Price": 5.744943713082332,
+      "totalValueLockedUSD": 4.55105206149831,
+      "totalValueLockedToken0": 95.90928197465206,
+      "totalValueLockedToken1": 522.6830195671837,
+      "volumeUSD": 0,
+      "txCount": 2601,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xd400711c694ebe514ba00b611080c0a3dc6387d4",
+      "createdAt": "2024-04-19T02:12:00.000Z",
+      "fee": 0.2986,
+      "token0": {
+        "symbol": "CP",
+        "name": "Cypress",
+        "id": "0x6021d2c27b6fbd6e7608d1f39b41398caee2f824"
+      },
+      "token1": {
+        "symbol": "xcPINK",
+        "name": "PINK",
+        "id": "0xffffffff30478fafbe935e466da114e14fb3563d"
+      },
+      "token0Price": 0.04094114584392905,
+      "token1Price": 24.425305628036906,
+      "totalValueLockedUSD": 3.8194323805644887,
+      "totalValueLockedToken0": 148.70177431175307,
+      "totalValueLockedToken1": 2952.8094719437,
+      "volumeUSD": 0,
+      "txCount": 570,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xa818ddb144f912e963d297f278fed64bca88e785",
+      "createdAt": "2023-12-18T22:48:48.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "mbXVT",
+        "name": "Xenvault Token on Moonbeam",
+        "id": "0xab197a16a5c62c94961ca7dde3c5d0fc31bc5e02"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 3.229742289484831,
+      "totalValueLockedToken0": 18.797813992088102,
+      "totalValueLockedToken1": 10,
+      "volumeUSD": 0,
+      "txCount": 4,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xb76ca52e91115aeb5497920199afaa343876a43f",
+      "createdAt": "2024-11-23T17:47:00.000Z",
+      "fee": 0.3,
+      "token0": {
+        "symbol": "WBTC",
+        "name": "Wrapped BTC",
+        "id": "0xe57ebd2d67b462e9926e04a8e33f01cd0d64346d"
+      },
+      "token1": {
+        "symbol": "xcUSDC",
+        "name": "USD Coin",
+        "id": "0xffffffff7d2b0b761af01ca8e25242976ac0ad7d"
+      },
+      "token0Price": 0.000010379507920894444,
+      "token1Price": 96343.68099348451,
+      "totalValueLockedUSD": 2.5047731767504375,
+      "totalValueLockedToken0": 0.00001455,
+      "totalValueLockedToken1": 1.035433,
+      "volumeUSD": 0,
+      "txCount": 73,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x8ecd0276b3b0dd7eb0005c754d74eef5885b0e49",
+      "createdAt": "2023-10-27T03:02:24.000Z",
+      "fee": 0.2719,
+      "token0": {
+        "symbol": "CP",
+        "name": "Cypress",
+        "id": "0x6021d2c27b6fbd6e7608d1f39b41398caee2f824"
+      },
+      "token1": {
+        "symbol": "xcRMRK",
+        "name": "xcRMRK",
+        "id": "0xecf2adaff1de8a512f6e8bfe67a2c836edb25da3"
+      },
+      "token0Price": 166.6905920319504,
+      "token1Price": 0.00599913881047543,
+      "totalValueLockedUSD": 2.34464030270163,
+      "totalValueLockedToken0": 81.43044385872291,
+      "totalValueLockedToken1": 0.3246103626,
+      "volumeUSD": 0,
+      "txCount": 584,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x8033999f16976875232992fab638581b035ef941",
+      "createdAt": "2024-09-05T18:09:18.000Z",
+      "fee": 0.8693,
+      "token0": {
+        "symbol": "mbXEN",
+        "name": "XEN Crypto",
+        "id": "0xb564a5767a00ee9075cac561c427643286f8f4e1"
+      },
+      "token1": {
+        "symbol": "xcUSDC",
+        "name": "USD Coin",
+        "id": "0xffffffff7d2b0b761af01ca8e25242976ac0ad7d"
+      },
+      "token0Price": 1850604374.5678813,
+      "token1Price": 5.403640095865987e-10,
+      "totalValueLockedUSD": 2.1709004175968425,
+      "totalValueLockedToken0": 8106120732.914486,
+      "totalValueLockedToken1": 2.171599,
+      "volumeUSD": 0,
+      "txCount": 1434,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x3b9a1186d1177631fd419055bd6e30833ec69cfb",
+      "createdAt": "2024-04-11T09:25:54.000Z",
+      "fee": 0.2842,
+      "token0": {
+        "symbol": "CP",
+        "name": "Cypress",
+        "id": "0x6021d2c27b6fbd6e7608d1f39b41398caee2f824"
+      },
+      "token1": {
+        "symbol": "xcUSDC",
+        "name": "USD Coin",
+        "id": "0xffffffff7d2b0b761af01ca8e25242976ac0ad7d"
+      },
+      "token0Price": 71.23379529987655,
+      "token1Price": 0.01403828050702969,
+      "totalValueLockedUSD": 1.9832178849498205,
+      "totalValueLockedToken0": 69.63265167358323,
+      "totalValueLockedToken1": 0.996584,
+      "volumeUSD": 0,
+      "txCount": 617,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x094946fc8a34abdbe3d90bea4d7740d84666f83a",
+      "createdAt": "2023-09-05T01:52:54.000Z",
+      "fee": 0.2729,
+      "token0": {
+        "symbol": "STELLA",
+        "name": "StellaSwap",
+        "id": "0x0e358838ce72d5e61e0018a2ffac4bec5f4c88d2"
+      },
+      "token1": {
+        "symbol": "CP",
+        "name": "Cypress",
+        "id": "0x6021d2c27b6fbd6e7608d1f39b41398caee2f824"
+      },
+      "token0Price": 0.4781154901952418,
+      "token1Price": 2.091544868357315,
+      "totalValueLockedUSD": 1.719169492630354,
+      "totalValueLockedToken0": 26.683137755816926,
+      "totalValueLockedToken1": 52.07307281442998,
+      "volumeUSD": 0,
+      "txCount": 735,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x1ac0b9bef2f84fb1b9a5b1a71cff5c799967747f",
+      "createdAt": "2024-09-11T08:38:12.000Z",
+      "fee": 0.57,
+      "token0": {
+        "symbol": "FRAX",
+        "name": "Frax",
+        "id": "0x322e86852e492a7ee17f28a78c663da38fb33bfb"
+      },
+      "token1": {
+        "symbol": "xcUSDC",
+        "name": "USD Coin",
+        "id": "0xffffffff7d2b0b761af01ca8e25242976ac0ad7d"
+      },
+      "token0Price": 3.402567865403252e+26,
+      "token1Price": 2.938956810142818e-27,
+      "totalValueLockedUSD": 1.5298107933553655,
+      "totalValueLockedToken0": 0.7721909884500757,
+      "totalValueLockedToken1": 0.739572,
+      "volumeUSD": 0,
+      "txCount": 414,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x2c6dcf7fb5cd33c4adffd3ba00ada93d9aee3d44",
+      "createdAt": "2024-04-16T08:08:48.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "CP",
+        "name": "Cypress",
+        "id": "0x6021d2c27b6fbd6e7608d1f39b41398caee2f824"
+      },
+      "token1": {
+        "symbol": "xcSUB",
+        "name": "Subsocial",
+        "id": "0xffffffff43b4560bc0c451a3386e082bff50ac90"
+      },
+      "token0Price": 0.1487445460222194,
+      "token1Price": 6.722935574731059,
+      "totalValueLockedUSD": 1.1892336848780918,
+      "totalValueLockedToken0": 25.04642838490948,
+      "totalValueLockedToken1": 206.8234010421,
+      "volumeUSD": 0,
+      "txCount": 78,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x0c93fa1488912496830dcbe371dc871946902eb0",
+      "createdAt": "2024-02-10T11:55:48.000Z",
+      "fee": 0.01,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "ecol",
+        "name": "ecol",
+        "id": "0xc724e95861ebd6c75aceb29bdf47df2c542eb223"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 0.20181583915998916,
+      "totalValueLockedToken0": 0.5291131253699489,
+      "totalValueLockedToken1": 111111111,
+      "volumeUSD": 0,
+      "txCount": 1,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x79098c810dd38e97eaaac87195606ccade35a5fe",
+      "createdAt": "2023-10-05T13:20:30.000Z",
+      "fee": 0.273,
+      "token0": {
+        "symbol": "d2O",
+        "name": "Deuterium",
+        "id": "0xc806b0600cbafa0b197562a9f7e3b9856866e9bf"
+      },
+      "token1": {
+        "symbol": "xcOTP",
+        "name": "OriginTrail Parachain Token",
+        "id": "0xffffffffb3229c8e7657eabea704d5e75246e544"
+      },
+      "token0Price": 2.9389568075855847e-45,
+      "token1Price": 3.402567868363881e+44,
+      "totalValueLockedUSD": 0.19496721473926112,
+      "totalValueLockedToken0": 2e-18,
+      "totalValueLockedToken1": 5.028379382925,
+      "volumeUSD": 0,
+      "txCount": 3,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x6e49b43a34ae2277ede931b3fd5150fdcca80e10",
+      "createdAt": "2024-08-26T02:37:18.000Z",
+      "fee": 0.2519,
+      "token0": {
+        "symbol": "CP",
+        "name": "Cypress",
+        "id": "0x6021d2c27b6fbd6e7608d1f39b41398caee2f824"
+      },
+      "token1": {
+        "symbol": "StabCP",
+        "name": "Cypress Stable Coin",
+        "id": "0x68c726519db356df893e617cf2692f83189be5f3"
+      },
+      "token0Price": 46.85202408285654,
+      "token1Price": 0.02134379505635716,
+      "totalValueLockedUSD": 0.17127265507429212,
+      "totalValueLockedToken0": 8.25,
+      "totalValueLockedToken1": 3e-18,
+      "volumeUSD": 0,
+      "txCount": 5,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xeb51c31f4cbd0237f094d2d56939fa13b554cee0",
+      "createdAt": "2023-12-09T13:17:12.000Z",
+      "fee": 0.89,
+      "token0": {
+        "symbol": "L-Swing",
+        "name": "LemoSwing",
+        "id": "0x76f4955f090a948876dea4b1762a2fa60c850364"
+      },
+      "token1": {
+        "symbol": "mbDXN",
+        "name": "DBXen Token on Moonbeam",
+        "id": "0xc418b123885d732ed042b16e12e259741863f723"
+      },
+      "token0Price": 2.938956807585585e-30,
+      "token1Price": 3.402567868363881e+29,
+      "totalValueLockedUSD": 0.10366977865960976,
+      "totalValueLockedToken0": 23.683388306,
+      "totalValueLockedToken1": 1955.318859750899,
+      "volumeUSD": 0,
+      "txCount": 54,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x9c9485247f8055aa8165d5cc507b2dd83153a372",
+      "createdAt": "2024-08-30T20:18:36.000Z",
+      "fee": 0.2739,
+      "token0": {
+        "symbol": "xcBTC",
+        "name": "xcBTC",
+        "id": "0x7283d643eb01fe020d8fa9c336845881170be1b0"
+      },
+      "token1": {
+        "symbol": "xcUSDC",
+        "name": "USD Coin",
+        "id": "0xffffffff7d2b0b761af01ca8e25242976ac0ad7d"
+      },
+      "token0Price": 1.0594973728039991,
+      "token1Price": 0.9438437750472781,
+      "totalValueLockedUSD": 0.06348509115414738,
+      "totalValueLockedToken0": 0.042777680000000005,
+      "totalValueLockedToken1": 0.021044,
+      "volumeUSD": 0,
+      "txCount": 19,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x9db37030e1ba4991fbeb8e9d8e4b87e2fcf1b453",
+      "createdAt": "2023-11-02T16:23:12.000Z",
+      "fee": 0.27,
+      "token0": {
+        "symbol": "d2O",
+        "name": "Deuterium",
+        "id": "0xc806b0600cbafa0b197562a9f7e3b9856866e9bf"
+      },
+      "token1": {
+        "symbol": "xcACA",
+        "name": "Acala",
+        "id": "0xffffffffa922fef94566104a6e5a35a4fcddaa9f"
+      },
+      "token0Price": 3.4025678654032526e+32,
+      "token1Price": 2.938956810142818e-33,
+      "totalValueLockedUSD": 0.040579576008950576,
+      "totalValueLockedToken0": 0.0552166896126579,
+      "totalValueLockedToken1": 0.000161308892,
+      "volumeUSD": 0,
+      "txCount": 6,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x6ea0511ddf76c5fe4599023a01ab810b8863146d",
+      "createdAt": "2024-03-26T10:21:12.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "STELLA",
+        "name": "StellaSwap",
+        "id": "0x0e358838ce72d5e61e0018a2ffac4bec5f4c88d2"
+      },
+      "token1": {
+        "symbol": "xcBNC",
+        "name": "BNC",
+        "id": "0xffffffff7cc06abdf7201b350a1265c62c8601d2"
+      },
+      "token0Price": 3.4025678654032526e+32,
+      "token1Price": 2.938956810142818e-33,
+      "totalValueLockedUSD": 0.040390330324680986,
+      "totalValueLockedToken0": 1.6433986426464866,
+      "totalValueLockedToken1": 1e-12,
+      "volumeUSD": 0,
+      "txCount": 2,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xe66ec3a7d22a0c3f4807ebc39ae09d1d6087d9b0",
+      "createdAt": "2023-03-06T13:53:42.000Z",
+      "fee": 0.01,
+      "token0": {
+        "symbol": "xcEQD",
+        "name": "Equilibrium Dollar",
+        "id": "0xffffffff8cda1707baf23834d211b08726b1e499"
+      },
+      "token1": {
+        "symbol": "xcEQ",
+        "name": "Equilibrium Token",
+        "id": "0xffffffff8f6267e040d8a0638c576dfba4f0f6d6"
+      },
+      "token0Price": 0.0035069845451016902,
+      "token1Price": 285.1452543173393,
+      "totalValueLockedUSD": 0.031514644197330695,
+      "totalValueLockedToken0": 0.031293118,
+      "totalValueLockedToken1": 102.380454925,
+      "volumeUSD": 0,
+      "txCount": 35,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x7cbe7174fbe857c0097dbaa1fdfde627e3eba4f7",
+      "createdAt": "2023-01-18T23:05:24.000Z",
+      "fee": 0.57,
+      "token0": {
+        "symbol": "STELLA",
+        "name": "StellaSwap",
+        "id": "0x0e358838ce72d5e61e0018a2ffac4bec5f4c88d2"
+      },
+      "token1": {
+        "symbol": "xcaUSD",
+        "name": "Acala Dollar",
+        "id": "0xffffffff52c56a9257bb97f4b2b6f7b2d624ecda"
+      },
+      "token0Price": 16.917779874766698,
+      "token1Price": 0.05910941077389981,
+      "totalValueLockedUSD": 0.031509330411646434,
+      "totalValueLockedToken0": 2.1170575372489115,
+      "totalValueLockedToken1": 0.009534511039,
+      "volumeUSD": 0,
+      "txCount": 23,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x059e4591795d5e2c0054cd274f3641eb7dfbe152",
+      "createdAt": "2024-05-21T10:59:42.000Z",
+      "fee": 0.01,
+      "token0": {
+        "symbol": "xcLDOT",
+        "name": "Acala Liquid DOT",
+        "id": "0xffffffffa9cfffa9834235fe53f4733f1b8b28d4"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "name": "Tether USD",
+        "id": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 0.027444121356338017,
+      "totalValueLockedToken0": 0.0158335403,
+      "totalValueLockedToken1": 0.01,
+      "volumeUSD": 0,
+      "txCount": 1,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x76c5bda959b58a00e786b0a097679f16196e450a",
+      "createdAt": "2023-06-13T10:41:18.000Z",
+      "fee": 0.6331,
+      "token0": {
+        "symbol": "WBTC",
+        "name": "Wrapped BTC",
+        "id": "0xe57ebd2d67b462e9926e04a8e33f01cd0d64346d"
+      },
+      "token1": {
+        "symbol": "xcACA",
+        "name": "Acala",
+        "id": "0xffffffffa922fef94566104a6e5a35a4fcddaa9f"
+      },
+      "token0Price": 0.0000013108408060281435,
+      "token1Price": 762869.1412422586,
+      "totalValueLockedUSD": 0.027093190401748554,
+      "totalValueLockedToken0": 9.2e-7,
+      "totalValueLockedToken1": 0.456620140818,
+      "volumeUSD": 0,
+      "txCount": 26,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xcf196e0d6530f991a0c9c23804c37c8bffa3529c",
+      "createdAt": "2024-05-21T11:06:30.000Z",
+      "fee": 0.01,
+      "token0": {
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "id": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "token1": {
+        "symbol": "xcLDOT",
+        "name": "Acala Liquid DOT",
+        "id": "0xffffffffa9cfffa9834235fe53f4733f1b8b28d4"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 0.026395792021543033,
+      "totalValueLockedToken0": 0.01,
+      "totalValueLockedToken1": 0.0148851458,
+      "volumeUSD": 0,
+      "txCount": 1,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x4e07542d1e8c1ae2d5dd0d29dbf91d285558aa40",
+      "createdAt": "2024-09-15T14:34:06.000Z",
+      "fee": 0.2729,
+      "token0": {
+        "symbol": "mbXEN",
+        "name": "XEN Crypto",
+        "id": "0xb564a5767a00ee9075cac561c427643286f8f4e1"
+      },
+      "token1": {
+        "symbol": "mbFENIX",
+        "name": "FENIX",
+        "id": "0xc3e8abfa04b0ec442c2a4d65699a40f7fced8055"
+      },
+      "token0Price": 2.938956807585585e-39,
+      "token1Price": 3.402567868363881e+38,
+      "totalValueLockedUSD": 0.015960355814177384,
+      "totalValueLockedToken0": 70187450.09635387,
+      "totalValueLockedToken1": 10425.39868591905,
+      "volumeUSD": 0,
+      "txCount": 57,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x79fb677df79108c83f797a3a196fbccb1dc28832",
+      "createdAt": "2023-02-14T12:23:48.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "xcaUSD",
+        "name": "Acala Dollar",
+        "id": "0xffffffff52c56a9257bb97f4b2b6f7b2d624ecda"
+      },
+      "token1": {
+        "symbol": "xcPHA",
+        "name": "Phala Token",
+        "id": "0xffffffff63d24ecc8eb8a7b5d0803e900f7b6ced"
+      },
+      "token0Price": 0.18623018176563408,
+      "token1Price": 5.36969888832775,
+      "totalValueLockedUSD": 0.013206700017470138,
+      "totalValueLockedToken0": 0.014148563531,
+      "totalValueLockedToken1": 0.08004101881,
+      "volumeUSD": 0,
+      "txCount": 2,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x48875227e1281b9e12f1e34446a75b5033033ab2",
+      "createdAt": "2024-11-20T14:07:06.000Z",
+      "fee": 0.5,
+      "token0": {
+        "symbol": "mbFENIX",
+        "name": "FENIX",
+        "id": "0xc3e8abfa04b0ec442c2a4d65699a40f7fced8055"
+      },
+      "token1": {
+        "symbol": "mbDXN",
+        "name": "DBXen Token on Moonbeam",
+        "id": "0xc418b123885d732ed042b16e12e259741863f723"
+      },
+      "token0Price": 5199.521525695189,
+      "token1Price": 0.0001923253889916914,
+      "totalValueLockedUSD": 0.007289611863415106,
+      "totalValueLockedToken0": 3605.07380156473,
+      "totalValueLockedToken1": 0.27055880679652994,
+      "volumeUSD": 0,
+      "txCount": 13,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x15a332624737b9c097a16da0404c7d591c3c3a73",
+      "createdAt": "2023-06-13T10:44:48.000Z",
+      "fee": 0.6741,
+      "token0": {
+        "symbol": "WBTC",
+        "name": "Wrapped BTC",
+        "id": "0xe57ebd2d67b462e9926e04a8e33f01cd0d64346d"
+      },
+      "token1": {
+        "symbol": "xcASTR",
+        "name": "Astar",
+        "id": "0xffffffffa893ad19e540e172c10d78d4d479b5cf"
+      },
+      "token0Price": 0.000002015062807893336,
+      "token1Price": 496262.4470477217,
+      "totalValueLockedUSD": 0.005944258750426628,
+      "totalValueLockedToken0": 1.6e-7,
+      "totalValueLockedToken1": 0.020466763486829406,
+      "volumeUSD": 0,
+      "txCount": 9,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x4ee754489107eb76ee5852f0690b2a12ee7dc864",
+      "createdAt": "2023-12-08T19:37:36.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "FRAX",
+        "name": "Frax",
+        "id": "0x322e86852e492a7ee17f28a78c663da38fb33bfb"
+      },
+      "token1": {
+        "symbol": "xcZTG",
+        "name": "Zeitgeist",
+        "id": "0xffffffff71815ab6142e0e20c7259126c6b40612"
+      },
+      "token0Price": 0.05247302073136278,
+      "token1Price": 19.057412477157175,
+      "totalValueLockedUSD": 0.0055872613192494485,
+      "totalValueLockedToken0": 0.004859549666331619,
+      "totalValueLockedToken1": 0.0102216397,
+      "volumeUSD": 0,
+      "txCount": 13,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xc16824dcceacd9c986d5f1fef2ff7af487c53faa",
+      "createdAt": "2023-06-17T16:38:42.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "xcINTR",
+        "name": "Interlay",
+        "id": "0xffffffff4c1cbcd97597339702436d4f18a375ab"
+      },
+      "token1": {
+        "symbol": "xcIBTC",
+        "name": "interBTC",
+        "id": "0xffffffff5ac1f9a51a93f5c527385edf7fe98a52"
+      },
+      "token0Price": 1098945.192951531,
+      "token1Price": 9.099634871819355e-7,
+      "totalValueLockedUSD": 0.0028669736108707052,
+      "totalValueLockedToken0": 0.1050545274,
+      "totalValueLockedToken1": 3e-8,
+      "volumeUSD": 0,
+      "txCount": 13,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x7c33153dbb1ef277fce06123e2d9bb7e1a78f92c",
+      "createdAt": "2024-03-26T10:29:00.000Z",
+      "fee": 0.01,
+      "token0": {
+        "symbol": "STELLA",
+        "name": "StellaSwap",
+        "id": "0x0e358838ce72d5e61e0018a2ffac4bec5f4c88d2"
+      },
+      "token1": {
+        "symbol": "xcPINK",
+        "name": "PINK",
+        "id": "0xffffffff30478fafbe935e466da114e14fb3563d"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 0.0020472714203668583,
+      "totalValueLockedToken0": 0.009999999999561773,
+      "totalValueLockedToken1": 0.1913405857,
+      "volumeUSD": 0,
+      "txCount": 1,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x8acda80501a2ac85173393efeb05ad20ef40314c",
+      "createdAt": "2023-03-20T03:40:00.000Z",
+      "fee": 0.01,
+      "token0": {
+        "symbol": "STELLA",
+        "name": "StellaSwap",
+        "id": "0x0e358838ce72d5e61e0018a2ffac4bec5f4c88d2"
+      },
+      "token1": {
+        "symbol": "ZOO",
+        "name": "ZooDAO",
+        "id": "0x7cd3e6e1a69409def0d78d17a492e8e143f40ec5"
+      },
+      "token0Price": 0.9298860217602078,
+      "token1Price": 1.0754006153432345,
+      "totalValueLockedUSD": 0.0012948878006024602,
+      "totalValueLockedToken0": 0.011352865186631837,
+      "totalValueLockedToken1": 0.006578066966663051,
+      "volumeUSD": 0,
+      "txCount": 13,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xdff059a0df13b06fd9cd92caecd7522285f15ac9",
+      "createdAt": "2023-01-24T16:25:36.000Z",
+      "fee": 0.0104,
+      "token0": {
+        "symbol": "WETH",
+        "name": "Wrapped Ether",
+        "id": "0xab3f0245b83feb11d15aaffefd7ad465a59817ed"
+      },
+      "token1": {
+        "symbol": "xcaUSD",
+        "name": "Acala Dollar",
+        "id": "0xffffffff52c56a9257bb97f4b2b6f7b2d624ecda"
+      },
+      "token0Price": 0.0003961237131749217,
+      "token1Price": 2524.4638650512106,
+      "totalValueLockedUSD": 0.0009925384777982294,
+      "totalValueLockedToken0": 2e-18,
+      "totalValueLockedToken1": 0.002138400002,
+      "volumeUSD": 0,
+      "txCount": 8,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x9706ccb738fe2f5097d7e0fb80b8230be0d820f7",
+      "createdAt": "2024-11-23T23:08:48.000Z",
+      "fee": 0.3,
+      "token0": {
+        "symbol": "WBTC",
+        "name": "Wrapped BTC",
+        "id": "0xe57ebd2d67b462e9926e04a8e33f01cd0d64346d"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "name": "Tether USD",
+        "id": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 0.0009729357645765055,
+      "totalValueLockedToken0": 1e-8,
+      "totalValueLockedToken1": 0.000001,
+      "volumeUSD": 0,
+      "txCount": 3,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xf62e0f781b09afed8281556e2b0d04cc85b72d02",
+      "createdAt": "2023-08-02T03:35:18.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "xcCFG",
+        "name": "Centrifuge",
+        "id": "0xffffffff44bd9d2ffee20b25d1cf9e78edb6eae3"
+      },
+      "token1": {
+        "symbol": "xcIBTC",
+        "name": "interBTC",
+        "id": "0xffffffff5ac1f9a51a93f5c527385edf7fe98a52"
+      },
+      "token0Price": 100149.70654688778,
+      "token1Price": 0.000009985051723859252,
+      "totalValueLockedUSD": 0.0006778816934025358,
+      "totalValueLockedToken0": 0.001340619911609957,
+      "totalValueLockedToken1": 1e-8,
+      "volumeUSD": 0,
+      "txCount": 4,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x73f44f19144d6445f1dc10334300cbfe6b9b2382",
+      "createdAt": "2023-08-02T18:07:24.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "WETH",
+        "name": "Wrapped Ether",
+        "id": "0xab3f0245b83feb11d15aaffefd7ad465a59817ed"
+      },
+      "token1": {
+        "symbol": "xcIBTC",
+        "name": "interBTC",
+        "id": "0xffffffff5ac1f9a51a93f5c527385edf7fe98a52"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 0.00029004021981415866,
+      "totalValueLockedToken0": 1e-18,
+      "totalValueLockedToken1": 1e-8,
+      "volumeUSD": 0,
+      "txCount": 3,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x20013ec41a9829792fcdfb7241f80a3983761af6",
+      "createdAt": "2023-12-04T17:32:36.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "stDOT",
+        "name": "Stella stDOT",
+        "id": "0xbc7e02c4178a7df7d3e564323a5c359dc96c4db4"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "name": "Tether USD",
+        "id": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 0.0000010065591731424428,
+      "totalValueLockedToken0": 1e-10,
+      "totalValueLockedToken1": 0.000001,
+      "volumeUSD": 0,
+      "txCount": 3,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xa3b2ada09f69e5102ee7cb6e1e9b57a1000b0bb3",
+      "createdAt": "2024-06-29T00:58:24.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "xcPHA",
+        "name": "Phala Token",
+        "id": "0xffffffff63d24ecc8eb8a7b5d0803e900f7b6ced"
+      },
+      "token1": {
+        "symbol": "xcUSDC",
+        "name": "USD Coin",
+        "id": "0xffffffff7d2b0b761af01ca8e25242976ac0ad7d"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 0.0000010014638898419912,
+      "totalValueLockedToken0": 1e-12,
+      "totalValueLockedToken1": 0.000001,
+      "volumeUSD": 0,
+      "txCount": 3,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xaa3cc4653abc161397f65fc8435ced0fff55657a",
+      "createdAt": "2023-02-18T13:07:42.000Z",
+      "fee": 0.01,
+      "token0": {
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "id": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "token1": {
+        "symbol": "xcaUSD",
+        "name": "Acala Dollar",
+        "id": "0xffffffff52c56a9257bb97f4b2b6f7b2d624ecda"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 0.0000010000004816984834,
+      "totalValueLockedToken0": 0.000001,
+      "totalValueLockedToken1": 1e-12,
+      "volumeUSD": 0,
+      "txCount": 4,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xed549783d238fb72c36414151b6f5195f9b0a9d5",
+      "createdAt": "2024-07-06T11:19:42.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "id": "0x931715fee2d06333043d11f658c8ce934ac61d0c"
+      },
+      "token1": {
+        "symbol": "EUTH",
+        "name": "EUTH",
+        "id": "0xe2777f7fb4c905977cc8ff8d1a1c5735bce39765"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 0.000001,
+      "totalValueLockedToken0": 0.000001,
+      "totalValueLockedToken1": 0.0001,
+      "volumeUSD": 0,
+      "txCount": 3,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xccb27dc5cd8abe8c376e274342ce55f458302e76",
+      "createdAt": "2024-01-04T11:06:30.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "xcPEN",
+        "name": "Pendulum",
+        "id": "0xffffffff2257622f345e1acde0d4f46d7d1d77d0"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "name": "Tether USD",
+        "id": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 9.960689856865421e-7,
+      "totalValueLockedToken0": 1e-12,
+      "totalValueLockedToken1": 0.000001,
+      "volumeUSD": 0,
+      "txCount": 3,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x813d21f1270edf98f79508fddf4e1395d51e1537",
+      "createdAt": "2023-03-11T22:32:17.000Z",
+      "fee": 0.01,
+      "token0": {
+        "symbol": "axlATOM",
+        "name": "Axelar Wrapped ATOM",
+        "id": "0x27292cf0016e5df1d8b37306b2a98588acbd6fca"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "name": "Tether USD",
+        "id": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 9.932465275690157e-7,
+      "totalValueLockedToken0": 0.000001,
+      "totalValueLockedToken1": 0.000001,
+      "volumeUSD": 0,
+      "txCount": 4,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x96519b8439ccbbefbbbbd657d192eff6989ea435",
+      "createdAt": "2023-06-29T11:52:36.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "d2O",
+        "name": "Deuterium",
+        "id": "0xc806b0600cbafa0b197562a9f7e3b9856866e9bf"
+      },
+      "token1": {
+        "symbol": "xcEQ",
+        "name": "Equilibrium Token",
+        "id": "0xffffffff8f6267e040d8a0638c576dfba4f0f6d6"
+      },
+      "token0Price": 0.00019173006055720469,
+      "token1Price": 5215.666218921573,
+      "totalValueLockedUSD": 2.409492003660865e-7,
+      "totalValueLockedToken0": 2.43466348199e-7,
+      "totalValueLockedToken1": 0.000550442,
+      "volumeUSD": 0,
+      "txCount": 5,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x990cca56c97b0b342e55b38c8ace05d0c455ec47",
+      "createdAt": "2024-03-27T15:34:00.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcvFIL",
+        "name": "Bifrost Voucher FIL",
+        "id": "0xffffffffcd0ad0ea6576b7b285295c85e94cf4c1"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 9.5470960696317e-10,
+      "totalValueLockedToken0": 1e-10,
+      "totalValueLockedToken1": 1e-18,
+      "volumeUSD": 0,
+      "txCount": 3,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x543f4a1c11f4db981f48a263bb1161ed1cedb5c8",
+      "createdAt": "2024-05-05T00:11:54.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token1": {
+        "symbol": "xcMANTA",
+        "name": "Manta",
+        "id": "0xffffffff7d3875460d4509eb8d0362c611b4e841"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 7.108928150548526e-10,
+      "totalValueLockedToken0": 1e-10,
+      "totalValueLockedToken1": 1e-18,
+      "volumeUSD": 0,
+      "txCount": 3,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x900567692c57ba9e8d9473c1fb04a60ca148e1f1",
+      "createdAt": "2023-08-04T01:28:42.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "xcRMRK",
+        "name": "xcRMRK",
+        "id": "0xecf2adaff1de8a512f6e8bfe67a2c836edb25da3"
+      },
+      "token1": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 6.773677249376889e-10,
+      "totalValueLockedToken0": 1e-10,
+      "totalValueLockedToken1": 1e-10,
+      "volumeUSD": 0,
+      "txCount": 3,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x152bddf0150a9a4e5b717b01ce989b5147e38403",
+      "createdAt": "2023-02-03T11:39:36.000Z",
+      "fee": 0.01,
+      "token0": {
+        "symbol": "BUSD",
+        "name": "BUSD Token",
+        "id": "0x692c57641fc054c2ad6551ccc6566eba599de1ba"
+      },
+      "token1": {
+        "symbol": "xcDOT",
+        "name": "xcDOT",
+        "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 6.202167617702989e-10,
+      "totalValueLockedToken0": 1e-18,
+      "totalValueLockedToken1": 1e-10,
+      "volumeUSD": 0,
+      "txCount": 3,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x1c2066835f4f87b80246c6c04e9e365f865cdff7",
+      "createdAt": "2023-10-26T17:14:30.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "xcvDOT",
+        "name": "Bifrost Voucher DOT",
+        "id": "0xffffffff15e1b7e3df971dd813bc394deb899abf"
+      },
+      "token1": {
+        "symbol": "xcBNC",
+        "name": "BNC",
+        "id": "0xffffffff7cc06abdf7201b350a1265c62c8601d2"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 5.064234123710356e-10,
+      "totalValueLockedToken0": 1e-10,
+      "totalValueLockedToken1": 1e-12,
+      "volumeUSD": 0,
+      "txCount": 3,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x8a2bc44019daf52add9bddb3e73c41e4b84cd449",
+      "createdAt": "2023-01-20T21:41:24.000Z",
+      "fee": 0.755,
+      "token0": {
+        "symbol": "xcaUSD",
+        "name": "Acala Dollar",
+        "id": "0xffffffff52c56a9257bb97f4b2b6f7b2d624ecda"
+      },
+      "token1": {
+        "symbol": "xcACA",
+        "name": "Acala",
+        "id": "0xffffffffa922fef94566104a6e5a35a4fcddaa9f"
+      },
+      "token0Price": 3.4518616111822977,
+      "token1Price": 0.28969875175774784,
+      "totalValueLockedUSD": 4.090366637351001e-12,
+      "totalValueLockedToken0": 9e-12,
+      "totalValueLockedToken1": 0.011307340002,
+      "volumeUSD": 0,
+      "txCount": 19,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x4df03860c15f90205092f026acbadc685ff91af9",
+      "createdAt": "2023-04-06T09:55:30.000Z",
+      "fee": 0.01,
+      "token0": {
+        "symbol": "FRAX",
+        "name": "Frax",
+        "id": "0x322e86852e492a7ee17f28a78c663da38fb33bfb"
+      },
+      "token1": {
+        "symbol": "WETH",
+        "name": "Wrapped Ether",
+        "id": "0xab3f0245b83feb11d15aaffefd7ad465a59817ed"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 1.875809881704578e-15,
+      "totalValueLockedToken0": 1e-18,
+      "totalValueLockedToken1": 1e-18,
+      "volumeUSD": 0,
+      "txCount": 3,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x287081fc4cba0f48b126991105775b3fc31f123d",
+      "createdAt": "2024-04-17T21:08:24.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "HOA",
+        "name": "Home Owners Association ",
+        "id": "0x41f794b4ce1d00df7dfa6ee83578fa1c40efbda7"
+      },
+      "token1": {
+        "symbol": "RMRK",
+        "name": "RMRK",
+        "id": "0x524d524b4c9366be706d3a90dcf70076ca037ae3"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 1.1219429526775736e-17,
+      "totalValueLockedToken0": 9e-18,
+      "totalValueLockedToken1": 8e-18,
+      "volumeUSD": 0,
+      "txCount": 25,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xd7043c4438016be9ea228b3899f02437a7a8ebf2",
+      "createdAt": "2023-09-30T20:31:36.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "BUSD",
+        "name": "BUSD Token",
+        "id": "0x692c57641fc054c2ad6551ccc6566eba599de1ba"
+      },
+      "token1": {
+        "symbol": "MAI",
+        "name": "Mai Stablecoin",
+        "id": "0xdfa46478f9e5ea86d57387849598dbfb2e964b02"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 8.623644704300916e-19,
+      "totalValueLockedToken0": 1e-18,
+      "totalValueLockedToken1": 1e-18,
+      "volumeUSD": 0,
+      "txCount": 3,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x7de392a53e9d31ab35a31043aa859a5ccd290cbe",
+      "createdAt": "2024-01-20T15:52:00.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "DEGEN",
+        "name": "BOSS DEGEN",
+        "id": "0x8638ac750bfd53c5c6a85dc9a98800056dd9f55d"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 5.114262134703811e-19,
+      "totalValueLockedToken0": 1e-18,
+      "totalValueLockedToken1": 1e-18,
+      "volumeUSD": 0,
+      "txCount": 3,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x4ee8840bf732c5bce60f28642cd6efb8735c86a8",
+      "createdAt": "2024-06-24T18:52:12.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "FRM",
+        "name": "⛤Freemasonry⛤",
+        "id": "0x1b9f2fb29c0e2b939abf6cf9e62d4ef85895a9fe"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 3.949322286562719e-19,
+      "totalValueLockedToken0": 1e-18,
+      "totalValueLockedToken1": 2e-18,
+      "volumeUSD": 0,
+      "txCount": 4,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x39862992424675516796d37051a4f79ca312e4a3",
+      "createdAt": "2024-01-20T15:21:42.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "GOM",
+        "name": "Gorilla on the Moon",
+        "id": "0xc93b746eb566eed2d6a625691999bb5be564ecf0"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 3.74681432633652e-19,
+      "totalValueLockedToken0": 1e-18,
+      "totalValueLockedToken1": 1e-18,
+      "volumeUSD": 0,
+      "txCount": 3,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x16af83dd5c68165de90e1cdf3caff0bb9de8a6b9",
+      "createdAt": "2023-05-25T13:02:42.000Z",
+      "fee": 0.01,
+      "token0": {
+        "symbol": "GEMZS",
+        "name": "GEMZSTONE",
+        "id": "0x50239e426462b88adddf48ca6eed23b8211d553e"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 2.7002465713730834e-19,
+      "totalValueLockedToken0": 1e-18,
+      "totalValueLockedToken1": 1e-18,
+      "volumeUSD": 0,
+      "txCount": 3,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x8dc499354d84d30de7648aa688ca2a2d4e443d35",
+      "createdAt": "2024-07-19T01:50:36.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token1": {
+        "symbol": "TSLA",
+        "name": "Tesla",
+        "id": "0xcf6af3478ce9cdb79625210a41f8ff8a0eeee958"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 2.1493928221569656e-19,
+      "totalValueLockedToken0": 1e-18,
+      "totalValueLockedToken1": 1e-18,
+      "volumeUSD": 0,
+      "txCount": 3,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x93d2b0a9dfa6510f4bd3c5a03ca9be26dbcae431",
+      "createdAt": "2023-01-17T21:26:12.000Z",
+      "fee": 0.2856,
+      "token0": {
+        "symbol": "STELLA",
+        "name": "StellaSwap",
+        "id": "0x0e358838ce72d5e61e0018a2ffac4bec5f4c88d2"
+      },
+      "token1": {
+        "symbol": "xcACA",
+        "name": "Acala",
+        "id": "0xffffffffa922fef94566104a6e5a35a4fcddaa9f"
+      },
+      "token0Price": 16.856209254441037,
+      "token1Price": 0.05932531952500139,
+      "totalValueLockedUSD": 1.313996394448529e-19,
+      "totalValueLockedToken0": 4e-18,
+      "totalValueLockedToken1": 0.008089676687,
+      "volumeUSD": 0,
+      "txCount": 7,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xade92ae9c6235a9081b71b6a488ffebe7da037ef",
+      "createdAt": "2023-04-12T15:55:00.000Z",
+      "fee": 0.1694,
+      "token0": {
+        "symbol": "xcASTR",
+        "name": "Astar",
+        "id": "0xffffffffa893ad19e540e172c10d78d4d479b5cf"
+      },
+      "token1": {
+        "symbol": "xcACA",
+        "name": "Acala",
+        "id": "0xffffffffa922fef94566104a6e5a35a4fcddaa9f"
+      },
+      "token0Price": 1.8421182151764983,
+      "token1Price": 0.5428533260033951,
+      "totalValueLockedUSD": 6.730800032995376e-20,
+      "totalValueLockedToken0": 1e-18,
+      "totalValueLockedToken1": 0.002629359017,
+      "volumeUSD": 0,
+      "txCount": 4,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xb7a4ef08c24ad43ca2e29de39b592d083ebf1133",
+      "createdAt": "2023-09-26T09:29:24.000Z",
+      "fee": 0.27,
+      "token0": {
+        "symbol": "CP",
+        "name": "Cypress",
+        "id": "0x6021d2c27b6fbd6e7608d1f39b41398caee2f824"
+      },
+      "token1": {
+        "symbol": "xcHDX",
+        "name": "HydraDX",
+        "id": "0xffffffff345dc44ddae98df024eb494321e73fcc"
+      },
+      "token0Price": 0.3888640990748013,
+      "token1Price": 2.571592498199844,
+      "totalValueLockedUSD": 4.8986801373983654e-20,
+      "totalValueLockedToken0": 4e-18,
+      "totalValueLockedToken1": 2.200000000003,
+      "volumeUSD": 0,
+      "txCount": 10,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x536639aa245de52c5c6aee887785d4c3daed0841",
+      "createdAt": "2025-01-27T02:41:42.000Z",
+      "fee": 0.01,
+      "token0": {
+        "symbol": "STELLA",
+        "name": "StellaSwap",
+        "id": "0x0e358838ce72d5e61e0018a2ffac4bec5f4c88d2"
+      },
+      "token1": {
+        "symbol": "xcUSDC",
+        "name": "USD Coin",
+        "id": "0xffffffff7d2b0b761af01ca8e25242976ac0ad7d"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 4.774264524666945e-20,
+      "totalValueLockedToken0": 1e-18,
+      "totalValueLockedToken1": 0,
+      "volumeUSD": 0,
+      "txCount": 3,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xfda4d84fa5e40f3cceaf6b2d2927cd1cfe79d945",
+      "createdAt": "2023-10-12T18:18:42.000Z",
+      "fee": 0.01,
+      "token0": {
+        "symbol": "STELLA",
+        "name": "StellaSwap",
+        "id": "0x0e358838ce72d5e61e0018a2ffac4bec5f4c88d2"
+      },
+      "token1": {
+        "symbol": "BUSD",
+        "name": "BUSD Token",
+        "id": "0x692c57641fc054c2ad6551ccc6566eba599de1ba"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 0,
+      "totalValueLockedToken0": 0,
+      "totalValueLockedToken1": 0,
+      "volumeUSD": 0,
+      "txCount": 0,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xfb24e296157b1b9870e8bd8bee7eb6f33e08646e",
+      "createdAt": "2023-12-22T21:23:48.000Z",
+      "fee": 0.01,
+      "token0": {
+        "symbol": "athUSD",
+        "name": "athUSD",
+        "id": "0x9d5d41d8c03e38194a577347206f8829b9cf7c9a"
+      },
+      "token1": {
+        "symbol": "WGLMR",
+        "name": "Wrapped GLMR",
+        "id": "0xacc15dc74880c9944775448304b263d191c6077f"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 0,
+      "totalValueLockedToken0": 2e-18,
+      "totalValueLockedToken1": 0,
+      "volumeUSD": 0,
+      "txCount": 6,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xf423a6e47a98521e96f862fd019310b04edb8a05",
+      "createdAt": "2023-01-25T01:00:00.000Z",
+      "fee": 0.01,
+      "token0": {
+        "symbol": "USDC",
+        "name": "USD Coin",
+        "id": "0x818ec0a7fe18ff94269904fced6ae3dae6d6dc0b"
+      },
+      "token1": {
+        "symbol": "POOP",
+        "name": "Raresama POOP",
+        "id": "0xfffffffecb45afd30a637967995394cc88c0c194"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 0,
+      "totalValueLockedToken0": 0.000001,
+      "totalValueLockedToken1": 1e-18,
+      "volumeUSD": 0,
+      "txCount": 3,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xe314a2156eee24a7ced288af6c618b2635bb6501",
+      "createdAt": "2024-07-30T14:20:06.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "OORTG2",
+        "name": "OORTG2",
+        "id": "0xee0155dfe2a6d41e59b5ebe94acab0f16e40e93b"
+      },
+      "token1": {
+        "symbol": "OORTG1",
+        "name": "OORTG1",
+        "id": "0xfe749db646f3f0310bfd2a5e0c6c279612b3f9af"
+      },
+      "token0Price": 2.938956807585585e-39,
+      "token1Price": 3.402567868363881e+38,
+      "totalValueLockedUSD": 0,
+      "totalValueLockedToken0": 1e-18,
+      "totalValueLockedToken1": 4.992265460711224,
+      "volumeUSD": 0,
+      "txCount": 7,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xcf684192d2066bab0acd916020d4478ab95fd536",
+      "createdAt": "2024-08-15T08:37:36.000Z",
+      "fee": 0.57,
+      "token0": {
+        "symbol": "TT1",
+        "name": "Test token 1",
+        "id": "0x571b7ba2b4236b2a432d9687a83a8a55de7d6d62"
+      },
+      "token1": {
+        "symbol": "TT2",
+        "name": "Test token 2",
+        "id": "0xd2c89854af840661d42ac9823685d49633e10ac2"
+      },
+      "token0Price": 0.10486236530506114,
+      "token1Price": 9.536309781787226,
+      "totalValueLockedUSD": 0,
+      "totalValueLockedToken0": 3.404530232597893,
+      "totalValueLockedToken1": 7.1433878521408944,
+      "volumeUSD": 0,
+      "txCount": 21,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xb705a357325c42aa7ff9ed9a4f59d9e43ad01223",
+      "createdAt": "2023-08-03T16:12:06.000Z",
+      "fee": 0.2729,
+      "token0": {
+        "symbol": "WELL",
+        "name": "WELL",
+        "id": "0x511ab53f793683763e5a8829738301368a2411e3"
+      },
+      "token1": {
+        "symbol": "axlUSDC",
+        "name": "Axelar Wrapped USDC",
+        "id": "0xca01a1d0993565291051daff390892518acfad3a"
+      },
+      "token0Price": 105.68043410628114,
+      "token1Price": 0.00946248951811,
+      "totalValueLockedUSD": 0,
+      "totalValueLockedToken0": 3e-18,
+      "totalValueLockedToken1": 0.022165,
+      "volumeUSD": 0,
+      "txCount": 5,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xb6cd370fb6fdd6d624a4e782e836d8ac173d0f92",
+      "createdAt": "2023-01-31T05:42:42.000Z",
+      "fee": 0.01,
+      "token0": {
+        "symbol": "stella4pool",
+        "name": "StellaSwap 4pool",
+        "id": "0xb326b5189aa42acaa3c649b120f084ed8f4dcaa6"
+      },
+      "token1": {
+        "symbol": "MAI",
+        "name": "Mai Stablecoin",
+        "id": "0xdfa46478f9e5ea86d57387849598dbfb2e964b02"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 0,
+      "totalValueLockedToken0": 1e-18,
+      "totalValueLockedToken1": 1e-18,
+      "volumeUSD": 0,
+      "txCount": 3,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xb56b7c15d08b2468613b7d25eeb61d4201b38854",
+      "createdAt": "2025-01-24T13:31:12.000Z",
+      "fee": 0.3005,
+      "token0": {
+        "symbol": "mbXEN",
+        "name": "XEN Crypto",
+        "id": "0xb564a5767a00ee9075cac561c427643286f8f4e1"
+      },
+      "token1": {
+        "symbol": "mbDXN",
+        "name": "DBXen Token on Moonbeam",
+        "id": "0xc418b123885d732ed042b16e12e259741863f723"
+      },
+      "token0Price": 3.4025678654032522e+38,
+      "token1Price": 2.938956810142818e-39,
+      "totalValueLockedUSD": 0,
+      "totalValueLockedToken0": 429954.6101469227,
+      "totalValueLockedToken1": 3e-18,
+      "volumeUSD": 0,
+      "txCount": 10,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0xaf27cf07199f1a83c46e7b5d700ae4ffbf3f6233",
+      "createdAt": "2023-10-30T13:47:36.000Z",
+      "fee": 0.6165,
+      "token0": {
+        "symbol": "TFA",
+        "name": "Take Flight Alpha",
+        "id": "0xe065ffaf3f7ded69bb5cf5fdd1fd1dda2eee8493"
+      },
+      "token1": {
+        "symbol": "xcACA",
+        "name": "Acala",
+        "id": "0xffffffffa922fef94566104a6e5a35a4fcddaa9f"
+      },
+      "token0Price": 0.4001016091143026,
+      "token1Price": 2.4993651043135796,
+      "totalValueLockedUSD": 0,
+      "totalValueLockedToken0": 2e-18,
+      "totalValueLockedToken1": 0.001649419587,
+      "volumeUSD": 0,
+      "txCount": 4,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x64599f0b557b2bd564943635e3e7629bafeb2031",
+      "createdAt": "2023-12-07T14:43:18.000Z",
+      "fee": 0.8873,
+      "token0": {
+        "symbol": "TOKEN1",
+        "name": "TOKEN1",
+        "id": "0x7be26c8298857a9e4e22c1fd9357e44ad65c41b6"
+      },
+      "token1": {
+        "symbol": "TOKEN",
+        "name": "TOKEN",
+        "id": "0xf272a6cbdc36570ebeb05be6e5fb11218e87bf83"
+      },
+      "token0Price": 2.530518985333568,
+      "token1Price": 0.3951758535683075,
+      "totalValueLockedUSD": 0,
+      "totalValueLockedToken0": 178336.8065955043,
+      "totalValueLockedToken1": 70216.58763613999,
+      "volumeUSD": 0,
+      "txCount": 13,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x631c5832acf59c77ec5d443b1fe79cef9949ad33",
+      "createdAt": "2023-08-03T15:53:24.000Z",
+      "fee": 0.01,
+      "token0": {
+        "symbol": "WELL",
+        "name": "WELL",
+        "id": "0x511ab53f793683763e5a8829738301368a2411e3"
+      },
+      "token1": {
+        "symbol": "xcUSDT",
+        "name": "Tether USD",
+        "id": "0xffffffffea09fb06d082fd1275cd48b191cbcd1d"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 0,
+      "totalValueLockedToken0": 1e-18,
+      "totalValueLockedToken1": 0,
+      "volumeUSD": 0,
+      "txCount": 3,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x60b7d8797c36524887e25c610fd9c9a4984821fe",
+      "createdAt": "2024-03-21T18:02:12.000Z",
+      "fee": 0.01,
+      "token0": {
+        "symbol": "STELLA",
+        "name": "StellaSwap",
+        "id": "0x0e358838ce72d5e61e0018a2ffac4bec5f4c88d2"
+      },
+      "token1": {
+        "symbol": "MAI",
+        "name": "Mai Stablecoin",
+        "id": "0xdfa46478f9e5ea86d57387849598dbfb2e964b02"
+      },
+      "token0Price": 0,
+      "token1Price": 0,
+      "totalValueLockedUSD": 0,
+      "totalValueLockedToken0": 0,
+      "totalValueLockedToken1": 0,
+      "volumeUSD": 0,
+      "txCount": 0,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x3cfd04dfe58a70664483e58a65753bd9f2d58d80",
+      "createdAt": "2024-09-13T13:24:00.000Z",
+      "fee": 0.25,
+      "token0": {
+        "symbol": "FPOC",
+        "name": "FPOC",
+        "id": "0x4f61d85da4f86e9ad4ab3ffa2979c372a4a2781e"
+      },
+      "token1": {
+        "symbol": "mbXEN",
+        "name": "XEN Crypto",
+        "id": "0xb564a5767a00ee9075cac561c427643286f8f4e1"
+      },
+      "token0Price": 2.938956807585585e-39,
+      "token1Price": 3.402567868363881e+38,
+      "totalValueLockedUSD": 0,
+      "totalValueLockedToken0": 1.2e-17,
+      "totalValueLockedToken1": 100.17355582382065,
+      "volumeUSD": 0,
+      "txCount": 14,
+      "approximateAPR": 0
+    },
+    {
+      "id": "0x208d563484603a1fc052855213abcb0c42439ee8",
+      "createdAt": "2024-07-30T15:46:12.000Z",
+      "fee": 0.2696,
+      "token0": {
+        "symbol": "OORTG1",
+        "name": "OORTG1",
+        "id": "0xec31f64f50614c73278d36c56205cdfcc7305ef2"
+      },
+      "token1": {
+        "symbol": "OORTG2",
+        "name": "OORTG2",
+        "id": "0xfb8a9ed40e23b2253db27a2a6facf6d8e3643f2b"
+      },
+      "token0Price": 3.4025678654032522e+38,
+      "token1Price": 2.938956810142818e-39,
+      "totalValueLockedUSD": 0,
+      "totalValueLockedToken0": 3.4145628341027,
+      "totalValueLockedToken1": 1e-18,
+      "volumeUSD": 0,
+      "txCount": 7,
+      "approximateAPR": 0
+    }
+  ]
+}

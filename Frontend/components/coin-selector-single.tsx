@@ -11,21 +11,20 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 
 // Sample top coins data
 const topCoins = [
-  { value: "btc", label: "Bitcoin (BTC)", marketCap: "1.15T", apr: "5.2%" },
-  { value: "eth", label: "Ethereum (ETH)", marketCap: "352.1B", apr: "4.8%" },
-  { value: "bnb", label: "Binance Coin (BNB)", marketCap: "62.8B", apr: "7.5%" },
-  { value: "sol", label: "Solana (SOL)", marketCap: "58.2B", apr: "9.2%" },
-  { value: "xrp", label: "XRP (XRP)", marketCap: "34.5B", apr: "3.9%" },
-  { value: "ada", label: "Cardano (ADA)", marketCap: "15.2B", apr: "5.7%" },
-  { value: "avax", label: "Avalanche (AVAX)", marketCap: "14.8B", apr: "11.3%" },
-  { value: "doge", label: "Dogecoin (DOGE)", marketCap: "14.1B", apr: "2.8%" },
-  { value: "dot", label: "Polkadot (DOT)", marketCap: "9.8B", apr: "8.4%" },
-  { value: "link", label: "Chainlink (LINK)", marketCap: "9.2B", apr: "6.1%" },
-  { value: "matic", label: "Polygon (MATIC)", marketCap: "8.7B", apr: "10.5%" },
-  { value: "uni", label: "Uniswap (UNI)", marketCap: "5.9B", apr: "12.7%" },
-  { value: "atom", label: "Cosmos (ATOM)", marketCap: "3.8B", apr: "15.2%" },
-  { value: "aave", label: "Aave (AAVE)", marketCap: "1.9B", apr: "8.9%" },
-  { value: "mkr", label: "Maker (MKR)", marketCap: "1.7B", apr: "7.3%" },
+  { value: "wglmr", label: "Wrapped GLMR (WGLMR)", marketCap: "267.5M", apr: "11.2%" },
+  { value: "xcdot", label: "xcDOT (xcDOT)", marketCap: "158.3M", apr: "8.4%" },
+  { value: "xcusdt", label: "xcUSDT (xcUSDT)", marketCap: "98.7M", apr: "5.6%" },
+  { value: "xcusdc", label: "xcUSDC (xcUSDC)", marketCap: "87.2M", apr: "5.3%" },
+  { value: "usdc", label: "USDC (USDC)", marketCap: "103.5M", apr: "5.1%" },
+  { value: "xcmanta", label: "xcMANTA (xcMANTA)", marketCap: "42.1M", apr: "9.7%" },
+  { value: "stella", label: "STELLA (STELLA)", marketCap: "35.6M", apr: "12.5%" },
+]
+
+// Coins for deposit - only stable coins
+const depositCoins = [
+  { value: "xcdot", label: "xcDOT (xcDOT)", marketCap: "158.3M", apr: "8.4%" },
+  { value: "xcusdt", label: "xcUSDT (xcUSDT)", marketCap: "98.7M", apr: "5.6%" },
+  { value: "xcusdc", label: "xcUSDC (xcUSDC)", marketCap: "87.2M", apr: "5.3%" },
 ]
 
 // Sample all coins data (would be fetched from CoinGecko API in a real app)
@@ -39,7 +38,7 @@ interface CoinSelectorSingleProps {
 
 export default function CoinSelectorSingle({ showAllCoins, selectedCoin, onSelectCoin }: CoinSelectorSingleProps) {
   const [open, setOpen] = useState(false)
-  const coins = showAllCoins ? allCoins : topCoins
+  const coins = showAllCoins ? allCoins : depositCoins
   
   const selectedCoinData = selectedCoin ? coins.find((c) => c.value === selectedCoin) : null
 

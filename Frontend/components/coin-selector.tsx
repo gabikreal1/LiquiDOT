@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Check, ChevronsUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -12,34 +12,40 @@ import { Badge } from "@/components/ui/badge"
 
 // Sample top coins data
 const topCoins = [
-  { value: "btc", label: "Bitcoin (BTC)", marketCap: "1.15T", apr: "5.2%" },
-  { value: "eth", label: "Ethereum (ETH)", marketCap: "352.1B", apr: "4.8%" },
-  { value: "bnb", label: "Binance Coin (BNB)", marketCap: "62.8B", apr: "7.5%" },
-  { value: "sol", label: "Solana (SOL)", marketCap: "58.2B", apr: "9.2%" },
-  { value: "xrp", label: "XRP (XRP)", marketCap: "34.5B", apr: "3.9%" },
-  { value: "ada", label: "Cardano (ADA)", marketCap: "15.2B", apr: "5.7%" },
-  { value: "avax", label: "Avalanche (AVAX)", marketCap: "14.8B", apr: "11.3%" },
-  { value: "doge", label: "Dogecoin (DOGE)", marketCap: "14.1B", apr: "2.8%" },
-  { value: "dot", label: "Polkadot (DOT)", marketCap: "9.8B", apr: "8.4%" },
-  { value: "link", label: "Chainlink (LINK)", marketCap: "9.2B", apr: "6.1%" },
-  { value: "matic", label: "Polygon (MATIC)", marketCap: "8.7B", apr: "10.5%" },
-  { value: "uni", label: "Uniswap (UNI)", marketCap: "5.9B", apr: "12.7%" },
-  { value: "atom", label: "Cosmos (ATOM)", marketCap: "3.8B", apr: "15.2%" },
-  { value: "aave", label: "Aave (AAVE)", marketCap: "1.9B", apr: "8.9%" },
-  { value: "mkr", label: "Maker (MKR)", marketCap: "1.7B", apr: "7.3%" },
+  { value: "wglmr", label: "Wrapped GLMR (WGLMR)", marketCap: "267.5M", apr: "11.2%" },
+  { value: "xcdot", label: "xcDOT (xcDOT)", marketCap: "158.3M", apr: "8.4%" },
+  { value: "xcusdt", label: "xcUSDT (xcUSDT)", marketCap: "98.7M", apr: "5.6%" },
+  { value: "xcusdc", label: "xcUSDC (xcUSDC)", marketCap: "87.2M", apr: "5.3%" },
+  { value: "usdc", label: "USDC (USDC)", marketCap: "103.5M", apr: "5.1%" },
+  { value: "xcmanta", label: "xcMANTA (xcMANTA)", marketCap: "42.1M", apr: "9.7%" },
+  { value: "stella", label: "STELLA (STELLA)", marketCap: "35.6M", apr: "12.5%" },
 ]
 
 // Sample all coins data (would be fetched from CoinGecko API in a real app)
 const allCoins = [...topCoins]
 
-export default function CoinSelector({ showAllCoins }: { showAllCoins: boolean }) {
+interface CoinSelectorProps {
+  showAllCoins: boolean;
+  onSelectCoins?: (coins: string[]) => void;
+}
+
+export default function CoinSelector({ showAllCoins, onSelectCoins }: CoinSelectorProps) {
   const [open, setOpen] = useState(false)
   const [selectedCoins, setSelectedCoins] = useState<string[]>([])
   const coins = showAllCoins ? allCoins : topCoins
 
   const toggleCoin = (value: string) => {
+    const coin = coins.find(c => c.value === value);
+    // Extract just the symbol part from label (e.g., "WGLMR" from "Wrapped GLMR (WGLMR)")
+    let symbol = coin?.label.match(/\(([^)]+)\)/)?.[1] || value.toUpperCase();
+    
+    // Ensure 'xc' is lowercase if the symbol starts with 'XC'
+    if (symbol.toUpperCase().startsWith('XC')) {
+      symbol = 'xc' + symbol.substring(2);
+    }
+    
     setSelectedCoins((current) =>
-      current.includes(value) ? current.filter((item) => item !== value) : [...current, value],
+      current.includes(symbol) ? current.filter((item) => item !== symbol) : [...current, symbol],
     )
   }
 
@@ -47,6 +53,13 @@ export default function CoinSelector({ showAllCoins }: { showAllCoins: boolean }
     e.stopPropagation()
     setSelectedCoins((current) => current.filter((item) => item !== value))
   }
+  
+  // Update parent component when selected coins change
+  useEffect(() => {
+    if (onSelectCoins) {
+      onSelectCoins(selectedCoins);
+    }
+  }, [selectedCoins, onSelectCoins]);
 
   return (
     <div className="space-y-4">
@@ -60,21 +73,22 @@ export default function CoinSelector({ showAllCoins }: { showAllCoins: boolean }
           >
             {selectedCoins.length > 0 ? (
               <div className="flex flex-wrap gap-1">
-                {selectedCoins.map((coin) => {
-                  const selectedCoin = coins.find((c) => c.value === coin)
+                {selectedCoins.map((coinSymbol) => {
+                  // Find the coin that has this symbol in its label
+                  const coinWithSymbol = coins.find((c) => c.label.includes(`(${coinSymbol})`));
                   return (
                     <Badge
-                      key={coin}
+                      key={coinSymbol}
                       variant="secondary"
                       className="mr-1 mb-1 bg-violet-100 text-violet-700 hover:bg-violet-200"
                     >
-                      {selectedCoin?.label.split(" ")[0]}
-                      <button
-                        className="ml-1 rounded-full outline-none focus:ring-2 focus:ring-violet-400"
-                        onClick={(e) => removeCoin(coin, e)}
+                      {coinSymbol}
+                      <span
+                        className="ml-1 rounded-full outline-none focus:ring-2 focus:ring-violet-400 cursor-pointer"
+                        onClick={(e) => removeCoin(coinSymbol, e)}
                       >
                         ×
-                      </button>
+                      </span>
                     </Badge>
                   )
                 })}
@@ -91,28 +105,33 @@ export default function CoinSelector({ showAllCoins }: { showAllCoins: boolean }
             <CommandList>
               <CommandEmpty>No coin found.</CommandEmpty>
               <CommandGroup className="max-h-64 overflow-auto">
-                {coins.map((coin) => (
-                  <CommandItem
-                    key={coin.value}
-                    value={coin.value}
-                    onSelect={() => toggleCoin(coin.value)}
-                    className="text-gray-700 hover:bg-violet-50 aria-selected:bg-violet-100"
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4 text-violet-500",
-                        selectedCoins.includes(coin.value) ? "opacity-100" : "opacity-0",
-                      )}
-                    />
-                    <div className="flex justify-between w-full">
-                      <span>{coin.label}</span>
-                      <div className="text-xs text-gray-500">
-                        <span className="mr-2">MC: {coin.marketCap}</span>
-                        <span>APR: {coin.apr}</span>
+                {coins.map((coin) => {
+                  // Extract the symbol from the label (e.g., "WGLMR" from "Wrapped GLMR (WGLMR)")
+                  const symbol = coin.label.match(/\(([^)]+)\)/)?.[1] || coin.value.toUpperCase();
+                  
+                  return (
+                    <CommandItem
+                      key={coin.value}
+                      value={coin.value}
+                      onSelect={() => toggleCoin(coin.value)}
+                      className="text-gray-700 hover:bg-violet-50 aria-selected:bg-violet-100"
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4 text-violet-500",
+                          selectedCoins.includes(symbol) ? "opacity-100" : "opacity-0",
+                        )}
+                      />
+                      <div className="flex justify-between w-full">
+                        <span>{coin.label}</span>
+                        <div className="text-xs text-gray-500">
+                          <span className="mr-2">MC: {coin.marketCap}</span>
+                          <span>APR: {coin.apr}</span>
+                        </div>
                       </div>
-                    </div>
-                  </CommandItem>
-                ))}
+                    </CommandItem>
+                  )
+                })}
               </CommandGroup>
             </CommandList>
           </Command>
