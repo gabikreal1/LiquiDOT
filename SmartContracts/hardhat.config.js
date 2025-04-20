@@ -35,7 +35,7 @@ module.exports = {
       url: "https://westend-asset-hub-eth-rpc.polkadot.io",
       chainId: 420420421,
       accounts: [ASSET_PRIVATE_KEY],
-      gasPrice: 1000000000
+      gasPrice: 100
     },
     // Local development
     hardhat: {
@@ -43,7 +43,7 @@ module.exports = {
     }
   },
   paths: {
-    sources: "./contracts",
+    sources: "./contracts2",
     tests: "./test",
     cache: "./cache",
     artifacts: "./artifacts"
