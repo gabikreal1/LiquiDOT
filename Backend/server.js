@@ -1,11 +1,16 @@
-const express = require('express');
-const cors = require('cors');
-const fs = require('fs');
-const path = require('path');
+import express from 'express';
+import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get __dirname equivalent in ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Import functions from existing files
-const { readAndSanitizePoolData } = require('./readPoolDataModule');
-const { makeInvestmentDecisions } = require('./poolInvestmentDecisionModule');
+import { readAndSanitizePoolData } from './readPoolDataModule.js';
+import { makeInvestmentDecisions } from './poolInvestmentDecisionModule.js';
 
 // File paths
 const POOL_DATA_FILE = './sanitizedPoolData.json';

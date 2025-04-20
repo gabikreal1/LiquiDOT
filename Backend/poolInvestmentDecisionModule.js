@@ -1,4 +1,9 @@
-const fs = require('fs');
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // File paths
 const USER_PREFERENCES_FILE = './userPreferences.json';
@@ -49,7 +54,7 @@ function loadPoolData() {
  * @param {Object} poolData Pool data
  * @returns {Array|null} Array of investment decisions or null if error
  */
-function makeInvestmentDecisions(preferences, poolData) {
+export function makeInvestmentDecisions(preferences, poolData) {
   if (!preferences || !poolData || !poolData.pools) {
     console.error('Error: Invalid preferences or pool data');
     return null;
@@ -163,7 +168,7 @@ function saveInvestmentDecisions(decisions) {
 }
 
 // Run the application if this file is directly executed
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   console.log('Starting investment decision process...');
   
   // Load user preferences
@@ -205,10 +210,5 @@ if (require.main === module) {
   }
 }
 
-// Export functions for use in other modules
-module.exports = {
-  loadUserPreferences,
-  loadPoolData,
-  makeInvestmentDecisions,
-  saveInvestmentDecisions
-}; 
+// Export the loadUserPreferences and loadPoolData functions
+export { loadUserPreferences, loadPoolData }; 

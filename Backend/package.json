@@ -1,17 +1,37 @@
 {
-  "name": "ailiquidity-contract-interaction",
+  "name": "liquidity-pool-investment-backend",
   "version": "1.0.0",
-  "description": "Examples for interacting with AILiquidityProvider smart contracts on Polkadot parachains",
-  "main": "interact-with-contract.js",
+  "main": "server.js",
   "type": "module",
+
+
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "example": "node example.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "read-preferences": "node index.js",
+    "process-pool-data": "node readPoolDataModule.js",
+    "make-decisions": "node poolInvestmentDecisionModule.js",
+    "full-process": "node readPoolDataModule.js && node poolInvestmentDecisionModule.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "dependencies": {
-    "dotenv": "^16.4.1",
-    "ethers": "^6.10.0"
-  },
+  "keywords": [
+    "defi",
+    "liquidity",
+    "investment",
+    "polkadot"
+  ],
   "author": "",
-  "license": "MIT"
+  "license": "ISC",
+  "description": "Backend for automated liquidity pool investments",
+  "dependencies": {
+    "@polkadot/api": "^15.9.2",
+    "@polkadot/api-contract": "^15.9.2",
+    "cors": "^2.8.5",
+    "ethers": "^5.7.2",
+    "express": "^4.18.2",
+    "fs": "^0.0.1-security"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
 }
