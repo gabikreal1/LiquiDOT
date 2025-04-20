@@ -5,6 +5,7 @@ require("dotenv").config();
 const MOON_PRIVATE_KEY = process.env.MOON || "0x0000000000000000000000000000000000000000000000000000000000000000";
 const ASSET_PRIVATE_KEY = process.env.ASSET || "0x0000000000000000000000000000000000000000000000000000000000000000";
 
+
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   contractSizer: {
@@ -30,12 +31,19 @@ module.exports = {
       accounts: [MOON_PRIVATE_KEY],
       gasPrice: 1000000000
     },
+    moonbeam: {
+      url: "https://rpc.api.moonbeam.network",
+      chainId: 1284,
+      accounts: [process.env.BEAM_PRIVATE_KEY],
+      gasPrice: 35000000000
+    },
     // Asset Hub (Westmint) Testnet
     westmint: {
       url: "https://westend-asset-hub-eth-rpc.polkadot.io",
       chainId: 420420421,
       accounts: [ASSET_PRIVATE_KEY],
-      gasPrice: 100
+      gasPrice: 1000000000,
+      
     },
     // Local development
     hardhat: {
@@ -43,7 +51,7 @@ module.exports = {
     }
   },
   paths: {
-    sources: "./contracts2",
+    sources: "./contracts",
     tests: "./test",
     cache: "./cache",
     artifacts: "./artifacts"

@@ -16,14 +16,13 @@ async function main() {
   }
 
   // Initial XCM fee amount - you may want to adjust this based on current network conditions
-  const initialXcmFeeAmount = ethers.utils.parseEther("0.1"); // 0.1 native token as fee
+  const initialXcmFeeAmount = 100; // 0.1 native token as fee
 
   console.log(`Using XCM Proxy address: ${proxyAddress}`);
   console.log(`Initial XCM fee amount: ${initialXcmFeeAmount}`);
 
   // Deploy the contract
   const liquidityProvider = await AILiquidityProvider.deploy(proxyAddress, initialXcmFeeAmount);
-  await liquidityProvider.deployed();
 
   console.log(`AILiquidityProvider deployed to Asset Hub at: ${liquidityProvider.address}`);
   console.log(`Run this command to save the Asset Hub contract address to your .env file:`);
