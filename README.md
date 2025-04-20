@@ -27,8 +27,8 @@ CrossLiquidity Protocol combines blockchain technology with advanced optimizatio
 
 ## 🎬 Project Walkthrough
 
-[![Project Walkthrough](https://img.youtube.com/vi/ZLKR4zE1o6U/0.jpg)](https://youtu.be/ZLKR4zE1o6U)
-[Click here for a complete project walkthrough](https://youtu.be/ZLKR4zE1o6U)
+* Smart Contract walkthrough: https://youtu.be/uR1Q-MbCqyc
+* Platform walthrough: https://youtu.be/kveBw8GVIVk 
 
 In this walkthrough video, we explain:
 - Project architecture and design decisions
