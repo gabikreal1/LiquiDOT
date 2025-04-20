@@ -45,6 +45,14 @@ module.exports = {
       gasPrice: 1000000000,
       
     },
+
+    assethub:{
+      url: "https://asset-hub-eth-rpc.polkadot.io",
+      chainId: 420420419,
+      accounts: [ASSET_PRIVATE_KEY1],
+      gasPrice: 1000000000,
+
+    },
     // Local development
     hardhat: {
       chainId: 31337
