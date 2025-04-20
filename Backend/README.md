@@ -1,267 +1,337 @@
-# Automated Liquidity Pool Investment Backend
+# CrossLiquidity Provider Backend
 
-A Node.js backend with REST API that reads pool data, analyzes it, and makes investment decisions for liquidity pools based on user preferences received from the frontend.
+This directory contains the JavaScript utilities for interacting with the CrossLiquidity smart contracts on Polkadot's EVM parachains (Moonbeam/Moonbase Alpha).
 
-## Project Structure
+## Files
 
-- `server.js` - Main server file with API endpoints
-- `readPoolDataModule.js` - Module to read and sanitize pool data from raw JSON file
-- `poolInvestmentDecisionModule.js` - Module to make investment decisions based on pool data and user preferences
-- `data.json` - Raw pool data from the blockchain/protocol
-- `sanitizedPoolData.json` - Cleaned and processed pool data
-- `decisions/` - Folder containing individual investment decision files
+- `interact-with-contract.js` - Main interaction examples for basic contract functions
+- `liquidity-swapper.js` - Advanced examples for token swapping functionality
+- `example.js` - Example usage showing how to interact with the contracts
+- `.env.example` - Example environment variable configuration
 
-## API Endpoints
-
-### GET /api/health
-Health check endpoint to verify the server is running.
-
-**Response**
-```json
-{
-  "status": "ok",
-  "message": "Server is running"
-}
-```
-
-### GET /api/pools
-Returns a list of all available liquidity pools with their details.
-
-**Response**
-```json
-{
-  "success": true,
-  "data": {
-    "pools": [
-      {
-        "id": "0xb13b281503f6ec8a837ae1a21e86a9cae368fcc5",
-        "createdAt": "2023-01-20T12:40:04.000Z",
-        "fee": 0.3004,
-        "token0": {
-          "symbol": "WGLMR",
-          "name": "Wrapped GLMR",
-          "id": "0xacc15dc74880c9944775448304b263d191c6077f"
-        },
-        "token1": {
-          "symbol": "xcDOT",
-          "name": "xcDOT",
-          "id": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
-        },
-        "token0Price": 55.62172608753225,
-        "token1Price": 0.01797858625290222,
-        "totalValueLockedUSD": 129307.67992424834,
-        "totalValueLockedToken0": 1009025.4688181674,
-        "totalValueLockedToken1": 16810.10985544,
-        "volumeUSD": 316748313.0822657,
-        "txCount": 513178,
-        "approximateAPR": 268585.6366502277
-      }
-      // ... more pools
-    ]
-  }
-}
-```
-
-### GET /api/decisions
-Returns a list of all previously saved investment decisions.
-
-**Response**
-```json
-{
-  "success": true,
-  "data": [
-    "decision_2025-04-20T08-35-12.000Z_0x123456.json",
-    "decision_2025-04-19T14-22-05.000Z_0xabcdef.json"
-  ]
-}
-```
-
-### GET /api/decisions/:filename
-Returns a specific investment decision by filename.
-
-**Response**
-```json
-{
-  "success": true,
-  "data": {
-    "timestamp": "2025-04-20T08:35:12.000Z",
-    "userPreferences": {
-      "coinLimit": 15,
-      "minRequiredApr": 5,
-      "minMarketCap": 1000000,
-      "stopLossLevel": 10,
-      "takeProfitLevel": 25,
-      "riskStrategy": "highestMarketCap",
-      "userAddress": "0x1234567890abcdef1234567890abcdef12345678"
-    },
-    "decisions": [
-      // ... investment decisions
-    ]
-  }
-}
-```
-
-### POST /api/get-investment-decisions
-Generates investment decisions based on user preferences.
-
-**Request Body:**
-```json
-{
-  "coinLimit": 5,
-  "minRequiredApr": 5,
-  "minMarketCap": 10000,
-  "stopLossLevel": 10,
-  "takeProfitLevel": 20,
-  "riskStrategy": "highestApr",
-  "userAddress": "0x123...",
-  "allowedCoins": ["WGLMR", "xcDOT", "xcUSDT", "xcUSDC", "USDC", "xcMANTA", "STELLA"]
-}
-```
-
-**Parameters:**
-- `coinLimit`: Maximum number of pools to include (required)
-- `minRequiredApr`: Minimum APR percentage required (required)
-- `minMarketCap`: Minimum market cap required in USD (required)
-- `stopLossLevel`: Stop loss percentage (required)
-- `takeProfitLevel`: Take profit percentage (required)
-- `riskStrategy`: Strategy for selecting pools - "highestApr" or "highestMarketCap" (required)
-- `userAddress`: User wallet address (required)
-- `allowedCoins`: (Optional) Array of coin symbols to filter by. If provided, only pools that include at least one of these coins will be considered. If empty or not provided, all pools are considered.
-
-**Note:**
-When `allowedCoins` is provided, the backend will only include pools where at least one of the tokens in the pool matches a symbol from the allowedCoins list.
-
-**Response**
-```json
-{
-  "success": true,
-  "data": {
-    "filename": "decision_2025-04-20T08-35-12.000Z_0x123456.json",
-    "timestamp": "2025-04-20T08:35:12.000Z",
-    "userPreferences": {
-      "coinLimit": 15,
-      "minRequiredApr": 5,
-      "minMarketCap": 1000000,
-      "stopLossLevel": 10,
-      "takeProfitLevel": 25,
-      "riskStrategy": "highestMarketCap",
-      "userAddress": "0x1234567890abcdef1234567890abcdef12345678"
-    },
-    "decisions": [
-      {
-        "poolId": "0xb13b281503f6ec8a837ae1a21e86a9cae368fcc5",
-        "pairName": "WGLMR/xcDOT",
-        "token0": {
-          "symbol": "WGLMR",
-          "address": "0xacc15dc74880c9944775448304b263d191c6077f"
-        },
-        "token1": {
-          "symbol": "xcDOT",
-          "address": "0xffffffff1fcacbd218edc0eba20fc2308c778080"
-        },
-        "approximateAPR": 268585.6366502277,
-        "totalValueLockedUSD": 129307.67992424834,
-        "stopLoss": 10,
-        "takeProfit": 25,
-        "proportion": 11.231829072712506
-      }
-      // ... more decisions
-    ]
-  }
-}
-```
-
-## How It Works
-
-### 1. Receiving User Preferences
-
-The system receives user preferences via an API endpoint from the frontend:
-- `coinLimit`: Maximum number of pools to invest in
-- `minRequiredApr`: Minimum APR requirement
-- `minMarketCap`: Minimum market cap requirement
-- `stopLossLevel`: Stop loss percentage
-- `takeProfitLevel`: Take profit percentage
-- `riskStrategy`: Strategy for investment (highestMarketCap or highestApr)
-- `userAddress`: User's blockchain address
-
-### 2. Processing Pool Data
-
-The system reads raw pool data from the blockchain/protocol and:
-- Extracts essential information about each pool
-- Calculates approximate APR based on volume and TVL
-- Sorts pools by APR
-- Saves cleaned data to a sanitized file
-- Makes this data available via API endpoint
-
-### 3. Making Investment Decisions
-
-Based on user preferences and sanitized pool data, the system:
-- Filters pools by minimum APR
-- Removes pools with unrealistic APRs or very low liquidity
-- Applies user's risk strategy (highest market cap or highest APR)
-- Selects top pools within coin limit
-- Calculates investment proportions based on pool metrics
-- Sets stop loss and take profit levels
-- Saves the investment decision to a unique file in the decisions folder
-- Returns investment decisions via API endpoint
-
-### 4. Storage of Investment Decisions
-
-Each investment decision is:
-- Saved as a separate JSON file in the `decisions/` folder
-- Named with timestamp and a portion of the user's address
-- Available for retrieval later via the GET endpoints
-
-## Installation and Usage
+## Setup
 
 1. Install dependencies:
-   ```
-   npm install
-   ```
 
-2. Start the server:
-   ```
-   npm start
-   ```
-
-   For development with auto-restart:
-   ```
-   npm run dev
-   ```
-
-3. The server will run on port 3001 by default. You can change this by setting the PORT environment variable.
-
-## Example API Usage
-
-### Get investment decisions
 ```bash
-curl -X POST http://localhost:3001/api/get-investment-decisions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "coinLimit": 15,
-    "maxDecisions": 5,
-    "minRequiredApr": 5,
-    "minMarketCap": 1000000,
-    "stopLossLevel": 10,
-    "takeProfitLevel": 25,
-    "riskStrategy": "highestMarketCap",
-    "userAddress": "0x1234567890abcdef1234567890abcdef12345678"
-  }'
+npm install
 ```
 
-### List previous decisions
+2. Create an environment file for your secrets:
+
 ```bash
-curl http://localhost:3001/api/decisions
+# Copy the example file
+cp .env.example .env
+
+# Edit the .env file with your actual values
+nano .env  # or use any text editor
 ```
 
-### Get a specific decision
-```bash
-curl http://localhost:3001/api/decisions/decision_2025-04-20T08-35-12.000Z_0x123456.json
+3. Configure your environment variables in the `.env` file:
+
+```
+# RPC endpoint (defaults to Moonbase Alpha if not specified)
+RPC_URL=https://rpc.api.moonbase.moonbeam.network
+
+# Contract addresses
+PROVIDER_CONTRACT_ADDRESS=0x123...  # Your LiquidityProvider address
+ROUTER_CONTRACT_ADDRESS=0x456...    # Your LiquidityRouter address
+
+# Your private key (keep this secret!)
+PRIVATE_KEY=0x789...
+
+# Example token addresses for testing
+TOKEN0_ADDRESS=0xAcc15dC74880C9944775448304B263D191c6077F  # WGLMR on Moonbase Alpha
+TOKEN1_ADDRESS=0xFfFFfFff1FcaCBd218EDc0EbA20Fc2308C778080  # xcDOT on Moonbase Alpha
+POOL_ADDRESS=0xabc...
 ```
 
-## Next Steps
+⚠️ **Security Warning**: 
+- Never commit your `.env` file to version control
+- Add `.env` to your `.gitignore` file
+- Consider using a vault service for production deployments
 
-- Integrate with smart contracts to execute investments
-- Implement stop loss and take profit monitoring
-- Add automated rebalancing
-- Create a frontend interface for user preference input and visualization 
+## Running the Code
+
+### Running the Example Script
+
+The easiest way to test that everything is set up correctly is to run the example script:
+
+```bash
+# Make sure you're in the Backend directory
+node example.js
+```
+
+This script will:
+1. Connect to the contracts using your environment variables
+2. Get basic contract information
+3. Check token balances if TOKEN0_ADDRESS is set
+4. Show an example of how to deposit tokens (commented out by default)
+
+### Creating Your Own Scripts
+
+You can create your own scripts by importing the functions from the utility files:
+
+```javascript
+// myScript.js
+import { ethers } from 'ethers';
+import { 
+  getContractInfo, 
+  addLiquidity,
+  depositTokens 
+} from './interact-with-contract.js';
+
+async function main() {
+  try {
+    // Your custom logic here
+    const info = await getContractInfo();
+    console.log('Contract info:', info);
+    
+    // Example: Add liquidity (uncomment and modify as needed)
+    /*
+    const poolAddress = process.env.POOL_ADDRESS;
+    const token0 = process.env.TOKEN0_ADDRESS;
+    const token1 = process.env.TOKEN1_ADDRESS;
+    const rangeSize = 2; // WIDE range
+    const liquidityAmount = ethers.parseUnits('1', 18);
+    
+    await addLiquidity(poolAddress, token0, token1, rangeSize, liquidityAmount);
+    */
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+main();
+```
+
+Then run your script:
+
+```bash
+node myScript.js
+```
+
+## Available Functions
+
+### Basic Contract Interaction (`interact-with-contract.js`)
+
+- `getContractInfo()` - Get basic information about the contract
+- `getTokenBalance(tokenAddress)` - Get token balance in the contract
+- `depositTokens(tokenAddress, amount)` - Deposit tokens to the liquidity provider
+- `withdrawTokens(tokenAddress, amount)` - Withdraw tokens from the liquidity provider
+- `transferAssetsToMoonbeam(tokenAddress, amount)` - Transfer assets to Moonbeam via XCM
+- `addLiquidity(poolAddress, token0Address, token1Address, rangeSize, liquidityDesired)` - Add liquidity to a pool
+- `removeLiquidity(poolAddress, bottomTick, topTick, liquidity)` - Remove liquidity from a pool
+- `batchDeposit(tokenAddresses, amounts)` - Batch deposit tokens via the router
+- `batchWithdraw(tokenAddresses, amounts)` - Batch withdraw tokens via the router
+
+### Advanced Swapping (`liquidity-swapper.js`)
+
+- `swapExactInputSingle(tokenIn, tokenOut, amountIn, slippage)` - Swap exact input amount of tokens
+- `swapExactOutputSingle(tokenIn, tokenOut, amountOut, slippage)` - Swap for exact output amount of tokens
+- `swapExactInputMultihop(tokensPath, fees, amountIn, slippage)` - Multi-hop swap with exact input
+- `swapExactOutputMultihop(tokensPath, fees, amountOut, slippage)` - Multi-hop swap for exact output
+
+## Usage Examples
+
+### Basic Contract Information
+
+```javascript
+// Import functions
+import { getContractInfo } from './interact-with-contract.js';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
+
+async function main() {
+  try {
+    // Get basic contract info
+    const info = await getContractInfo();
+    console.log('Contract info:', info);
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+main();
+```
+
+### Token Operations
+
+```javascript
+import { depositTokens, withdrawTokens, getTokenBalance } from './interact-with-contract.js';
+import { ethers } from 'ethers';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
+
+async function main() {
+  try {
+    const tokenAddress = process.env.TOKEN0_ADDRESS;
+    if (!tokenAddress) {
+      console.error('Error: TOKEN0_ADDRESS not set in environment variables');
+      return;
+    }
+    
+    const amount = ethers.parseUnits('10', 18); // 10 tokens with 18 decimals
+    console.log(`Working with token address: ${tokenAddress}`);
+    
+    // Check balance before operations
+    const initialBalance = await getTokenBalance(tokenAddress);
+    console.log(`Initial balance: ${ethers.formatUnits(initialBalance, 18)} tokens`);
+    
+    // Deposit tokens
+    console.log(`Depositing ${ethers.formatUnits(amount, 18)} tokens...`);
+    await depositTokens(tokenAddress, amount);
+    
+    // Check balance after deposit
+    const balanceAfterDeposit = await getTokenBalance(tokenAddress);
+    console.log(`Balance after deposit: ${ethers.formatUnits(balanceAfterDeposit, 18)} tokens`);
+    
+    // Withdraw tokens
+    console.log(`Withdrawing ${ethers.formatUnits(amount, 18)} tokens...`);
+    await withdrawTokens(tokenAddress, amount);
+    
+    // Check final balance
+    const finalBalance = await getTokenBalance(tokenAddress);
+    console.log(`Final balance: ${ethers.formatUnits(finalBalance, 18)} tokens`);
+  } catch (error) {
+    console.error('Error in token operations:', error);
+  }
+}
+
+main();
+```
+
+### Adding Liquidity
+
+```javascript
+import { addLiquidity } from './interact-with-contract.js';
+import { ethers } from 'ethers';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
+
+async function main() {
+  try {
+    // Get values from environment variables
+    const poolAddress = process.env.POOL_ADDRESS;
+    const token0 = process.env.TOKEN0_ADDRESS;
+    const token1 = process.env.TOKEN1_ADDRESS;
+    
+    // Validate environment variables
+    if (!poolAddress || !token0 || !token1) {
+      console.error('Error: Required environment variables not set');
+      console.error('Please ensure POOL_ADDRESS, TOKEN0_ADDRESS, and TOKEN1_ADDRESS are set in your .env file');
+      return;
+    }
+    
+    const rangeSize = 2;               // 0=NARROW, 1=MEDIUM, 2=WIDE, 3=MAXIMUM
+    const liquidity = ethers.parseUnits('5', 18); // Amount of liquidity to add
+    
+    console.log(`Adding liquidity to pool: ${poolAddress}`);
+    console.log(`Token0: ${token0}`);
+    console.log(`Token1: ${token1}`);
+    console.log(`Range size: ${rangeSize} (WIDE)`);
+    console.log(`Liquidity amount: ${ethers.formatUnits(liquidity, 18)}`);
+    
+    await addLiquidity(poolAddress, token0, token1, rangeSize, liquidity);
+    console.log('Liquidity added successfully!');
+  } catch (error) {
+    console.error('Error adding liquidity:', error);
+  }
+}
+
+main();
+```
+
+### Token Swaps
+
+```javascript
+import { swapExactInputSingle, swapExactInputMultihop } from './liquidity-swapper.js';
+import { ethers } from 'ethers';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
+
+async function main() {
+  try {
+    // Get token addresses from environment variables
+    const WGLMR = process.env.TOKEN0_ADDRESS; // Assuming TOKEN0_ADDRESS is WGLMR
+    const DOT = process.env.TOKEN1_ADDRESS;   // Assuming TOKEN1_ADDRESS is DOT
+    const USDT = process.env.TOKEN2_ADDRESS;  // You would need to add this to your .env file
+    
+    // Validate environment variables
+    if (!WGLMR || !DOT) {
+      console.error('Error: Required environment variables not set');
+      console.error('Please ensure TOKEN0_ADDRESS and TOKEN1_ADDRESS are set in your .env file');
+      return;
+    }
+    
+    console.log('Token addresses:');
+    console.log(`WGLMR: ${WGLMR}`);
+    console.log(`DOT: ${DOT}`);
+    if (USDT) console.log(`USDT: ${USDT}`);
+    
+    // Simple swap
+    const amountIn = ethers.parseUnits('1', 18); // 1 WGLMR
+    console.log(`\nPerforming simple swap: ${ethers.formatUnits(amountIn)} WGLMR -> DOT with 5% slippage`);
+    await swapExactInputSingle(WGLMR, DOT, amountIn, 5); // 5% slippage
+    
+    // Multi-hop swap (only if USDT is defined)
+    if (USDT) {
+      console.log(`\nPerforming multi-hop swap: ${ethers.formatUnits(amountIn)} WGLMR -> DOT -> USDT with 5% slippage`);
+      const tokensPath = [WGLMR, DOT, USDT];
+      const fees = [3000, 500]; // Fee tiers in basis points
+      await swapExactInputMultihop(tokensPath, fees, amountIn, 5);
+    }
+    
+    console.log('\nSwap operations completed successfully!');
+  } catch (error) {
+    console.error('Error performing swaps:', error);
+  }
+}
+
+main();
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **"Error: PRIVATE_KEY environment variable is required"**
+   - Make sure you've created a `.env` file with your private key
+   - Ensure the private key is correctly formatted (with or without '0x' prefix)
+
+2. **"Error: PROVIDER_CONTRACT_ADDRESS environment variable is required"**
+   - Make sure you've set the contract addresses in your `.env` file
+
+3. **Connection Issues**
+   - Check that the RPC_URL in your `.env` file is correct and the node is accessible
+   - Try using a different RPC provider if you're experiencing connection timeouts
+
+4. **Transaction Errors**
+   - Ensure your wallet has sufficient funds for transactions
+   - Check that the contract addresses are correct and deployed on the network you're connecting to
+
+### Getting Help
+
+If you encounter issues not covered here, please:
+1. Check the contract's documentation
+2. Review the error messages carefully, they often provide useful information
+3. Open an issue on the GitHub repository with details about the problem
+
+## Note on Mock Functions
+
+Some functions in `liquidity-swapper.js` use mock implementations for price quotes:
+
+- `getEstimatedOutput`
+- `getEstimatedInput`
+- `getEstimatedMultihopOutput`
+- `getEstimatedMultihopInput`
+
+In a production environment, these should be replaced with actual price oracle calls or on-chain quote functions. 
