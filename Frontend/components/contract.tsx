@@ -6,9 +6,12 @@ import { parseUnits, formatUnits } from 'viem';
 import { xcmProxyAbi, erc20Abi } from '../lib/abis';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import CoinSelectorSingle from "@/components/coin-selector-single";
 import { toast } from 'sonner';
 import { motion } from "framer-motion";
+import Image from "next/image";
 
 // Contract addresses - replace with your actual addresses
 const XCM_PROXY_ADDRESS = "0x..."; // Your XCMProxy address on Moonbeam
@@ -21,29 +24,6 @@ export default function TokenManagement() {
   const [decimals, setDecimals] = useState(18);
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [backendStatus, setBackendStatus] = useState<'checking' | 'online' | 'offline'>('checking');
-  
-  // Check backend status (similar to how it's done in liquidity-manager)
-  useEffect(() => {
-    const checkBackendStatus = async () => {
-      try {
-        const response = await fetch('http://localhost:3001/api/health', {
-          method: 'GET',
-          signal: AbortSignal.timeout(3000) // 3 second timeout
-        });
-        if (response.ok) {
-          setBackendStatus('online');
-        } else {
-          setBackendStatus('offline');
-        }
-      } catch (error) {
-        console.error('Backend health check failed:', error);
-        setBackendStatus('offline');
-      }
-    };
-    
-    checkBackendStatus();
-  }, []);
   
   // Convert user input to token units with decimals
   useEffect(() => {
@@ -103,6 +83,36 @@ export default function TokenManagement() {
     error: depositError
   } = useWriteContract();
   
+  // Prepare withdraw
+  const { data: withdrawData, error: simulateWithdrawError } = useSimulateContract({
+    address: XCM_PROXY_ADDRESS as `0x${string}`,
+    abi: xcmProxyAbi,
+    functionName: 'withdraw',
+    args: [tokenAddress as `0x${string}`, BigInt(formattedAmount)],
+    query: {
+      enabled: !!tokenAddress && !!formattedAmount && formattedAmount !== '0',
+    }
+  });
+  
+  // Execute withdraw
+  const {
+    writeContract: withdrawToken,
+    isPending: isWithdrawingToken,
+    isSuccess: isWithdrawSuccess,
+    error: withdrawError
+  } = useWriteContract();
+  
+  // Read user's token balance in the proxy
+  const { data: proxyBalance } = useReadContract({
+    address: XCM_PROXY_ADDRESS as `0x${string}`,
+    abi: xcmProxyAbi,
+    functionName: 'getUserTokenBalance',
+    args: [address, tokenAddress as `0x${string}`],
+    query: {
+      enabled: !!address && !!tokenAddress,
+    }
+  });
+  
   // Read user's wallet balance
   const { data: walletBalance } = useReadContract({
     address: tokenAddress as `0x${string}`,
@@ -125,40 +135,38 @@ export default function TokenManagement() {
     }
   });
 
-  const handleDepositProcess = async () => {
+  const handleApprove = async () => {
     if (!address || !selectedToken || !amount) {
       toast.error("Please connect your wallet and fill in all required fields");
       return;
     }
     
-    if (backendStatus === 'offline') {
-      toast.error("Backend server is not running");
-      return;
-    }
-    
-    // First check if approval is needed
-    if (currentAllowance && BigInt(formattedAmount) > (currentAllowance as bigint)) {
-      setIsLoading(true);
-      try {
-        if (approveData) {
-          approveToken(approveData.request);
-          toast.success("Approving token transfer...");
-          // Note: In a production app, we would wait for the approval transaction to complete
-          // before initiating the deposit
-        }
-      } catch (error) {
-        console.error("Approval error:", error);
-        toast.error("Failed to approve token");
-        setIsLoading(false);
-        return;
+    setIsLoading(true);
+    try {
+      if (approveData) {
+        approveToken(approveData.request);
+        toast.success("Token approval initiated!");
       }
-    } else {
-      // If no approval needed, proceed with deposit
-      initiateDeposit();
+    } catch (error) {
+      console.error("Approval error:", error);
+      toast.error("Failed to approve token");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const initiateDeposit = async () => {
+  const handleDeposit = async () => {
+    if (!address || !selectedToken || !amount) {
+      toast.error("Please connect your wallet and fill in all required fields");
+      return;
+    }
+    
+    // Check if allowance is sufficient
+    if (currentAllowance && BigInt(formattedAmount) > (currentAllowance as bigint)) {
+      toast.error("Please approve tokens first");
+      return;
+    }
+    
     setIsLoading(true);
     try {
       if (depositData) {
@@ -172,13 +180,26 @@ export default function TokenManagement() {
       setIsLoading(false);
     }
   };
-  
-  // Call initiateDeposit when approval is successful
-  useEffect(() => {
-    if (isApproveSuccess) {
-      initiateDeposit();
+
+  const handleWithdraw = async () => {
+    if (!address || !selectedToken || !amount) {
+      toast.error("Please connect your wallet and fill in all required fields");
+      return;
     }
-  }, [isApproveSuccess]);
+    
+    setIsLoading(true);
+    try {
+      if (withdrawData) {
+        withdrawToken(withdrawData.request);
+        toast.success("Withdrawal initiated!");
+      }
+    } catch (error) {
+      console.error("Withdrawal error:", error);
+      toast.error("Failed to withdraw token");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <motion.div
@@ -187,71 +208,99 @@ export default function TokenManagement() {
       transition={{ duration: 0.5 }}
       className="w-full max-w-4xl mx-auto"
     >
-      <div className="bg-[#0e1219] p-8 rounded-lg">
-        {isConnected && (
-          <div className="mb-6 text-center text-violet-300">
-            Connected: {address ? `${address.substring(0, 6)}...${address.substring(address.length - 4)}` : ''}
+      <Card className="border-2 border-gray-200 shadow-lg">
+        <CardHeader className="border-b border-gray-200 pb-4">
+          <div className="flex items-center">
+            <div className="w-10 h-10 relative mr-3">
+              <Image src="/images/logo.png" alt="LiquiDOT Logo" fill className="object-contain" />
+            </div>
+            <CardTitle className="text-2xl text-gray-700">Token Management</CardTitle>
+          </div>
+          <CardDescription className="text-gray-500">Deposit and withdraw tokens from the XCM proxy</CardDescription>
+        </CardHeader>
+        
+        <CardContent className="space-y-5 pt-5">
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="token-selector" className="text-base font-medium mb-2 block">Select Token</Label>
+              <CoinSelectorSingle 
+                onSelectCoin={(coin) => setSelectedToken(coin)} 
+                selectedCoin={selectedToken}
+                showAllCoins={true}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="amount" className="text-base font-medium mb-2 block">Amount</Label>
+              <Input
+                id="amount"
+                type="text"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0.0"
+                className="w-full"
+              />
+            </div>
+            
+            <div className="flex flex-col md:flex-row md:space-x-4 md:items-center space-y-2 md:space-y-0 p-4 bg-gray-50 rounded-lg">
+              <div className="flex-1">
+                <p className="text-sm text-gray-500">Wallet Balance</p>
+                <p className="font-medium">{walletBalance ? formatUnits(walletBalance as bigint, decimals) : '0'}</p>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-gray-500">XCM Proxy Balance</p>
+                <p className="font-medium">{proxyBalance ? formatUnits(proxyBalance as bigint, decimals) : '0'}</p>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-gray-500">Current Allowance</p>
+                <p className="font-medium">{currentAllowance ? formatUnits(currentAllowance as bigint, decimals) : '0'}</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+        
+        <CardFooter className="border-t border-gray-200 pt-4 flex flex-wrap gap-2">
+          <Button 
+            onClick={handleApprove} 
+            disabled={!approveData || isApprovingToken || isLoading}
+            variant="outline"
+            className="flex-1"
+          >
+            {isApprovingToken ? 'Approving...' : 'Approve'}
+          </Button>
+          
+          <Button 
+            onClick={handleDeposit} 
+            disabled={!depositData || isDepositingToken || isLoading || (currentAllowance && BigInt(formattedAmount) > (currentAllowance as bigint)) as boolean}
+            variant="default"
+            className="flex-1 bg-gray-600 hover:bg-gray-700"
+          >
+            {isDepositingToken ? 'Depositing...' : 'Deposit'}
+          </Button>
+          
+          <Button 
+            onClick={handleWithdraw} 
+            disabled={!withdrawData || isWithdrawingToken || isLoading}
+            variant="destructive"
+            className="flex-1"
+          >
+            {isWithdrawingToken ? 'Withdrawing...' : 'Withdraw'}
+          </Button>
+        </CardFooter>
+        
+        {(approveError || depositError || withdrawError || simulateDepositError || simulateWithdrawError) && (
+          <div className="p-4 bg-red-50 text-red-700 rounded-b-lg">
+            {approveError?.message || depositError?.message || withdrawError?.message || 
+             simulateDepositError?.message || simulateWithdrawError?.message}
           </div>
         )}
-
-        <div className="space-y-6">
-          <div>
-            <label className="block text-white text-xl font-medium mb-2">
-              Deposit Amount
-            </label>
-            <Input
-              type="text"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.0"
-              className="w-full bg-[#1a202c] border-0 text-white h-14 text-lg"
-            />
+        
+        {(isApproveSuccess || isDepositSuccess || isWithdrawSuccess) && (
+          <div className="p-4 bg-green-50 text-green-700 rounded-b-lg">
+            Transaction successful!
           </div>
-          
-          <div>
-            <label className="block text-white text-xl font-medium mb-2">
-              Select Coin
-            </label>
-            <CoinSelectorSingle 
-              onSelectCoin={(coin) => setSelectedToken(coin)} 
-              selectedCoin={selectedToken}
-              showAllCoins={true}
-            />
-          </div>
-          
-          <div className="mt-8">
-            <h3 className="block text-white text-xl font-medium mb-4">
-              Deposit Tokens
-            </h3>
-            
-            <Button
-              onClick={handleDepositProcess}
-              disabled={!address || !selectedToken || !amount || isLoading || isApprovingToken || isDepositingToken}
-              className="w-full bg-purple-700 hover:bg-purple-800 text-white py-6 rounded-md text-lg"
-            >
-              {isLoading ? 'Processing...' : 'Deposit'}
-            </Button>
-          </div>
-          
-          {backendStatus === 'offline' && (
-            <div className="w-full p-4 bg-purple-700 text-white text-center rounded-md">
-              Backend offline
-            </div>
-          )}
-          
-          {(approveError || depositError || simulateDepositError) && (
-            <div className="p-4 bg-red-900/50 text-red-300 rounded-md">
-              {approveError?.message || depositError?.message || simulateDepositError?.message}
-            </div>
-          )}
-          
-          {isDepositSuccess && (
-            <div className="p-4 bg-green-900/50 text-green-300 rounded-md">
-              Deposit successful!
-            </div>
-          )}
-        </div>
-      </div>
+        )}
+      </Card>
     </motion.div>
   );
 }
