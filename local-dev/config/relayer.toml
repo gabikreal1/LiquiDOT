@@ -1,0 +1,54 @@
+[relayer]
+# Relayer configuration for local development
+log_level = "info"
+telemetry_url = "ws://127.0.0.1:8001/feed/websocket"
+
+[[relayer.chains]]
+name = "asset-hub-local"
+chain_id = 1000
+type = "Substrate"
+account = "//Alice"
+real_chain = false
+store_prefix = "asset-hub"
+
+[relayer.chains.connection]
+ws_url = "ws://asset-hub-local:9944"
+http_url = "http://asset-hub-local:9944"
+
+[[relayer.chains]]
+name = "moonbeam-local"
+chain_id = 1284
+type = "Substrate"
+account = "//Alice"
+real_chain = false
+store_prefix = "moonbeam"
+
+[relayer.chains.connection]
+ws_url = "ws://moonbeam-local:9945"
+http_url = "http://moonbeam-local:9945"
+
+# XCM message routing configuration
+[[relayer.routes]]
+from = "asset-hub-local"
+to = "moonbeam-local"
+xcm_version = 3
+
+# Asset transfer configuration
+[relayer.assets]
+# DOT token configuration
+[[relayer.assets.tokens]]
+symbol = "DOT"
+decimals = 10
+asset_id = "0x0000000000000000000000000000000000000000000000000000000000000000"
+
+# USDC token configuration
+[[relayer.assets.tokens]]
+symbol = "USDC"
+decimals = 6
+asset_id = "0x0000000000000000000000000000000000000000000000000000000000000001"
+
+# USDT token configuration
+[[relayer.assets.tokens]]
+symbol = "USDT"
+decimals = 6
+asset_id = "0x0000000000000000000000000000000000000000000000000000000000000002" 

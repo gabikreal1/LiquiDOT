@@ -56,6 +56,20 @@ module.exports = {
     // Local development
     hardhat: {
       chainId: 31337
+    },
+    // Local Asset Hub Node
+    assetHubLocal: {
+      url: "ws://localhost:9944",
+      chainId: 1000,
+      accounts: [MOON_PRIVATE_KEY],
+      gasPrice: 1000000000
+    },
+    // Local Moonbeam Node
+    moonbeamLocal: {
+      url: "ws://localhost:9945",
+      chainId: 1284,
+      accounts: [MOON_PRIVATE_KEY],
+      gasPrice: 1000000000
     }
   },
   paths: {

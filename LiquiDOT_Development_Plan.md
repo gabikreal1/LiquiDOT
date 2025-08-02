@@ -979,21 +979,21 @@ class BlockchainMonitor {
 
 ## 👥 Resource Allocation & Team Responsibilities
 
-### Gabriel Bandman (Lead Developer) - 40% Allocation
+### Gabriel  (Full-Stack Developer) - 60% Allocation
 **Primary Focus:** Smart Contract Development
 - Asset Hub Vault contract implementation
 - XCM Proxy contract development
 - Security reviews and optimization
 - Integration testing and debugging
 
-### Rashad Hosseini (Backend Engineer) - 40% Allocation
+### Rashad  (Backend Engineer) - 20% Allocation
 **Primary Focus:** Backend Infrastructure
 - NestJS service development
 - Database design and optimization
 - PolkadotJS integration
 - Monitoring and alerting systems
 
-### Fedir Maliarenko (Product/Frontend) - 20% Allocation
+### Theo (Product/Frontend) - 20% Allocation
 **Primary Focus:** Frontend & Product
 - NextJS dashboard development
 - User experience design

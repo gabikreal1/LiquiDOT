@@ -1,0 +1,105 @@
+version: '3.8'
+
+services:
+  asset-hub-local:
+    image: parity/polkadot:latest
+    container_name: asset-hub-local
+    ports:
+      - "9944:9944"
+      - "30333:30333"
+    volumes:
+      - ./local-nodes/asset-hub:/data
+    command: >
+      --chain asset-hub-polkadot-dev
+      --base-path /data
+      --rpc-cors all
+      --rpc-methods unsafe
+      --ws-external
+      --rpc-external
+      --unsafe-rpc-external
+      --unsafe-ws-external
+      --pruning archive
+      --validator
+      --name "AssetHub-Local"
+      --rpc-port 9944
+      --ws-port 9944
+    environment:
+      - RUST_LOG=info
+    networks:
+      - polkadot-network
+
+  moonbeam-local:
+    image: purestake/moonbeam:latest
+    container_name: moonbeam-local
+    ports:
+      - "9945:9945"
+      - "30334:30334"
+    volumes:
+      - ./local-nodes/moonbeam:/data
+    command: >
+      --chain moonbase-dev
+      --base-path /data
+      --rpc-cors all
+      --rpc-methods unsafe
+      --ws-external
+      --rpc-external
+      --unsafe-rpc-external
+      --unsafe-ws-external
+      --pruning archive
+      --validator
+      --name "Moonbeam-Local"
+      --rpc-port 9945
+      --ws-port 9945
+      --execution wasm
+      --wasm-execution compiled
+    environment:
+      - RUST_LOG=info
+    networks:
+      - polkadot-network
+
+  xcm-relayer:
+    image: parity/xcm-tools:latest
+    container_name: xcm-relayer-local
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./local-nodes/relayer:/data
+      - ./config/relayer.toml:/etc/relayer.toml
+    command: >
+      --config /etc/relayer.toml
+      --base-path /data
+    environment:
+      - RUST_LOG=info
+    networks:
+      - polkadot-network
+    depends_on:
+      - asset-hub-local
+      - moonbeam-local
+
+  postgres:
+    image: postgres:15
+    container_name: liquidot-postgres
+    environment:
+      POSTGRES_DB: liquidot_dev
+      POSTGRES_USER: liquidot_user
+      POSTGRES_PASSWORD: liquidot_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./local-nodes/postgres:/var/lib/postgresql/data
+    networks:
+      - polkadot-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: liquidot-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./local-nodes/redis:/data
+    networks:
+      - polkadot-network
+
+networks:
+  polkadot-network:
+    driver: bridge 
