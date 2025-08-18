@@ -7,7 +7,8 @@ async function main() {
   const XCMProxy = await ethers.getContractFactory("XCMProxy");
   
   // Deploy the contract
-  const xcmProxy = await XCMProxy.deploy();
+  const [deployer] = await ethers.getSigners();
+  const xcmProxy = await XCMProxy.deploy(deployer.address);
   
   // Wait for deployment to complete
   await xcmProxy.deployed();
@@ -28,29 +29,21 @@ async function main() {
     console.log("❌ Contract code not found on blockchain");
   }
 
-  // Set up initial configuration
-  console.log("⚙️ Setting up initial configuration...");
-  try {
-    // Set the owner (deployer)
-    const setOwnerTx = await xcmProxy.transferOwnership(deployer.address);
-    await setOwnerTx.wait();
-    console.log("✅ Ownership set to deployer");
-    
-    // Configure supported tokens (DOT, USDC, USDT)
-    const supportedTokens = [
-      "0x0000000000000000000000000000000000000000", // DOT
-      "0x0000000000000000000000000000000000000001", // USDC
-      "0x0000000000000000000000000000000000000002"  // USDT
-    ];
-    
-    for (const token of supportedTokens) {
+  // Configure supported tokens (DOT, USDC, USDT)
+  console.log("⚙️ Setting up supported tokens...");
+  const supportedTokens = [
+    "0x0000000000000000000000000000000000000000", // DOT
+    "0x0000000000000000000000000000000000000001", // USDC
+    "0x0000000000000000000000000000000000000002"  // USDT
+  ];
+  for (const token of supportedTokens) {
+    try {
       const addTokenTx = await xcmProxy.addSupportedToken(token);
       await addTokenTx.wait();
       console.log(`✅ Added supported token: ${token}`);
+    } catch (e) {
+      console.log(`⚠️ Skipped token ${token}:`, e.message);
     }
-    
-  } catch (error) {
-    console.log("⚠️ Configuration failed:", error.message);
   }
 
   // Log deployment summary

@@ -8,40 +8,30 @@ async function main() {
   
   // Deploy the contract
   const assetHubVault = await AssetHubVault.deploy();
-  
-  // Wait for deployment to complete
-  await assetHubVault.deployed();
+  await assetHubVault.waitForDeployment();
 
-  console.log("✅ Asset Hub Vault deployed to:", assetHubVault.address);
+  console.log("✅ Asset Hub Vault deployed to:", await assetHubVault.getAddress());
   
   // Get deployment information
   const [deployer] = await ethers.getSigners();
   console.log("👤 Deployed by:", deployer.address);
-  console.log("💰 Deployer balance:", ethers.utils.formatEther(await deployer.getBalance()));
+  console.log("💰 Deployer balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)));
   
   // Verify the deployment
   console.log("🔍 Verifying deployment...");
-  const vaultCode = await ethers.provider.getCode(assetHubVault.address);
+  const vaultCode = await ethers.provider.getCode(await assetHubVault.getAddress());
   if (vaultCode !== "0x") {
     console.log("✅ Contract code verified on blockchain");
   } else {
     console.log("❌ Contract code not found on blockchain");
   }
 
-  // Initialize the contract with basic setup
-  console.log("⚙️ Initializing contract...");
-  try {
-    const initTx = await assetHubVault.initialize();
-    await initTx.wait();
-    console.log("✅ Contract initialized successfully");
-  } catch (error) {
-    console.log("⚠️ Contract initialization failed (may already be initialized):", error.message);
-  }
+  // Non-upgradeable: roles are set in constructor
 
   // Log deployment summary
   console.log("\n📋 Deployment Summary:");
   console.log("   Contract: AssetHubVault");
-  console.log("   Address:", assetHubVault.address);
+  console.log("   Address:", await assetHubVault.getAddress());
   console.log("   Network:", network.name);
   console.log("   Chain ID:", network.config.chainId);
   

@@ -21,7 +21,7 @@
     "polkadot"
   ],
   "author": "",
-  "license": "ISC",
+  "license": "Apache-2.0",
   "description": "Backend for automated liquidity pool investments",
   "dependencies": {
     "@polkadot/api": "^15.9.2",

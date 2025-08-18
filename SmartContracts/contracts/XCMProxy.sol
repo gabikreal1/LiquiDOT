@@ -43,6 +43,16 @@ contract XCMProxy is Ownable, ReentrancyGuard {
         uint256 amount1
     );
 
+    event LiquidityAdded(
+        address indexed pool,
+        address indexed recipient,
+        int24 bottomTick,
+        int24 topTick,
+        uint128 liquidity,
+        uint256 amount0,
+        uint256 amount1
+    );
+
     // Structs
     struct Position {
         address pool;
@@ -59,7 +69,7 @@ contract XCMProxy is Ownable, ReentrancyGuard {
         bool active;
     }
 
-    constructor() Ownable(msg.sender) {
+    constructor(address initialOwner) Ownable(initialOwner) {
         // Initialize with common tokens
         supportedTokens[address(0)] = true; // Native token (DOT)
         supportedTokens[address(1)] = true; // USDC
@@ -187,6 +197,55 @@ contract XCMProxy is Ownable, ReentrancyGuard {
         emit PositionLiquidated(positionId, position.owner, amount0, amount1);
 
         return (amount0, amount1);
+    }
+
+    // Minimal adapter to interact with a pool's mint function (mock Algebra)
+    function addLiquidityAdapter(
+        address pool,
+        address token0,
+        address token1,
+        uint8 /*rangeSize*/,
+        uint128 liquidityDesired,
+        address positionOwner
+    ) external onlyOwner nonReentrant returns (uint256 amount0, uint256 amount1) {
+        require(pool != address(0) && positionOwner != address(0), "invalid");
+
+        // Simplified tick range for demo
+        (int24 bottomTick, int24 topTick) = calculateTickRange(pool, -5, 10);
+
+        // Call mock pool mint
+        (amount0, amount1) = IAlgebraPool(pool).mint(
+            address(this),
+            positionOwner,
+            bottomTick,
+            topTick,
+            liquidityDesired,
+            bytes("")
+        );
+
+        uint256 positionId = _createPosition(
+            pool,
+            token0,
+            token1,
+            bottomTick,
+            topTick,
+            liquidityDesired,
+            positionOwner,
+            -5,
+            10
+        );
+
+        emit LiquidityAdded(pool, positionOwner, bottomTick, topTick, liquidityDesired, amount0, amount1);
+        emit PositionCreated(positionId, positionOwner, pool, token0, token1, bottomTick, topTick, liquidityDesired);
+    }
+
+    function executeBurn(
+        address pool,
+        int24 bottomTick,
+        int24 topTick,
+        uint128 liquidity
+    ) external onlyOwner nonReentrant returns (uint256 amount0, uint256 amount1) {
+        (amount0, amount1) = IAlgebraPool(pool).burn(bottomTick, topTick, liquidity);
     }
 
     /**

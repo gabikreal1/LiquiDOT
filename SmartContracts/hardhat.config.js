@@ -4,6 +4,7 @@ require("dotenv").config();
 // Load private keys from environment variables
 const MOON_PRIVATE_KEY = process.env.MOON || "0x0000000000000000000000000000000000000000000000000000000000000000";
 const ASSET_PRIVATE_KEY = process.env.ASSET || "0x0000000000000000000000000000000000000000000000000000000000000000";
+const BEAM_PRIVATE_KEY = process.env.BEAM_PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000000";
 
 
 /** @type import('hardhat/config').HardhatUserConfig */
@@ -14,7 +15,7 @@ module.exports = {
     disambiguatePaths: false,
   },
   solidity: {
-    version: "0.8.17",
+    version: "0.8.24",
     settings: {
       viaIR: true,
       optimizer: {
@@ -26,7 +27,7 @@ module.exports = {
   networks: {
     // Moonbase Alpha Testnet
     moonbase: {
-      url: "https://moonbase-alpha.public.blastapi.io",
+      url: "https://rpc.api.moonbase.moonbeam.network",
       chainId: 1287,
       accounts: [MOON_PRIVATE_KEY],
       gasPrice: 1000000000
@@ -34,25 +35,25 @@ module.exports = {
     moonbeam: {
       url: "https://rpc.api.moonbeam.network",
       chainId: 1284,
-      accounts: [process.env.BEAM_PRIVATE_KEY],
+      accounts: [BEAM_PRIVATE_KEY],
       gasPrice: 35000000000
     },
-    // Asset Hub (Westmint) Testnet
+    // Asset Hub (Westmint) Testnet — commented out for now
+    /*
     westmint: {
       url: "https://westend-asset-hub-eth-rpc.polkadot.io",
       chainId: 420420421,
       accounts: [ASSET_PRIVATE_KEY],
       gasPrice: 1000000000,
-      
     },
 
-    assethub:{
+    assethub: {
       url: "https://asset-hub-eth-rpc.polkadot.io",
       chainId: 420420419,
-      accounts: [ASSET_PRIVATE_KEY1],
+      accounts: [ASSET_PRIVATE_KEY],
       gasPrice: 1000000000,
-
     },
+    */
     // Local development
     hardhat: {
       chainId: 31337

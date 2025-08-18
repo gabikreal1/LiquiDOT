@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.so  l";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -12,18 +10,12 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
  * @title AssetHubVault
  * @dev Primary custody layer for LiquiDOT cross-chain liquidity management
  */
-contract AssetHubVault is 
-    Initializable, 
-    ReentrancyGuardUpgradeable, 
-    AccessControlUpgradeable, 
-    UUPSUpgradeable
-{
+contract AssetHubVault is ReentrancyGuard, AccessControl {
     using SafeERC20 for IERC20;
 
     // Role definitions
     bytes32 public constant EMERGENCY_ROLE = keccak256("EMERGENCY_ROLE");
     bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
-    bytes32 public constant UPGRADER_ROLE = keccak256("UPGRADER_ROLE");
 
     // State variables
     mapping(address => mapping(address => uint256)) public userBalances; // user => token => balance
@@ -59,20 +51,10 @@ contract AssetHubVault is
         bool active;
     }
 
-    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
-        _disableInitializers();
-    }
-
-    function initialize() public initializer {
-        __ReentrancyGuard_init();
-        __AccessControl_init();
-        __UUPSUpgradeable_init();
-
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(EMERGENCY_ROLE, msg.sender);
         _grantRole(OPERATOR_ROLE, msg.sender);
-        _grantRole(UPGRADER_ROLE, msg.sender);
     }
 
     /**
@@ -86,7 +68,7 @@ contract AssetHubVault is
         userBalances[msg.sender][token] += amount;
 
         emit Deposit(msg.sender, token, amount);
-    }
+    }s
 
     /**
      * @dev Withdraw tokens from the vault
@@ -220,5 +202,4 @@ contract AssetHubVault is
         return positions[positionId];
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyRole(UPGRADER_ROLE) {}
 } 
