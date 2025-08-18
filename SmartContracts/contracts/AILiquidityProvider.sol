@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity >=0.8.0;
 
+// DEPRECATED - DO NOT USE.
+// AssethubVault.sol is the new contract for this functionality.
+
+
 // Core interfaces included directly
 interface IXCMTransactor {
     function transactThroughDerivative(
