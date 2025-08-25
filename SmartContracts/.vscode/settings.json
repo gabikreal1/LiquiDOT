@@ -1,0 +1,8 @@
+{
+    "solidity.packageDefaultDependenciesDirectory": "node_modules",
+    "solidity.packageDefaultDependenciesContractsDirectory": "",
+    "solidity.remappings": [
+      "@cryptoalgebra/integral-core/=node_modules/@cryptoalgebra/integral-core/",
+      "@cryptoalgebra/integral-periphery/=node_modules/@cryptoalgebra/integral-periphery/"
+    ]
+  }

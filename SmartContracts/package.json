@@ -23,6 +23,8 @@
   "author": "",
   "license": "Apache-2.0",
   "devDependencies": {
+    "@cryptoalgebra/integral-core": "^1.2.9",
+    "@cryptoalgebra/integral-periphery": "^1.2.4",
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
     "@nomicfoundation/hardhat-ethers": "^3.0.8",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.12",

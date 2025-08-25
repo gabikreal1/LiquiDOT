@@ -1,0 +1,120 @@
+{
+    "relaychain": {
+      "bin": "./polkadot",
+      "chain": "paseo-local",
+      "nodes": [
+        {
+          "name": "alice",
+          "wsPort": 9944,
+          "port": 30333,
+          "flags": [
+            "--alice",
+            "--validator",
+            "--base-path", "/tmp/relay/alice",
+            "--chain", "paseo-local",
+            "--port", "30333",
+            "--ws-port", "9944",
+            "--rpc-port", "9933",
+            "--node-key", "0000000000000000000000000000000000000000000000000000000000000001",
+            "--telemetry-url", "wss://telemetry.polkadot.io/submit/ 0",
+            "--execution", "wasm"
+          ]
+        },
+        {
+          "name": "bob",
+          "wsPort": 9945,
+          "port": 30334,
+          "flags": [
+            "--bob",
+            "--validator",
+            "--base-path", "/tmp/relay/bob",
+            "--chain", "paseo-local",
+            "--port", "30334",
+            "--ws-port", "9945",
+            "--rpc-port", "9934",
+            "--bootnodes", "/ip4/127.0.0.1/tcp/30333/p2p/12D3KooWEyoppNCUx8Yx66oV9fJnriXwCcXwDDUA2kj6vnc6iDEp",
+            "--telemetry-url", "wss://telemetry.polkadot.io/submit/ 0",
+            "--execution", "wasm"
+          ]
+        }
+      ]
+    },
+    "parachains": [
+      {
+        "bin": "./polkadot-parachain",
+        "id": "1000",
+        "balance": "1000000000000000000000",
+        "nodes": [
+          {
+            "name": "passeohub-contracts",
+            "wsPort": 9946,
+            "port": 30335,
+            "flags": [
+              "--alice",
+              "--collator",
+              "--force-authoring",
+              "--chain", "asset-hub-paseo-local",
+              "--base-path", "/tmp/parachain/passeohub-contracts-alice",
+              "--port", "30335",
+              "--ws-port", "9946",
+              "--rpc-port", "9935",
+              "--unsafe-ws-external",
+              "--unsafe-rpc-external",
+              "--rpc-cors", "all",
+              "--",
+              "--execution", "wasm",
+              "--chain", "paseo-local",
+              "--port", "30343",
+              "--ws-port", "9977"
+            ]
+          }
+        ]
+      },
+      {
+        "bin": "./moonbeam",
+        "id": "1001",
+        "balance": "1000000000000000000000",
+        "nodes": [
+          {
+            "name": "moonbeam-alice",
+            "wsPort": 9947,
+            "port": 30336,
+            "flags": [
+              "--alice",
+              "--collator",
+              "--force-authoring",
+              "--chain", "moonbeam-dev",
+              "--base-path", "/tmp/parachain/moonbeam-alice",
+              "--port", "30336",
+              "--ws-port", "9947",
+              "--rpc-port", "9936",
+              "--unsafe-ws-external",
+              "--unsafe-rpc-external",
+              "--rpc-cors", "all",
+              "--",
+              "--execution", "wasm",
+              "--chain", "paseo-local",
+              "--port", "30344",
+              "--ws-port", "9978"
+            ]
+          }
+        ]
+      }
+    ],
+    "hrmpChannels": [
+      {
+        "sender": 1000,
+        "recipient": 1001,
+        "maxCapacity": 8,
+        "maxMessageSize": 512
+      },
+      {
+        "sender": 1001,
+        "recipient": 1000,
+        "maxCapacity": 8,
+        "maxMessageSize": 512
+      }
+    ],
+    "types": {},
+    "finalization": false
+  }
