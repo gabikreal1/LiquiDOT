@@ -1,0 +1,3 @@
+endpoint: wss://moonbase.public.curie.radiumblock.co/ws
+port: 8001
+mock-signature-host: true

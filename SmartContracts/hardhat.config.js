@@ -3,21 +3,13 @@ require("dotenv").config();
 
 // Load private keys from environment variables
 const MOON_PRIVATE_KEY = process.env.MOON || "0x0000000000000000000000000000000000000000000000000000000000000000";
-const ASSET_PRIVATE_KEY = process.env.ASSET || "0x0000000000000000000000000000000000000000000000000000000000000000";
 const BEAM_PRIVATE_KEY = process.env.BEAM_PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000000";
-
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  contractSizer: {
-    alphaSort: true,
-    runOnCompile: true,
-    disambiguatePaths: false,
-  },
   solidity: {
-    version: "0.8.24",
+    version: "0.8.28",
     settings: {
-      viaIR: true,
       optimizer: {
         enabled: true,
         runs: 200
@@ -25,7 +17,23 @@ module.exports = {
     }
   },
   networks: {
-    // Moonbase Alpha Testnet
+    // Local development
+    hardhat: {
+      chainId: 31337
+    },
+    // Chopsticks (Moonbase)
+    moonbaseChopsticks: {
+      url: "http://localhost:8001",
+      chainId: 1287,
+      accounts: [
+        "0x5fb92d6e98884f76de468fa3f6278f8807c48bebc13595d45af5bdc4da702133",
+        MOON_PRIVATE_KEY
+      ],
+      gasPrice: 1000000000,
+      gas: 8000000,
+      timeout: 60000
+    },
+    // Live Networks (EVM)
     moonbase: {
       url: "https://rpc.api.moonbase.moonbeam.network",
       chainId: 1287,
@@ -38,48 +46,22 @@ module.exports = {
       accounts: [BEAM_PRIVATE_KEY],
       gasPrice: 35000000000
     },
-    // Asset Hub (Westmint) Testnet — commented out for now
-    /*
-    westmint: {
-      url: "https://westend-asset-hub-eth-rpc.polkadot.io",
-      chainId: 420420421,
+    passethub: {
+      url: 'https://testnet-passet-hub-eth-rpc.polkadot.io',
+      chainId: 420420422,
       accounts: [ASSET_PRIVATE_KEY],
       gasPrice: 1000000000,
-    },
-
-    assethub: {
-      url: "https://asset-hub-eth-rpc.polkadot.io",
-      chainId: 420420419,
-      accounts: [ASSET_PRIVATE_KEY],
-      gasPrice: 1000000000,
-    },
-    */
-    // Local development
-    hardhat: {
-      chainId: 31337
-    },
-    // Local Asset Hub Node
-    assetHubLocal: {
-      url: "ws://localhost:9944",
-      chainId: 1000,
-      accounts: [MOON_PRIVATE_KEY],
-      gasPrice: 1000000000
-    },
-    // Local Moonbeam Node
-    moonbeamLocal: {
-      url: "ws://localhost:9945",
-      chainId: 1284,
-      accounts: [MOON_PRIVATE_KEY],
-      gasPrice: 1000000000
     }
   },
   paths: {
     sources: "./contracts",
     tests: "./test",
-    cache: "./cache",
-    artifacts: "./artifacts"
+    cache: "./cache-evm",
+    artifacts: "./artifacts-evm"
   },
   mocha: {
     timeout: 40000
   }
-}; 
+};
+
+
