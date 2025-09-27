@@ -1,5 +1,0 @@
-endpoint: wss://wnd-rpc.stakeworld.io/westmint
-port: 8000
-mock-signature-host: true
-
-paraId: 1000

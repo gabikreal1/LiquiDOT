@@ -7,10 +7,6 @@ import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "./libraries/XCMEncoder.sol";
-
-
-
 import "@cryptoalgebra/integral-core/contracts/interfaces/IAlgebraPool.sol";
 import "@cryptoalgebra/integral-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
 import "@cryptoalgebra/integral-periphery/contracts/interfaces/ISwapRouter.sol";
@@ -64,8 +60,6 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
     uint64 public defaultDestWeight; // conservative default; tune per target chain
     uint32 public assetHubParaId; // target Asset Hub parachain id on the same relay
     address public trustedXcmCaller; // optional: derived XCM caller or allowed system caller
-    bool public destUseAccountKey20; // destination Account junction type preference
-    address public assetHubVaultRemote; // pallet_revive contract account on Asset Hub
     bool public xcmConfigFrozen; // freeze flag to prevent further config changes
 
     // Moonbeam XCM Transactor precompile (variant that supports transactThroughDerivative)
@@ -74,13 +68,14 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
     // Slippage configuration (basis points, 1 = 0.01%) for NFPM mint operations
     uint16 public defaultSlippageBps; // e.g., 100 = 1%
 
+    // Operator role for day-to-day execution
+    address public operator;
+
     // Config events
     event XTokensPrecompileSet(address indexed precompile);
     event DefaultDestWeightSet(uint64 weight);
     event AssetHubParaIdSet(uint32 paraId);
     event TrustedXcmCallerSet(address indexed caller);
-    event DestUseAccountKey20Set(bool enabled);
-    event AssetHubVaultRemoteSet(address indexed account);
     event XcmConfigFrozen();
 
     // Events
@@ -121,7 +116,7 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
     event AssetsReturned(
         address indexed token,
         address indexed user,
-        address indexed recipient,
+        bytes destination,
         uint256 amount,
         uint256 positionId
     );
@@ -133,6 +128,8 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         uint256 amountOut,
         uint256 positionId
     );
+
+    event OperatorUpdated(address indexed operator);
 
     // Structs
     struct Position {
@@ -153,17 +150,15 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
 
     constructor(address initialOwner) Ownable(initialOwner) {
         // Reasonable defaults; override via admin setters per deployment
-        xTokensPrecompile = 0x0000000000000000000000000000000000000804;
+        xTokensPrecompile = address(0);
         defaultDestWeight = 6_000_000_000;
         assetHubParaId = 0; // require admin to set correct paraId
         trustedXcmCaller = address(0);
-        destUseAccountKey20 = true;
-        assetHubVaultRemote = address(0);
         xcmConfigFrozen = false;
 
         // Default known precompile address (can be overridden per-network)
-        xcmTransactorPrecompile = 0x0000000000000000000000000000000000000806;
-
+        xcmTransactorPrecompile = address(0);
+        operator = initialOwner;
     }
 
     function setIntegrations(address quoter, address router) external onlyOwner {
@@ -199,18 +194,6 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         emit TrustedXcmCallerSet(caller);
     }
 
-    function setDestUseAccountKey20(bool enabled) external onlyOwner {
-        require(!xcmConfigFrozen, "xcm config frozen");
-        destUseAccountKey20 = enabled;
-        emit DestUseAccountKey20Set(enabled);
-    }
-
-    function setAssetHubVaultRemote(address account) external onlyOwner {
-        require(!xcmConfigFrozen, "xcm config frozen");
-        assetHubVaultRemote = account;
-        emit AssetHubVaultRemoteSet(account);
-    }
-
     function freezeXcmConfig() external onlyOwner {
         require(!xcmConfigFrozen, "already frozen");
         xcmConfigFrozen = true;
@@ -222,6 +205,25 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
     event XcmTransactorPrecompileSet(address indexed precompile);
     event DefaultSlippageSet(uint16 bps);
     event XcmTransferAttempt(address indexed token, bytes dest, uint256 amount, bool success, bytes errorData);
+    event XcmRemoteCallAttempt(
+        uint32 paraId,
+        uint16 feeLocation,
+        uint64 transactRequiredWeightAtMost,
+        uint256 feeAmount,
+        uint64 overallWeight,
+        bool success,
+        bytes errorData
+    );
+
+    modifier onlyOperator() {
+        require(msg.sender == operator, "not operator");
+        _;
+    }
+
+    function setOperator(address newOperator) external onlyOwner {
+        operator = newOperator;
+        emit OperatorUpdated(newOperator);
+    }
 
     function setXcmTransactorPrecompile(address precompile) external onlyOwner {
         xcmTransactorPrecompile = precompile;
@@ -272,47 +274,32 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
     ) external onlyOwner whenNotPaused nonReentrant {
         require(assetHubParaId != 0, "paraId not set");
         require(xcmTransactorPrecompile != address(0), "xcm tx precompile not set");
-        IXCMTransactor(xcmTransactorPrecompile).transactThroughDerivative(
+        bool success = false;
+        bytes memory err;
+        try IXCMTransactor(xcmTransactorPrecompile).transactThroughDerivative(
             assetHubParaId,
             feeLocation,
             transactRequiredWeightAtMost,
             call,
             feeAmount,
             overallWeight
+        ) {
+            success = true;
+        } catch (bytes memory reason) {
+            err = reason;
+        }
+        emit XcmRemoteCallAttempt(
+            assetHubParaId,
+            feeLocation,
+            transactRequiredWeightAtMost,
+            feeAmount,
+            overallWeight,
+            success,
+            err
         );
     }
 
     // ===== Internal helpers: MultiLocation encoding for destination =====
-    function _encodeParachainAccountKey20(uint32 paraId, address account, uint8 network)
-        internal
-        pure
-        returns (bytes memory)
-    {
-        XCMEncoder.Junction[] memory junc = new XCMEncoder.Junction[](2);
-        junc[0] = XCMEncoder.createParachainJunction(paraId);
-        junc[1] = XCMEncoder.createAccountKey20Junction(account, network);
-        XCMEncoder.MultiLocation memory ml = XCMEncoder.MultiLocation({
-            parents: 1,
-            junctions: junc
-        });
-        return XCMEncoder.encodeMultiLocation(ml);
-    }
-
-    function _encodeParachainAccountId32(uint32 paraId, bytes32 account, uint8 network)
-        internal
-        pure
-        returns (bytes memory)
-    {
-        XCMEncoder.Junction[] memory junc = new XCMEncoder.Junction[](2);
-        junc[0] = XCMEncoder.createParachainJunction(paraId);
-        junc[1] = XCMEncoder.createAccountId32Junction(account, network);
-        XCMEncoder.MultiLocation memory ml = XCMEncoder.MultiLocation({
-            parents: 1,
-            junctions: junc
-        });
-        return XCMEncoder.encodeMultiLocation(ml);
-    }
-
     /**
      * @dev Receive assets from XCM transfer
      */
@@ -342,8 +329,9 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         int24 lowerRangePercent;
         int24 upperRangePercent;
         address positionOwner;
-        (poolId, baseAsset, amounts, lowerRangePercent, upperRangePercent, positionOwner) =
-            abi.decode(investmentParams, (address, address, uint256[], int24, int24, address));
+        uint16 slippageBps;
+        (poolId, baseAsset, amounts, lowerRangePercent, upperRangePercent, positionOwner, slippageBps) =
+            abi.decode(investmentParams, (address, address, uint256[], int24, int24, address, uint16));
 
         // Ensure the transferred token matches the declared baseAsset
         require(token == baseAsset, "asset mismatch");
@@ -385,8 +373,9 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
             IERC20(token1).forceApprove(nfpmContract, amount1Desired);
         }
 
-        uint256 amount0Min = amount0Desired == 0 ? 0 : (amount0Desired * (10_000 - defaultSlippageBps)) / 10_000;
-        uint256 amount1Min = amount1Desired == 0 ? 0 : (amount1Desired * (10_000 - defaultSlippageBps)) / 10_000;
+        uint256 bps = slippageBps > 0 ? slippageBps : defaultSlippageBps;
+        uint256 amount0Min = amount0Desired == 0 ? 0 : (amount0Desired * (10_000 - bps)) / 10_000;
+        uint256 amount1Min = amount1Desired == 0 ? 0 : (amount1Desired * (10_000 - bps)) / 10_000;
 
         (tokenId, liquidityCreated, , ) = INonfungiblePositionManager(nfpmContract).mint(
             INonfungiblePositionManager.MintParams({
@@ -577,7 +566,7 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
      */
     function executeFullLiquidation(
         uint256 positionId
-    ) external onlyOwner whenNotPaused nonReentrant returns (uint256 amount0, uint256 amount1) {
+    ) external onlyOperator whenNotPaused nonReentrant returns (uint256 amount0, uint256 amount1) {
         return _liquidatePosition(positionId);
     }
 
@@ -586,56 +575,34 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         Position storage position = positions[positionId];
         require(position.active, "Position not active");
 
-        if (position.tokenId != 0 && nfpmContract != address(0)) {
-            // NFPM flow: decrease full liquidity then collect
-            (amount0, amount1) = INonfungiblePositionManager(nfpmContract).decreaseLiquidity(
-                INonfungiblePositionManager.DecreaseLiquidityParams({
-                    tokenId: position.tokenId,
-                    liquidity: position.liquidity,
-                    amount0Min: 0,
-                    amount1Min: 0,
-                    deadline: block.timestamp
-                })
-            );
+        require(position.tokenId != 0 && nfpmContract != address(0), "NFPM position required");
 
-            (uint256 c0, uint256 c1) = INonfungiblePositionManager(nfpmContract).collect(
-                INonfungiblePositionManager.CollectParams({
-                    tokenId: position.tokenId,
-                    recipient: address(this),
-                    amount0Max: type(uint128).max,
-                    amount1Max: type(uint128).max
-                })
-            );
+        // NFPM flow: decrease full liquidity then collect
+        (amount0, amount1) = INonfungiblePositionManager(nfpmContract).decreaseLiquidity(
+            INonfungiblePositionManager.DecreaseLiquidityParams({
+                tokenId: position.tokenId,
+                liquidity: position.liquidity,
+                amount0Min: 0,
+                amount1Min: 0,
+                deadline: block.timestamp
+            })
+        );
 
-            if (c0 > 0 || c1 > 0) {
-                amount0 += c0;
-                amount1 += c1;
-            }
+        (uint256 c0, uint256 c1) = INonfungiblePositionManager(nfpmContract).collect(
+            INonfungiblePositionManager.CollectParams({
+                tokenId: position.tokenId,
+                recipient: address(this),
+                amount0Max: type(uint128).max,
+                amount1Max: type(uint128).max
+            })
+        );
 
-            // Optionally burn NFT to clean up
-            INonfungiblePositionManager(nfpmContract).burn(position.tokenId);
-        } else {
-            // Direct pool flow
-            (amount0, amount1) = IAlgebraPool(position.pool).burn(
-                position.bottomTick,
-                position.topTick,
-                position.liquidity,
-                bytes("")
-            );
-
-            // Collect everything owed from the pool (if any)
-            (uint128 c0, uint128 c1) = IAlgebraPool(position.pool).collect(
-                address(this),
-                position.bottomTick,
-                position.topTick,
-                type(uint128).max,
-                type(uint128).max
-            );
-            if (amount0 == 0 && amount1 == 0) {
-                amount0 = c0;
-                amount1 = c1;
-            }
+        if (c0 > 0 || c1 > 0) {
+            amount0 += c0;
+            amount1 += c1;
         }
+
+        INonfungiblePositionManager(nfpmContract).burn(position.tokenId);
 
         // Mark position as inactive
         position.active = false;
@@ -654,41 +621,27 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         address token,
         address user,
         uint256 amount,
-        address recipient
+        bytes calldata destination
     ) external onlyOwner whenNotPaused nonReentrant {
-        require(recipient != address(0), "invalid recipient");
+        require(destination.length != 0, "invalid destination");
         require(supportedTokens[token], "Token not supported");
         uint256 balance = IERC20(token).balanceOf(address(this));
         uint256 sendAmount = amount == 0 ? balance : amount;
         require(sendAmount <= balance, "insufficient balance");
-        // If recipient is this chain address: do local transfer; otherwise, optionally send via XCM precompile
-        // For cross-chain (Asset Hub) delivery, pass recipient==address(0) upstream and we use XTokens
-        if (recipient == address(0)) {
-            require(assetHubParaId != 0, "paraId not set");
-            // Encode destination MultiLocation (Parachain + AccountKey20/AccountId32)
-            address target = assetHubVaultRemote != address(0) ? assetHubVaultRemote : user;
-            bytes memory dest = destUseAccountKey20
-                ? _encodeParachainAccountKey20(assetHubParaId, target, 0)
-                : _encodeParachainAccountId32(assetHubParaId, bytes32(uint256(uint160(target))), 0);
-            require(xTokensPrecompile != address(0), "xtokens not set");
-            // Tight allowance to precompile
-            uint256 cur = IERC20(token).allowance(address(this), xTokensPrecompile);
-            if (cur != 0) IERC20(token).forceApprove(xTokensPrecompile, 0);
-            IERC20(token).forceApprove(xTokensPrecompile, sendAmount);
-            bool success = false;
-            bytes memory err;
-            try IXTokens(xTokensPrecompile).transfer(token, sendAmount, dest, defaultDestWeight) {
-                success = true;
-            } catch (bytes memory reason) {
-                err = reason;
-            }
-            emit XcmTransferAttempt(token, dest, sendAmount, success, err);
-            // Reset allowance regardless
-            IERC20(token).forceApprove(xTokensPrecompile, 0);
-        } else {
-            IERC20(token).safeTransfer(recipient, sendAmount);
+        require(xTokensPrecompile != address(0), "xtokens not set");
+        uint256 cur = IERC20(token).allowance(address(this), xTokensPrecompile);
+        if (cur != 0) IERC20(token).forceApprove(xTokensPrecompile, 0);
+        IERC20(token).forceApprove(xTokensPrecompile, sendAmount);
+        bool success = false;
+        bytes memory err;
+        try IXTokens(xTokensPrecompile).transfer(token, sendAmount, destination, defaultDestWeight) {
+            success = true;
+        } catch (bytes memory reason) {
+            err = reason;
         }
-        emit AssetsReturned(token, user, recipient, sendAmount, 0);
+        emit XcmTransferAttempt(token, destination, sendAmount, success, err);
+        IERC20(token).forceApprove(xTokensPrecompile, 0);
+        emit AssetsReturned(token, user, destination, sendAmount, 0);
     }
 
     /**
@@ -698,12 +651,12 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
     function liquidateSwapAndReturn(
         uint256 positionId,
         address baseAsset,
-        address recipient,
+        bytes calldata destination,
         uint256 minAmountOut0,
         uint256 minAmountOut1,
         uint160 limitSqrtPrice
-    ) external onlyOwner whenNotPaused nonReentrant {
-        require(recipient != address(0), "invalid recipient");
+    ) external onlyOperator whenNotPaused nonReentrant {
+        require(destination.length != 0, "invalid destination");
         Position storage position = positions[positionId];
         require(position.active, "Position not active");
         require(supportedTokens[baseAsset], "base not supported");
@@ -764,29 +717,20 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
 
         require(totalBase > 0, "no proceeds");
         // Send proceeds back. If recipient==address(0), ship via XCM, else local transfer
-        if (recipient == address(0)) {
-            require(assetHubParaId != 0, "paraId not set");
-            address target = assetHubVaultRemote != address(0) ? assetHubVaultRemote : position.owner;
-            bytes memory dest = destUseAccountKey20
-                ? _encodeParachainAccountKey20(assetHubParaId, target, 0)
-                : _encodeParachainAccountId32(assetHubParaId, bytes32(uint256(uint160(target))), 0);
-            require(xTokensPrecompile != address(0), "xtokens not set");
-            uint256 cur = IERC20(baseAsset).allowance(address(this), xTokensPrecompile);
-            if (cur != 0) IERC20(baseAsset).forceApprove(xTokensPrecompile, 0);
-            IERC20(baseAsset).forceApprove(xTokensPrecompile, totalBase);
-            bool success = false;
-            bytes memory err;
-            try IXTokens(xTokensPrecompile).transfer(baseAsset, totalBase, dest, defaultDestWeight) {
-                success = true;
-            } catch (bytes memory reason) {
-                err = reason;
-            }
-            emit XcmTransferAttempt(baseAsset, dest, totalBase, success, err);
-            IERC20(baseAsset).forceApprove(xTokensPrecompile, 0);
-        } else {
-            IERC20(baseAsset).safeTransfer(recipient, totalBase);
+        require(xTokensPrecompile != address(0), "xtokens not set");
+        uint256 cur = IERC20(baseAsset).allowance(address(this), xTokensPrecompile);
+        if (cur != 0) IERC20(baseAsset).forceApprove(xTokensPrecompile, 0);
+        IERC20(baseAsset).forceApprove(xTokensPrecompile, totalBase);
+        bool success = false;
+        bytes memory err;
+        try IXTokens(xTokensPrecompile).transfer(baseAsset, totalBase, destination, defaultDestWeight) {
+            success = true;
+        } catch (bytes memory reason) {
+            err = reason;
         }
-        emit AssetsReturned(baseAsset, position.owner, recipient, totalBase, positionId);
+        emit XcmTransferAttempt(baseAsset, destination, totalBase, success, err);
+        IERC20(baseAsset).forceApprove(xTokensPrecompile, 0);
+        emit AssetsReturned(baseAsset, position.owner, destination, totalBase, positionId);
     }
 
     /**
@@ -799,7 +743,7 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
     // Fee harvest without changing liquidity (NFPM path)
     function collectFees(uint256 positionId)
         external
-        onlyOwner
+        onlyOperator
         nonReentrant
         returns (uint256 amount0, uint256 amount1)
     {
@@ -901,107 +845,6 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
      */
     function removeSupportedToken(address token) external onlyOwner {
         supportedTokens[token] = false;
-    }
-
-    /**
-     * @dev Internal function to create position from XCM parameters
-     */
-    function _createPositionFromParams(
-        address user,
-        address token,
-        uint256 amount,
-        bytes memory params
-    ) internal {
-        // Decode params (V1 schema only)
-        address poolId;
-        address baseAsset;
-        uint256[] memory amounts;
-        int24 lowerRangePercent;
-        int24 upperRangePercent;
-        address positionOwner;
-        (poolId, baseAsset, amounts, lowerRangePercent, upperRangePercent, positionOwner) =
-            abi.decode(params, (address, address, uint256[], int24, int24, address));
-
-        // Validate asset consistency
-        require(token == baseAsset, "asset mismatch");
-        require(amount > 0, "zero amount");
-        require(positionOwner != address(0), "invalid owner");
-        require(lowerRangePercent < upperRangePercent, "invalid range");
-
-        // Compute ticks
-        (int24 bottomTick, int24 topTick) = calculateTickRange(
-            poolId,
-            lowerRangePercent,
-            upperRangePercent
-        );
-
-        // Determine pool tokens
-        address token0 = IAlgebraPool(poolId).token0();
-        address token1 = IAlgebraPool(poolId).token1();
-
-        uint256 amount0Desired = amounts.length > 0 ? amounts[0] : 0;
-        uint256 amount1Desired = amounts.length > 1 ? amounts[1] : 0;
-
-        uint128 liquidityCreated;
-        uint256 tokenId;
-
-        require(nfpmContract != address(0), "NFPM not set");
-        if (amount0Desired > 0) {
-            uint256 cur = IERC20(token0).allowance(address(this), nfpmContract);
-            if (cur != 0) IERC20(token0).approve(nfpmContract, 0);
-            IERC20(token0).approve(nfpmContract, amount0Desired);
-        }
-        if (amount1Desired > 0) {
-            uint256 cur1 = IERC20(token1).allowance(address(this), nfpmContract);
-            if (cur1 != 0) IERC20(token1).approve(nfpmContract, 0);
-            IERC20(token1).approve(nfpmContract, amount1Desired);
-        }
-
-        uint256 amount0Min = amount0Desired == 0 ? 0 : (amount0Desired * (10_000 - defaultSlippageBps)) / 10_000;
-        uint256 amount1Min = amount1Desired == 0 ? 0 : (amount1Desired * (10_000 - defaultSlippageBps)) / 10_000;
-
-        (tokenId, liquidityCreated, , ) = INonfungiblePositionManager(nfpmContract).mint(
-            INonfungiblePositionManager.MintParams({
-                token0: token0,
-                token1: token1,
-                deployer: address(0),
-                tickLower: bottomTick,
-                tickUpper: topTick,
-                amount0Desired: amount0Desired,
-                amount1Desired: amount1Desired,
-                amount0Min: amount0Min,
-                amount1Min: amount1Min,
-                recipient: address(this),
-                deadline: block.timestamp
-            })
-        );
-
-        if (amount0Desired > 0) IERC20(token0).approve(nfpmContract, 0);
-        if (amount1Desired > 0) IERC20(token1).approve(nfpmContract, 0);
-
-        uint256 positionId = _createPosition(
-            poolId,
-            token0,
-            token1,
-            bottomTick,
-            topTick,
-            liquidityCreated,
-            tokenId,
-            positionOwner,
-            lowerRangePercent,
-            upperRangePercent
-        );
-
-        emit PositionCreated(
-            positionId,
-            positionOwner,
-            poolId,
-            token0,
-            token1,
-            bottomTick,
-            topTick,
-            liquidityCreated
-        );
     }
 
     /**

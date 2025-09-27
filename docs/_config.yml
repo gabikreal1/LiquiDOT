@@ -1,0 +1,118 @@
+# GitHub Pages Configuration for LiquiDOT Documentation
+
+# Site settings
+title: "LiquiDOT Documentation"
+description: "Automated Cross-Chain Liquidity Management for the Polkadot Ecosystem"
+url: "https://gabikreal1.github.io"
+baseurl: "/LiquiDOT"
+
+# Repository settings
+repository: "gabikreal1/LiquiDOT"
+
+# Theme settings
+theme: minima
+# remote_theme: "mmistakes/minimal-mistakes"  # Alternative: More feature-rich theme
+
+# Author/Organization
+author:
+  name: "LiquiDOT Team"
+  email: "contact@liquidot.xyz"
+  twitter: "LiquiDOT_xyz"
+
+# Navigation menu
+header_pages:
+  - index.md
+  - user-guide.md
+  - contracts.md
+  - integration.md
+  - security.md
+  - contributing.md
+  - faq.md
+
+# Plugin settings
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+  - jekyll-readme-index
+  - jekyll-optional-front-matter
+  - jekyll-default-layout
+  - jekyll-titles-from-headings
+
+# Markdown settings
+markdown: kramdown
+highlighter: rouge
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    block:
+      line_numbers: false
+
+# Build settings
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - package.json
+  - package-lock.json
+
+# Social media and links
+social_links:
+  twitter: LiquiDOT_xyz
+  github: gabikreal1
+  # discord: invite_link_here
+  # telegram: liquidot
+
+# SEO settings
+twitter:
+  username: LiquiDOT_xyz
+  card: summary_large_image
+
+# Analytics (uncomment when ready)
+# google_analytics: G-XXXXXXXXXX
+
+# Custom variables
+liquidot:
+  version: "v1.0.0-beta"
+  networks:
+    - name: "Asset Hub"
+      chain_id: 1000
+    - name: "Moonbeam"
+      chain_id: 1284
+  links:
+    github: "https://github.com/gabikreal1/LiquiDOT"
+    demo: "https://www.youtube.com/watch?v=9bX0Up0pLww"
+    app: "https://app.liquidot.xyz"  # When ready
+    api: "https://api.liquidot.xyz"  # When ready
+
+# Collections (for organized documentation)
+collections:
+  guides:
+    output: true
+    permalink: /:collection/:name/
+  api:
+    output: true
+    permalink: /:collection/:name/
+
+# Default front matter
+defaults:
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "page"
+  - scope:
+      path: "_guides"
+      type: "guides"
+    values:
+      layout: "page"
+  - scope:
+      path: "_api"
+      type: "api"
+    values:
+      layout: "page"
