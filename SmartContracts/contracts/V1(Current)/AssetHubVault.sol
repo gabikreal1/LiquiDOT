@@ -74,6 +74,12 @@ contract AssetHubVault is ReentrancyGuard {
         bytes message
     );
     event XcmSendAttempt(bytes32 indexed messageHash, bytes destination, bool success, bytes errorData);
+    event LiquidationSettled(
+        bytes32 indexed positionId,
+        address indexed user,
+        uint256 receivedAmount,
+        uint256 expectedAmount
+    );
 
     // Structs (packed for smaller storage)
     struct Position {
@@ -90,6 +96,9 @@ contract AssetHubVault is ReentrancyGuard {
     // Polkadot XCM precompile (PolkaVM) configurable address; depends on runtime
     address public XCM_PRECOMPILE;
     bool public xcmPrecompileFrozen;
+    
+    // Test mode - allows direct contract calls without XCM for local testing
+    bool public testMode;
     
 
     constructor() {
@@ -118,6 +127,10 @@ contract AssetHubVault is ReentrancyGuard {
     function freezeXcmPrecompile() external onlyAdmin {
         require(!xcmPrecompileFrozen, "already frozen");
         xcmPrecompileFrozen = true;
+    }
+
+    function setTestMode(bool _testMode) external onlyAdmin {
+        testMode = _testMode;
     }
 
     // Role management
@@ -213,53 +226,53 @@ contract AssetHubVault is ReentrancyGuard {
         emit InvestmentInitiated(positionId, user, chainId, poolId, amount);
 
         // Dispatch the provided XCM message to the provided destination
-        bytes32 messageHash = keccak256(preBuiltXcmMessage);
-        bool success = false;
-        bytes memory err;
-        try IXcm(XCM_PRECOMPILE).send(destination, preBuiltXcmMessage) {
-            success = true;
-        } catch (bytes memory reason) {
-            err = reason;
+        // In test mode, skip actual XCM send to allow local testing
+        if (!testMode) {
+            bytes32 messageHash = keccak256(preBuiltXcmMessage);
+            bool success = false;
+            bytes memory err;
+            try IXcm(XCM_PRECOMPILE).send(destination, preBuiltXcmMessage) {
+                success = true;
+            } catch (bytes memory reason) {
+                err = reason;
+            }
+            emit XCMMessageSent(messageHash, destination, preBuiltXcmMessage);
+            emit XcmSendAttempt(messageHash, destination, success, err);
         }
-        emit XCMMessageSent(messageHash, destination, preBuiltXcmMessage);
-        emit XcmSendAttempt(messageHash, destination, success, err);
     }
 
 
     
 
     /**
-    * @dev Handle incoming XCM messages (called by XCM precompile)
-    * @notice This function can be called by the XCM system to deliver assets or data
+    * @dev Settle liquidation after assets have been returned from Moonbeam
+    * @notice Called by operator after XTokens transfer deposits assets to this contract
+    * @notice Assets arrive at Substrate level without triggering execution - manual settlement required
+    * @param positionId The position being settled
+    * @param receivedAmount Amount of assets received (should match contract balance increase)
     */
-    function handleIncomingXCM(
-        uint256 amount,
-        bytes calldata data
-    ) external payable {
-        // Only allow calls from XCM precompile or authorized operators
-        if (XCM_PRECOMPILE == address(0) || msg.sender != XCM_PRECOMPILE && msg.sender != admin) revert UnauthorizedXcmCall();
-        if (amount == 0) revert AmountZero();
-
-        if (data.length > 0) {
-            // Decode the XCM data to determine the action
-            (string memory action, bytes memory params) = abi.decode(data, (string, bytes));
-            
-            if (keccak256(bytes(action)) == keccak256(bytes("LIQUIDATION_PROCEEDS"))) {
-                // Handle liquidation proceeds
-                (bytes32 positionId, address user, uint256 finalAmount) = 
-                    abi.decode(params, (bytes32, address, uint256));
-                
-                Position storage position = positions[positionId];
-                require(position.user == user, "user mismatch");
-				if (!position.active) revert PositionNotActive();
-                if (finalAmount != amount) revert AmountMismatch();
-                position.active = false;
-                userBalances[user] += amount;
-                emit PositionLiquidated(positionId, user, finalAmount);
-            }
-        }
+    function settleLiquidation(
+        bytes32 positionId,
+        uint256 receivedAmount
+    ) external onlyOperator nonReentrant {
+        if (receivedAmount == 0) revert AmountZero();
+        
+        Position storage position = positions[positionId];
+        if (!position.active) revert PositionNotActive();
+        
+        // Verify contract has sufficient balance to settle
+        // Note: In production, you may want to track expected amounts more precisely
+        require(address(this).balance >= receivedAmount, "Insufficient contract balance");
+        
+        // Update position and user balance
+        position.active = false;
+        userBalances[position.user] += receivedAmount;
+        
+        emit PositionLiquidated(positionId, position.user, receivedAmount);
+        emit LiquidationSettled(positionId, position.user, receivedAmount, position.amount);
     }
 
+    
     /**
     * @dev Emergency liquidation override
     */
