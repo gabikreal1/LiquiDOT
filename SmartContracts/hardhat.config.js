@@ -21,18 +21,6 @@ module.exports = {
     hardhat: {
       chainId: 31337
     },
-    // Chopsticks (Moonbase)
-    moonbaseChopsticks: {
-      url: "http://localhost:8001",
-      chainId: 1287,
-      accounts: [
-        "0x5fb92d6e98884f76de468fa3f6278f8807c48bebc13595d45af5bdc4da702133",
-        MOON_PRIVATE_KEY
-      ],
-      gasPrice: 1000000000,
-      gas: 8000000,
-      timeout: 60000
-    },
     // Live Networks (EVM)
     moonbase: {
       url: "https://rpc.api.moonbase.moonbeam.network",
