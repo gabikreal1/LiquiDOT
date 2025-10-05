@@ -18,23 +18,60 @@ const { ethers } = require("hardhat");
 const fs = require("fs");
 const path = require("path");
 
-// Fully-qualified artifact paths to load real Algebra contracts from node_modules
-// This ensures we're using the exact same contracts as production Algebra DEX
-const ALGEBRA_ARTIFACTS = {
-  PoolDeployer: "@cryptoalgebra/integral-core/contracts/AlgebraPoolDeployer.sol:AlgebraPoolDeployer",
-  Factory: "@cryptoalgebra/integral-core/contracts/AlgebraFactory.sol:AlgebraFactory",
-  Router: "@cryptoalgebra/integral-periphery/contracts/SwapRouter.sol:SwapRouter",
-  Quoter: "@cryptoalgebra/integral-periphery/contracts/Quoter.sol:Quoter",
-  NFPM: "@cryptoalgebra/integral-periphery/contracts/NonfungiblePositionManager.sol:NonfungiblePositionManager",
+// Paths to pre-compiled Algebra artifacts from npm packages
+// These packages come with pre-compiled bytecode and ABIs
+const ALGEBRA_ARTIFACT_PATHS = {
+  PoolDeployer: path.join(__dirname, "../../node_modules/@cryptoalgebra/integral-core/artifacts/contracts/AlgebraPoolDeployer.sol/AlgebraPoolDeployer.json"),
+  Factory: path.join(__dirname, "../../node_modules/@cryptoalgebra/integral-core/artifacts/contracts/AlgebraFactory.sol/AlgebraFactory.json"),
+  Router: path.join(__dirname, "../../node_modules/@cryptoalgebra/integral-periphery/artifacts/contracts/SwapRouter.sol/SwapRouter.json"),
+  Quoter: path.join(__dirname, "../../node_modules/@cryptoalgebra/integral-periphery/artifacts/contracts/lens/Quoter.sol/Quoter.json"),
+  NFPM: path.join(__dirname, "../../node_modules/@cryptoalgebra/integral-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json"),
 };
+
+/**
+ * Load a contract factory from a pre-compiled artifact
+ * @param {string} artifactPath - Path to the artifact JSON file
+ * @param {Signer} signer - Signer to use for deployment
+ * @returns {ContractFactory} Contract factory ready for deployment
+ */
+function getContractFactoryFromArtifact(artifactPath, signer) {
+  const artifact = JSON.parse(fs.readFileSync(artifactPath, "utf8"));
+  return new ethers.ContractFactory(artifact.abi, artifact.bytecode, signer);
+}
+
+/**
+ * Load existing deployment state or create new
+ */
+function loadDeploymentState(outputDir) {
+  const stateFile = path.join(outputDir, "algebra-deployment-state.json");
+  if (fs.existsSync(stateFile)) {
+    console.log("📂 Found existing deployment state, will resume from checkpoint...\n");
+    return JSON.parse(fs.readFileSync(stateFile, "utf8"));
+  }
+  return { deployed: {} };
+}
+
+/**
+ * Save deployment checkpoint
+ */
+function saveDeploymentState(state, outputDir) {
+  const stateFile = path.join(outputDir, "algebra-deployment-state.json");
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+  fs.writeFileSync(stateFile, JSON.stringify(state, null, 2));
+}
 
 /**
  * Deploys the complete Algebra protocol suite
  * 
  * Deployment order is critical:
- * 1. PoolDeployer first (required by Factory)
- * 2. Factory second (uses PoolDeployer, required by periphery contracts)
- * 3. Periphery contracts (Router, Quoter, NFPM) - depend on Factory
+ * 1. PoolDeployer first (with zero address for factory initially)
+ * 2. Factory second (with PoolDeployer address)
+ * 3. Set Factory address in PoolDeployer
+ * 4. Periphery contracts (Router, Quoter, NFPM) - depend on Factory
+ * 
+ * Supports resuming from checkpoints if deployment fails partway through.
  * 
  * @param {object} options - Deployment configuration options
  * @param {string} options.deployer - Signer account for deployment
@@ -53,67 +90,136 @@ async function deployAlgebraSuite(options = {}) {
   console.log(`\n=== Deploying Algebra Suite on ${network.name} (chainId: ${network.chainId}) ===`);
   console.log(`Deployer address: ${deployer.address}\n`);
 
-  // ===== STEP 1: Deploy Core Contracts =====
+  // Load existing deployment state for checkpointing
+  const outputDir = options.outputDir || path.join(__dirname, "../../deployments");
+  const deploymentState = loadDeploymentState(outputDir);
+
+  // ===== STEP 1: Predict PoolDeployer address and deploy Factory =====
+  let factory, factoryAddress, poolDeployer, poolDeployerAddress;
   
-  // AlgebraPoolDeployer - Creates and manages pool contracts
-  // This is the factory for individual pool instances
-  console.log("📦 Deploying AlgebraPoolDeployer...");
-  const PoolDeployer = await ethers.getContractFactory(ALGEBRA_ARTIFACTS.PoolDeployer, deployer);
-  const poolDeployer = await PoolDeployer.deploy();
-  await poolDeployer.waitForDeployment();
-  const poolDeployerAddress = await poolDeployer.getAddress();
-  console.log(`✅ PoolDeployer deployed: ${poolDeployerAddress}`);
+  if (deploymentState.deployed.factory && deploymentState.deployed.poolDeployer) {
+    console.log(`♻️  Using existing Factory: ${deploymentState.deployed.factory}`);
+    console.log(`♻️  Using existing PoolDeployer: ${deploymentState.deployed.poolDeployer}`);
+    factoryAddress = deploymentState.deployed.factory;
+    poolDeployerAddress = deploymentState.deployed.poolDeployer;
+    const Factory = getContractFactoryFromArtifact(ALGEBRA_ARTIFACT_PATHS.Factory, deployer);
+    const PoolDeployer = getContractFactoryFromArtifact(ALGEBRA_ARTIFACT_PATHS.PoolDeployer, deployer);
+    factory = Factory.attach(factoryAddress);
+    poolDeployer = PoolDeployer.attach(poolDeployerAddress);
+  } else {
+    // Get current nonce
+    const currentNonce = await deployer.getNonce();
+    console.log(`📍 Current nonce: ${currentNonce}`);
+    
+    // Calculate addresses: Factory will be at nonce, PoolDeployer at nonce+1
+    const predictedFactoryAddress = ethers.getCreateAddress({
+      from: deployer.address,
+      nonce: currentNonce
+    });
+    const predictedPoolDeployerAddress = ethers.getCreateAddress({
+      from: deployer.address,
+      nonce: currentNonce + 1
+    });
+    
+    console.log(`📍 Predicted Factory address: ${predictedFactoryAddress}`);
+    console.log(`📍 Predicted PoolDeployer address: ${predictedPoolDeployerAddress}`);
+    
+    // Deploy Factory first (will use predicted PoolDeployer address)
+    console.log("\n📦 Deploying AlgebraFactory...");
+    const Factory = getContractFactoryFromArtifact(ALGEBRA_ARTIFACT_PATHS.Factory, deployer);
+    factory = await Factory.deploy(predictedPoolDeployerAddress);
+    await factory.waitForDeployment();
+    factoryAddress = await factory.getAddress();
+    
+    if (factoryAddress !== predictedFactoryAddress) {
+      throw new Error(`Factory address mismatch! Expected ${predictedFactoryAddress}, got ${factoryAddress}`);
+    }
+    console.log(`✅ Factory deployed: ${factoryAddress}`);
+    
+    // Save checkpoint
+    deploymentState.deployed.factory = factoryAddress;
+    saveDeploymentState(deploymentState, outputDir);
+    
+    // Deploy PoolDeployer second (will use Factory address)
+    console.log("\n📦 Deploying AlgebraPoolDeployer...");
+    const PoolDeployer = getContractFactoryFromArtifact(ALGEBRA_ARTIFACT_PATHS.PoolDeployer, deployer);
+    poolDeployer = await PoolDeployer.deploy(factoryAddress);
+    await poolDeployer.waitForDeployment();
+    poolDeployerAddress = await poolDeployer.getAddress();
+    
+    if (poolDeployerAddress !== predictedPoolDeployerAddress) {
+      throw new Error(`PoolDeployer address mismatch! Expected ${predictedPoolDeployerAddress}, got ${poolDeployerAddress}`);
+    }
+    console.log(`✅ PoolDeployer deployed: ${poolDeployerAddress}`);
+    
+    // Save checkpoint
+    deploymentState.deployed.poolDeployer = poolDeployerAddress;
+    saveDeploymentState(deploymentState, outputDir);
+    
+    console.log("\n✅ Factory and PoolDeployer correctly linked!");
+  }
 
-  // AlgebraFactory - Main entry point for creating pools
-  // Constructor params: (_poolDeployer, _communityVault)
-  // - _poolDeployer: Address of the pool deployer contract
-  // - _communityVault: Address that receives community fees (protocol revenue)
-  console.log("\n📦 Deploying AlgebraFactory...");
-  const communityVault = options.communityVault || deployer.address;
-  const Factory = await ethers.getContractFactory(ALGEBRA_ARTIFACTS.Factory, deployer);
-  const factory = await Factory.deploy(poolDeployerAddress, communityVault);
-  await factory.waitForDeployment();
-  const factoryAddress = await factory.getAddress();
-  console.log(`✅ Factory deployed: ${factoryAddress}`);
-  console.log(`   Community vault set to: ${communityVault}`);
-
-  // ===== STEP 2: Deploy Periphery Contracts =====
+  // ===== STEP 4: Deploy Periphery Contracts =====
+  const wNative = options.wNative || ethers.ZeroAddress;
   
   // SwapRouter - Executes token swaps through Algebra pools
-  // Handles single and multi-hop swaps with slippage protection
-  // Constructor params: (_factory, _WNative)
-  // - _factory: Address of the Algebra factory
-  // - _WNative: Wrapped native token (e.g., WETH) for native token swaps
-  console.log("\n📦 Deploying SwapRouter...");
-  const wNative = options.wNative || ethers.ZeroAddress;
-  const Router = await ethers.getContractFactory(ALGEBRA_ARTIFACTS.Router, deployer);
-  const router = await Router.deploy(factoryAddress, wNative);
-  await router.waitForDeployment();
-  const routerAddress = await router.getAddress();
-  console.log(`✅ Router deployed: ${routerAddress}`);
+  let router, routerAddress;
+  if (deploymentState.deployed.router) {
+    console.log(`\n♻️  Using existing SwapRouter: ${deploymentState.deployed.router}`);
+    routerAddress = deploymentState.deployed.router;
+    const Router = getContractFactoryFromArtifact(ALGEBRA_ARTIFACT_PATHS.Router, deployer);
+    router = Router.attach(routerAddress);
+  } else {
+    console.log("\n📦 Deploying SwapRouter...");
+    const Router = getContractFactoryFromArtifact(ALGEBRA_ARTIFACT_PATHS.Router, deployer);
+    router = await Router.deploy(factoryAddress, wNative, poolDeployerAddress);
+    await router.waitForDeployment();
+    routerAddress = await router.getAddress();
+    console.log(`✅ Router deployed: ${routerAddress}`);
+    
+    deploymentState.deployed.router = routerAddress;
+    saveDeploymentState(deploymentState, outputDir);
+  }
 
   // Quoter - Provides swap price quotes without state changes
-  // Used to preview swap outcomes before execution
-  // Returns expected output amounts and gas estimates
-  console.log("\n📦 Deploying Quoter...");
-  const Quoter = await ethers.getContractFactory(ALGEBRA_ARTIFACTS.Quoter, deployer);
-  const quoter = await Quoter.deploy(factoryAddress);
-  await quoter.waitForDeployment();
-  const quoterAddress = await quoter.getAddress();
-  console.log(`✅ Quoter deployed: ${quoterAddress}`);
+  let quoter, quoterAddress;
+  if (deploymentState.deployed.quoter) {
+    console.log(`\n♻️  Using existing Quoter: ${deploymentState.deployed.quoter}`);
+    quoterAddress = deploymentState.deployed.quoter;
+    const Quoter = getContractFactoryFromArtifact(ALGEBRA_ARTIFACT_PATHS.Quoter, deployer);
+    quoter = Quoter.attach(quoterAddress);
+  } else {
+    console.log("\n📦 Deploying Quoter...");
+    const Quoter = getContractFactoryFromArtifact(ALGEBRA_ARTIFACT_PATHS.Quoter, deployer);
+    quoter = await Quoter.deploy(factoryAddress, wNative, poolDeployerAddress);
+    await quoter.waitForDeployment();
+    quoterAddress = await quoter.getAddress();
+    console.log(`✅ Quoter deployed: ${quoterAddress}`);
+    
+    deploymentState.deployed.quoter = quoterAddress;
+    saveDeploymentState(deploymentState, outputDir);
+  }
 
   // NonfungiblePositionManager (NFPM) - Manages liquidity positions as ERC-721 NFTs
-  // Each liquidity position is represented by a unique NFT
-  // Handles minting, burning, and modifying liquidity positions
-  // Constructor params: (_factory, _WNativeToken)
-  console.log("\n📦 Deploying NonfungiblePositionManager...");
-  const NFPM = await ethers.getContractFactory(ALGEBRA_ARTIFACTS.NFPM, deployer);
-  const nfpm = await NFPM.deploy(factoryAddress, wNative);
-  await nfpm.waitForDeployment();
-  const nfpmAddress = await nfpm.getAddress();
-  console.log(`✅ NFPM deployed: ${nfpmAddress}`);
+  let nfpm, nfpmAddress;
+  if (deploymentState.deployed.nfpm) {
+    console.log(`\n♻️  Using existing NFPM: ${deploymentState.deployed.nfpm}`);
+    nfpmAddress = deploymentState.deployed.nfpm;
+    const NFPM = getContractFactoryFromArtifact(ALGEBRA_ARTIFACT_PATHS.NFPM, deployer);
+    nfpm = NFPM.attach(nfpmAddress);
+  } else {
+    console.log("\n📦 Deploying NonfungiblePositionManager...");
+    const NFPM = getContractFactoryFromArtifact(ALGEBRA_ARTIFACT_PATHS.NFPM, deployer);
+    nfpm = await NFPM.deploy(factoryAddress, wNative, ethers.ZeroAddress, poolDeployerAddress);
+    await nfpm.waitForDeployment();
+    nfpmAddress = await nfpm.getAddress();
+    console.log(`✅ NFPM deployed: ${nfpmAddress}`);
+    
+    deploymentState.deployed.nfpm = nfpmAddress;
+    saveDeploymentState(deploymentState, outputDir);
+  }
 
-  // ===== STEP 3: Prepare deployment data =====
+  // ===== STEP 5: Prepare deployment data =====
   
   const deploymentData = {
     chainId: Number(network.chainId),
@@ -128,22 +234,23 @@ async function deployAlgebraSuite(options = {}) {
       nfpm: nfpmAddress,
     },
     config: {
-      communityVault,
       wNative,
     },
   };
 
-  // ===== STEP 4: Save deployment data to file (optional) =====
+  // ===== STEP 6: Save final deployment data and clean up checkpoint =====
   
   if (options.saveDeployment !== false) {
-    const outputDir = options.outputDir || path.join(__dirname, "../../deployments");
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
-    }
-    
     const outputFile = path.join(outputDir, `${network.name}_algebra.json`);
     fs.writeFileSync(outputFile, JSON.stringify(deploymentData, null, 2));
     console.log(`\n💾 Deployment data saved to: ${outputFile}`);
+    
+    // Clean up checkpoint file on successful completion
+    const checkpointFile = path.join(outputDir, "algebra-deployment-state.json");
+    if (fs.existsSync(checkpointFile)) {
+      fs.unlinkSync(checkpointFile);
+      console.log(`🗑️  Checkpoint file removed (deployment complete)`);
+    }
   }
 
   console.log("\n✅ Algebra suite deployment complete!\n");
@@ -186,6 +293,7 @@ if (require.main === module) {
 
 module.exports = {
   deployAlgebraSuite,
-  ALGEBRA_ARTIFACTS,
+  getContractFactoryFromArtifact,
+  ALGEBRA_ARTIFACT_PATHS,
 };
 

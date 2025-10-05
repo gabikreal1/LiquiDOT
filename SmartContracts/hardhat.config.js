@@ -2,14 +2,15 @@ require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config();
 
 // Load private keys from environment variables
-const MOON_PRIVATE_KEY = process.env.MOON || "0x0000000000000000000000000000000000000000000000000000000000000000";
-const BEAM_PRIVATE_KEY = process.env.BEAM_PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000000";
+const MOON_PRIVATE_KEY = process.env.MOON_PK || "0x0000000000000000000000000000000000000000000000000000000000000000";
+const ASSET_PRIVATE_KEY = process.env.ASSET_PK || "0x0000000000000000000000000000000000000000000000000000000000000000";
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   solidity: {
     version: "0.8.28",
     settings: {
+      viaIR: true,
       optimizer: {
         enabled: true,
         runs: 200
@@ -27,12 +28,6 @@ module.exports = {
       chainId: 1287,
       accounts: [MOON_PRIVATE_KEY],
       gasPrice: 1000000000
-    },
-    moonbeam: {
-      url: "https://rpc.api.moonbeam.network",
-      chainId: 1284,
-      accounts: [BEAM_PRIVATE_KEY],
-      gasPrice: 35000000000
     },
     passethub: {
       url: 'https://testnet-passet-hub-eth-rpc.polkadot.io',

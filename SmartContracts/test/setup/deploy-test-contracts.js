@@ -247,7 +247,8 @@ async function createAndInitializePool(options) {
   let [t0, t1] = token0 < token1 ? [token0, token1] : [token1, token0];
   
   // Create the pool through the factory
-  const tx = await factory.createPool(t0, t1);
+  // Algebra Integral v1.2 requires empty bytes data parameter
+  const tx = await factory.createPool(t0, t1, "0x");
   await tx.wait();
   console.log(`  ✓ Pool creation tx: ${tx.hash}`);
   

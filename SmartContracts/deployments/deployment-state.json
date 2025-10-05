@@ -1,0 +1,77 @@
+{
+  "networks": {
+    "moonbase": {
+      "chainId": 1287,
+      "name": "moonbase",
+      "contracts": {
+        "XCMProxy": {
+          "address": "0x2f6C6207BB0c5118223a8c44FF2f292C3a0C96E0",
+          "deployer": "0x2372cB955817cD5200a559c2faAC93d0B3a88f2d",
+          "deploymentTx": "0xf1aa36898f999bd7eef4c6af3e3f181f86000a17519a162ae9b0fd5ce7363965",
+          "timestamp": "2025-10-05T19:51:30.925Z",
+          "config": {
+            "owner": "0x2372cB955817cD5200a559c2faAC93d0B3a88f2d",
+            "operator": "0x2372cB955817cD5200a559c2faAC93d0B3a88f2d",
+            "quoter": "0x56495A38335B9319304fa0C97A8CF6Cef67251CB",
+            "router": "0x6a43f1f8F11C03991F462a9db2E2876b11dC959e",
+            "nfpm": "0xC068af7d84FBC3F8edCC04CD4aAeB55adA94C00c",
+            "xtokensPrecompile": "0x0000000000000000000000000000000000000804",
+            "defaultDestWeight": "6000000000",
+            "assetHubParaId": 1000,
+            "trustedXcmCaller": "0x0000000000000000000000000000000000000000",
+            "xcmTransactorPrecompile": "0x0000000000000000000000000000000000000806",
+            "defaultSlippageBps": 100,
+            "supportedTokens": {},
+            "xcmConfigFrozen": false
+          },
+          "configurationTxs": [
+            {
+              "action": "setIntegrations",
+              "tx": "0x6b0c78c5ca475dbb535f264155a30ac41501a1d12285afc50fcc5ba8403d08d6",
+              "params": {
+                "quoter": "0x56495A38335B9319304fa0C97A8CF6Cef67251CB",
+                "router": "0x6a43f1f8F11C03991F462a9db2E2876b11dC959e"
+              }
+            },
+            {
+              "action": "setNFPM",
+              "tx": "0x18a4e4d4441eaf6b4aa7299d7e123fe1270b9543e4b5a3d80cf85c85bb88f143",
+              "params": {
+                "nfpm": "0xC068af7d84FBC3F8edCC04CD4aAeB55adA94C00c"
+              }
+            },
+            {
+              "action": "setXTokensPrecompile",
+              "tx": "0xd343256cff18c988ea21901cd4bd0616d00f7db12aa6acd3baea5c6735dbfee4",
+              "params": {
+                "precompile": "0x0000000000000000000000000000000000000804"
+              }
+            },
+            {
+              "action": "setAssetHubParaId",
+              "tx": "0x3865813a6fae065a7d2285ff9a5837dc9b1dac5c8642c445ac6608a7a381093e",
+              "params": {
+                "paraId": 1000
+              }
+            },
+            {
+              "action": "setXcmTransactorPrecompile",
+              "tx": "0x7b50305352d156647b6748695a02f9cca7e1ceff477899b3ec6338bcc2dc3b0c",
+              "params": {
+                "precompile": "0x0000000000000000000000000000000000000806"
+              }
+            },
+            {
+              "action": "setDefaultSlippageBps",
+              "tx": "0x60b9273d0a7fe4b39294178892c8ba6a06b6a496148e6cad76abd33b052f77dd",
+              "params": {
+                "bps": 100
+              }
+            }
+          ]
+        }
+      },
+      "lastRun": "2025-10-05T19:51:30.925Z"
+    }
+  }
+}

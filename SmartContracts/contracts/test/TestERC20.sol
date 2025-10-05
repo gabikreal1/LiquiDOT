@@ -18,14 +18,6 @@ contract TestERC20 is ERC20 {
         _decimals = 18;
     }
     
-    constructor(
-        string memory name,
-        string memory symbol,
-        uint8 decimals_
-    ) ERC20(name, symbol) {
-        _decimals = decimals_;
-    }
-    
     /**
      * @dev Mint tokens to any address (for testing)
      */
