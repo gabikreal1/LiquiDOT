@@ -302,7 +302,7 @@ describe("Mock XCM Integration - Liquidation Flow", function () {
 
       // Test settlement events on AssetHubVault
       await expect(
-        assetHubVault.connect(operator).settleLiquidation(positionId, returnAmount)
+        assetHubVault.connect(operator).settleLiquidation(positionId, { value: returnAmount })
       )
         .to.emit(assetHubVault, "PositionLiquidated")
         .to.emit(assetHubVault, "LiquidationSettled");
@@ -497,7 +497,7 @@ describe("Mock XCM Integration - Liquidation Flow", function () {
 
       // Second settlement should fail
       await expect(
-        assetHubVault.connect(operator).settleLiquidation(positionId, returnAmount)
+        assetHubVault.connect(operator).settleLiquidation(positionId, { value: returnAmount })
       ).to.be.revertedWithCustomError(assetHubVault, "PositionNotActive");
     });
 

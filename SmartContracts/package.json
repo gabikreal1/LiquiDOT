@@ -8,24 +8,7 @@
     "test:polkavm": "hardhat test --config hardhat.config.polkavm.js",
     "node:polkavm": "hardhat node --config hardhat.config.polkavm.js",
     "compile:evm": "hardhat compile --config hardhat.config.evm.js",
-    "test:evm": "hardhat test --config hardhat.config.evm.js",
-    "test:testnet": "hardhat test test/AssetHubVault/testnet/**/*.test.js",
-    "test:testnet:config": "hardhat test test/AssetHubVault/testnet/1.config-check.test.js",
-    "test:testnet:deposits": "hardhat test test/AssetHubVault/testnet/2.deposits.test.js",
-    "test:integration": "hardhat test test/Integration/**/*.test.js",
-    "test:integration:real": "hardhat test test/Integration/1.full-investment-flow.test.js test/Integration/2.full-liquidation-flow.test.js",
-    "test:integration:mock": "hardhat test test/Integration/mock-xcm/**/*.test.js",
-    "test:integration:mock:investment": "hardhat test test/Integration/mock-xcm/1.mock-investment-flow.test.js",
-    "test:integration:mock:liquidation": "hardhat test test/Integration/mock-xcm/2.mock-liquidation-flow.test.js",
-    "test:xcmproxy": "hardhat test test/XCMProxy/**/*.test.js",
-    "test:xcmproxy:deployment": "hardhat test test/XCMProxy/1.deployment.test.js",
-    "test:xcmproxy:access": "hardhat test test/XCMProxy/2.access.test.js",
-    "test:xcmproxy:config": "hardhat test test/XCMProxy/3.config.test.js",
-    "test:xcmproxy:investment": "hardhat test test/XCMProxy/4.investment.test.js",
-    "test:xcmproxy:liquidation": "hardhat test test/XCMProxy/5.liquidation.test.js",
-    "test:xcmproxy:views": "hardhat test test/XCMProxy/6.views.test.js",
-    "test:local": "hardhat test test/AssetHubVault/local/**/*.test.js",
-    "test:all": "hardhat test"
+    "test:evm": "hardhat test --config hardhat.config.evm.js"
   },
   "keywords": [
     "polkadot",
@@ -70,3 +53,4 @@
     "solc": "^0.8.30"
   }
 }
+

@@ -85,13 +85,12 @@ describe("AssetHubVault - Liquidation Settlement", function () {
       let position = await assetHubVault.getPosition(positionId);
       expect(position.active).to.equal(true);
 
-      // Simulate XCM return by sending funds to contract
+      // Settle liquidation with funds
       await deployer.sendTransaction({
         to: await assetHubVault.getAddress(),
         value: returnAmount
       });
 
-      // Settle liquidation
       await assetHubVault.connect(operator).settleLiquidation(positionId, returnAmount);
 
       // Verify position is now inactive
@@ -128,13 +127,9 @@ describe("AssetHubVault - Liquidation Settlement", function () {
       await assetHubVault.connect(user1).deposit({ value: depositAmount });
       const positionId = await createPosition(user1, investmentAmount);
 
-      await deployer.sendTransaction({
-        to: await assetHubVault.getAddress(),
-        value: returnAmount
-      });
 
       await expect(
-        assetHubVault.connect(operator).settleLiquidation(positionId, returnAmount)
+        assetHubVault.connect(operator).settleLiquidation(positionId, { value: returnAmount })
       )
         .to.emit(assetHubVault, "PositionLiquidated")
         .withArgs(positionId, user1.address, returnAmount);
@@ -148,13 +143,9 @@ describe("AssetHubVault - Liquidation Settlement", function () {
       await assetHubVault.connect(user1).deposit({ value: depositAmount });
       const positionId = await createPosition(user1, investmentAmount);
 
-      await deployer.sendTransaction({
-        to: await assetHubVault.getAddress(),
-        value: returnAmount
-      });
 
       await expect(
-        assetHubVault.connect(operator).settleLiquidation(positionId, returnAmount)
+        assetHubVault.connect(operator).settleLiquidation(positionId, { value: returnAmount })
       )
         .to.emit(assetHubVault, "LiquidationSettled")
         .withArgs(positionId, user1.address, returnAmount, investmentAmount);
@@ -173,7 +164,7 @@ describe("AssetHubVault - Liquidation Settlement", function () {
       const positionId = await createPosition(user1, investmentAmount);
 
       await expect(
-        assetHubVault.connect(operator).settleLiquidation(positionId, 0)
+        assetHubVault.connect(operator).settleLiquidation(positionId, { value: 0 })
       ).to.be.revertedWithCustomError(assetHubVault, "AmountZero");
     });
 
@@ -185,34 +176,39 @@ describe("AssetHubVault - Liquidation Settlement", function () {
       await assetHubVault.connect(user1).deposit({ value: depositAmount });
       const positionId = await createPosition(user1, investmentAmount);
 
-      // Send funds and settle once
+      // Settle once with funds
       await deployer.sendTransaction({
         to: await assetHubVault.getAddress(),
         value: returnAmount
       });
+
       await assetHubVault.connect(operator).settleLiquidation(positionId, returnAmount);
 
       // Try to settle again (position now inactive)
       await expect(
-        assetHubVault.connect(operator).settleLiquidation(positionId, returnAmount)
+        assetHubVault.connect(operator).settleLiquidation(positionId, { value: returnAmount })
       ).to.be.revertedWithCustomError(assetHubVault, "PositionNotActive");
     });
 
-    it("should revert when contract has insufficient balance", async function () {
+    it("should accept any positive settlement amount", async function () {
       const depositAmount = ethers.parseEther("100");
       const investmentAmount = ethers.parseEther("50");
-      const returnAmount = ethers.parseEther("60");
+      const returnAmount = ethers.parseEther("30"); // Less than invested
 
       await assetHubVault.connect(user1).deposit({ value: depositAmount });
       const positionId = await createPosition(user1, investmentAmount);
 
-      // Don't send enough funds to contract
-      // Contract only has remaining user balance (50 ETH)
-      // Try to settle with 60 ETH
-
+      // Should accept settlement with different amount (flexible settlement)
       await expect(
-        assetHubVault.connect(operator).settleLiquidation(positionId, returnAmount)
-      ).to.be.revertedWith("Insufficient contract balance");
+        assetHubVault.connect(operator).settleLiquidation(positionId, { value: returnAmount })
+      ).to.not.be.reverted;
+
+      // Verify position is settled and user got the funds
+      const position = await assetHubVault.getPosition(positionId);
+      expect(position.active).to.equal(false);
+
+      const userBalance = await assetHubVault.getUserBalance(user1.address);
+      expect(userBalance).to.equal(returnAmount);
     });
   });
 
@@ -228,18 +224,19 @@ describe("AssetHubVault - Liquidation Settlement", function () {
       await assetHubVault.connect(user1).deposit({ value: depositAmount });
       const positionId = await createPosition(user1, investmentAmount);
 
-      // Send double the amount needed
-      await deployer.sendTransaction({
-        to: await assetHubVault.getAddress(),
-        value: returnAmount * 2n
-      });
+      // Will send double the amount needed in settleLiquidation call
 
       // First settlement succeeds
+      await deployer.sendTransaction({
+        to: await assetHubVault.getAddress(),
+        value: returnAmount
+      });
+
       await assetHubVault.connect(operator).settleLiquidation(positionId, returnAmount);
 
       // Second settlement fails
       await expect(
-        assetHubVault.connect(operator).settleLiquidation(positionId, returnAmount)
+        assetHubVault.connect(operator).settleLiquidation(positionId, { value: returnAmount })
       ).to.be.revertedWithCustomError(assetHubVault, "PositionNotActive");
     });
 
@@ -335,14 +332,10 @@ describe("AssetHubVault - Liquidation Settlement", function () {
       await assetHubVault.connect(user1).deposit({ value: depositAmount });
       const positionId = await createPosition(user1, investmentAmount);
 
-      await deployer.sendTransaction({
-        to: await assetHubVault.getAddress(),
-        value: returnAmount
-      });
 
       // Normal settlement should work
       await expect(
-        assetHubVault.connect(operator).settleLiquidation(positionId, returnAmount)
+        assetHubVault.connect(operator).settleLiquidation(positionId, { value: returnAmount })
       ).to.not.be.reverted;
     });
 
@@ -358,12 +351,13 @@ describe("AssetHubVault - Liquidation Settlement", function () {
       await assetHubVault.connect(user1).deposit({ value: depositAmount });
       const positionId = await createPosition(user1, investmentAmount);
 
+
+      // Normal operation should complete
       await deployer.sendTransaction({
         to: await assetHubVault.getAddress(),
         value: returnAmount
       });
 
-      // Normal operation should complete
       await assetHubVault.connect(operator).settleLiquidation(positionId, returnAmount);
 
       // Position should be settled (inactive)
@@ -430,17 +424,13 @@ describe("AssetHubVault - Liquidation Settlement", function () {
       await ethers.provider.send("evm_mine");
       const positionId2 = await createPosition(user1, investmentAmount);
 
-      // Send funds for both settlements
-      await deployer.sendTransaction({
-        to: await assetHubVault.getAddress(),
-        value: returnAmount * 2n
-      });
+      // Funds for both settlements will be sent in settleLiquidation calls
 
       // Settle first position
-      await assetHubVault.connect(operator).settleLiquidation(positionId1, returnAmount);
+      await assetHubVault.connect(operator).settleLiquidation(positionId1, { value: returnAmount });
 
       // Settle second position
-      await assetHubVault.connect(operator).settleLiquidation(positionId2, returnAmount);
+      await assetHubVault.connect(operator).settleLiquidation(positionId2, { value: returnAmount });
 
       // Both should be inactive
       expect((await assetHubVault.getPosition(positionId1)).active).to.equal(false);

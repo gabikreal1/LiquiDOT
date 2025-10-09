@@ -354,8 +354,43 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         (poolId, baseAsset, amounts, lowerRangePercent, upperRangePercent, positionOwner, slippageBps) =
             abi.decode(investmentParams, (address, address, uint256[], int24, int24, address, uint16));
 
-        // Ensure the transferred token matches the declared baseAsset
-        require(token == baseAsset, "asset mismatch");
+        // Check if received token needs to be swapped to match pool requirements
+        address tokenToUse = token;
+        uint256 swapAmount = amount;
+
+        // If received token != baseAsset, we need to swap
+        if (token != baseAsset) {
+            require(swapRouterContract != address(0), "Swap router not set for token conversion");
+
+            // Approve swap router to spend the received token
+            uint256 currentAllowance = IERC20(token).allowance(address(this), swapRouterContract);
+            if (currentAllowance != 0) {
+                IERC20(token).forceApprove(swapRouterContract, 0);
+            }
+            IERC20(token).forceApprove(swapRouterContract, amount);
+
+            // Swap received token to baseAsset
+            uint256 amountOut = swapExactInputSingle(
+                token,
+                baseAsset,
+                address(this), // recipient
+                amount,
+                0, // amountOutMinimum (0 for now, should be calculated properly)
+                0  // limitSqrtPrice (0 for no limit)
+            );
+
+            // Reset allowance
+            IERC20(token).forceApprove(swapRouterContract, 0);
+
+            // Use the swapped token for investment
+            tokenToUse = baseAsset;
+            swapAmount = amountOut;
+
+            emit ProceedsSwapped(token, baseAsset, amount, amountOut, 0); // positionId = 0 for asset reception
+
+            // Verify we have enough swapped tokens
+            require(swapAmount > 0, "Swap resulted in zero output");
+        }
 
         // Execute investment inline (avoid nonReentrant external self-call)
         (int24 bottomTick, int24 topTick) = calculateTickRange(
@@ -370,7 +405,7 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         uint256 amount0Desired = amounts.length > 0 ? amounts[0] : 0;
         uint256 amount1Desired = amounts.length > 1 ? amounts[1] : 0;
 
-        require(IERC20(baseAsset).balanceOf(address(this)) >= amount, "insufficient base funding");
+        require(IERC20(tokenToUse).balanceOf(address(this)) >= swapAmount, "insufficient swapped funding");
         if (amount0Desired > 0) {
             require(IERC20(token0).balanceOf(address(this)) >= amount0Desired, "insufficient token0 funds");
         }
@@ -393,10 +428,29 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
             if (cur1 != 0) IERC20(token1).forceApprove(nfpmContract, 0);
             IERC20(token1).forceApprove(nfpmContract, amount1Desired);
         }
+        // If we swapped tokens, also approve the swapped token for NFPM if it's one of the pool tokens
+        if (tokenToUse != token && (tokenToUse == token0 || tokenToUse == token1)) {
+            uint256 curSwapped = IERC20(tokenToUse).allowance(address(this), nfpmContract);
+            if (curSwapped != 0) IERC20(tokenToUse).forceApprove(nfpmContract, 0);
+            IERC20(tokenToUse).forceApprove(nfpmContract, swapAmount);
+        }
 
         uint256 bps = slippageBps > 0 ? slippageBps : defaultSlippageBps;
         uint256 amount0Min = amount0Desired == 0 ? 0 : (amount0Desired * (10_000 - bps)) / 10_000;
         uint256 amount1Min = amount1Desired == 0 ? 0 : (amount1Desired * (10_000 - bps)) / 10_000;
+
+        // Determine which amounts to use for minting
+        // If we swapped to token0 or token1, use the swapped amount for that token
+        uint256 finalAmount0Desired = amount0Desired;
+        uint256 finalAmount1Desired = amount1Desired;
+
+        if (tokenToUse == token0 && swapAmount > 0) {
+            finalAmount0Desired = swapAmount;
+            amount0Min = swapAmount == 0 ? 0 : (swapAmount * (10_000 - bps)) / 10_000;
+        } else if (tokenToUse == token1 && swapAmount > 0) {
+            finalAmount1Desired = swapAmount;
+            amount1Min = swapAmount == 0 ? 0 : (swapAmount * (10_000 - bps)) / 10_000;
+        }
 
         (tokenId, liquidityCreated, , ) = INonfungiblePositionManager(nfpmContract).mint(
             INonfungiblePositionManager.MintParams({
@@ -405,8 +459,8 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
                 deployer: address(0),
                 tickLower: bottomTick,
                 tickUpper: topTick,
-                amount0Desired: amount0Desired,
-                amount1Desired: amount1Desired,
+                amount0Desired: finalAmount0Desired,
+                amount1Desired: finalAmount1Desired,
                 amount0Min: amount0Min,
                 amount1Min: amount1Min,
                 recipient: address(this),
@@ -417,6 +471,10 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         // Reset allowances back to 0
         if (amount0Desired > 0) IERC20(token0).forceApprove(nfpmContract, 0);
         if (amount1Desired > 0) IERC20(token1).forceApprove(nfpmContract, 0);
+        // Reset swapped token allowance if we used it
+        if (tokenToUse != token && (tokenToUse == token0 || tokenToUse == token1)) {
+            IERC20(tokenToUse).forceApprove(nfpmContract, 0);
+        }
 
         uint256 positionId = _createPosition(
             poolId,

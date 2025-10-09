@@ -2,15 +2,16 @@
   "chainId": 1287,
   "networkName": "moonbase",
   "deployer": "0x2372cB955817cD5200a559c2faAC93d0B3a88f2d",
-  "timestamp": "2025-10-05T19:48:06.541Z",
+  "timestamp": "2025-10-07T19:39:36.439Z",
   "contracts": {
     "poolDeployer": "0x94dC61d1BC73f11CE5Ec69F982c93C12C3558479",
     "factory": "0xeCDf1a5F17b94b72339078d71c012Fe4d45b1032",
     "router": "0x6a43f1f8F11C03991F462a9db2E2876b11dC959e",
     "quoter": "0x56495A38335B9319304fa0C97A8CF6Cef67251CB",
-    "nfpm": "0xC068af7d84FBC3F8edCC04CD4aAeB55adA94C00c"
+    "nfpm": "0x1A2e52315646EC23340C3b64409D7D16e4F2D632",
+    "wdev": "0x5bDdA8D0FDFB75c05cC9a64dc07B24EAC8058923"
   },
   "config": {
-    "wNative": "0x0000000000000000000000000000000000000000"
+    "wNative": "0x5bDdA8D0FDFB75c05cC9a64dc07B24EAC8058923"
   }
 }

@@ -256,18 +256,18 @@ contract AssetHubVault is ReentrancyGuard {
         uint256 receivedAmount
     ) external onlyOperator nonReentrant {
         if (receivedAmount == 0) revert AmountZero();
-        
+
         Position storage position = positions[positionId];
         if (!position.active) revert PositionNotActive();
-        
+
         // Verify contract has sufficient balance to settle
         // Note: In production, you may want to track expected amounts more precisely
         require(address(this).balance >= receivedAmount, "Insufficient contract balance");
-        
+
         // Update position and user balance
         position.active = false;
         userBalances[position.user] += receivedAmount;
-        
+
         emit PositionLiquidated(positionId, position.user, receivedAmount);
         emit LiquidationSettled(positionId, position.user, receivedAmount, position.amount);
     }
@@ -279,14 +279,19 @@ contract AssetHubVault is ReentrancyGuard {
     function emergencyLiquidatePosition(
         uint32 chainId,
         bytes32 positionId
-    ) external onlyEmergency {
+    ) external payable onlyEmergency {
         Position storage position = positions[positionId];
         if (!position.active) revert PositionNotActive();
         if (position.chainId != chainId) revert ChainIdMismatch();
 
 		position.active = false;
 
-        emit PositionLiquidated(positionId, position.user, 0);
+        // In emergency cases, may receive funds as part of liquidation
+        if (msg.value > 0) {
+            userBalances[position.user] += msg.value;
+        }
+
+        emit PositionLiquidated(positionId, position.user, msg.value);
     }
 
     /**
@@ -318,6 +323,15 @@ contract AssetHubVault is ReentrancyGuard {
     */
     function getPosition(bytes32 positionId) external view returns (Position memory) {
         return positions[positionId];
+    }
+
+    /**
+    * @dev Receive function to accept ETH transfers (for XCM returns and testing)
+    * @notice Only accepts ETH - no other functions can be called via this interface
+    */
+    receive() external payable {
+        // Accept ETH transfers for XCM returns and testing
+        // No additional logic needed - balance tracking is handled in settleLiquidation
     }
 
 } 

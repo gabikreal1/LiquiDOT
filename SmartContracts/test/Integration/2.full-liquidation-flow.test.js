@@ -220,7 +220,7 @@ describe("Integration - Complete Liquidation Flow", function () {
       const returnAmount = position.amount; // Simplify for testing
 
       await expect(
-        assetHubVault.connect(operator).settleLiquidation(positionId, returnAmount)
+        assetHubVault.connect(operator).settleLiquidation(positionId, { value: returnAmount })
       )
         .to.emit(assetHubVault, "PositionLiquidated")
         .to.emit(assetHubVault, "LiquidationSettled");

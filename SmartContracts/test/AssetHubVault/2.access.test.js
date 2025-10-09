@@ -356,7 +356,7 @@ describe("AssetHubVault - Access Control", function () {
         )
           .to.emit(assetHubVault, "PositionLiquidated")
           .and.to.emit(assetHubVault, "LiquidationSettled");
-        
+
         // Verify position is no longer active
         const position = await assetHubVault.getPosition(positionId);
         expect(position.active).to.equal(false);
