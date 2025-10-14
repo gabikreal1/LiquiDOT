@@ -14,6 +14,7 @@
  */
 
 const { ethers } = require("hardhat");
+const algebraDeployments = require("../deployments/moonbase_algebra.json");
 
 async function main() {
   console.log("\n⚙️  Configuring XCMProxy on Moonbase Alpha...\n");
@@ -24,13 +25,13 @@ async function main() {
   const OPERATOR_ADDRESS = process.env.OPERATOR_ADDRESS;
   const TEST_MODE = process.env.TEST_MODE === "true";
 
-  // Algebra DEX addresses (update these with actual Moonbase deployments)
-  const ALGEBRA_QUOTER = process.env.ALGEBRA_QUOTER || ethers.ZeroAddress;
-  const ALGEBRA_ROUTER = process.env.ALGEBRA_ROUTER || ethers.ZeroAddress;
-  const ALGEBRA_NFPM = process.env.ALGEBRA_NFPM || ethers.ZeroAddress;
+  // Algebra DEX addresses from deployment file
+  const ALGEBRA_QUOTER = process.env.ALGEBRA_QUOTER || algebraDeployments.contracts.quoter;
+  const ALGEBRA_ROUTER = process.env.ALGEBRA_ROUTER || algebraDeployments.contracts.router;
+  const ALGEBRA_NFPM = process.env.ALGEBRA_NFPM || algebraDeployments.contracts.nfpm;
 
-  // Token addresses
-  const WDEV_ADDRESS = process.env.WDEV_ADDRESS;  // Wrapped DEV
+  // Token addresses from deployment file
+  const WDEV_ADDRESS = process.env.WDEV_ADDRESS || algebraDeployments.contracts.wdev;  // Wrapped DEV
 
   if (!XCMPROXY_ADDRESS) {
     console.error("❌ XCMPROXY_ADDRESS environment variable required");
@@ -40,6 +41,11 @@ async function main() {
   const [deployer] = await ethers.getSigners();
   console.log("Configuring from:", deployer.address);
   console.log("XCMProxy address:", XCMPROXY_ADDRESS);
+  console.log("\n📦 Using Algebra DEX Suite:");
+  console.log("  Quoter:", ALGEBRA_QUOTER);
+  console.log("  Router:", ALGEBRA_ROUTER);
+  console.log("  NFPM:", ALGEBRA_NFPM);
+  console.log("  WDEV:", WDEV_ADDRESS);
 
   // Connect to deployed contract
   const xcmProxy = await ethers.getContractAt(
@@ -92,7 +98,7 @@ async function main() {
   console.log("\n2️⃣  Setting XCM parameters...");
   
   const XTOKENS_PRECOMPILE = "0x0000000000000000000000000000000000000804";
-  const ASSET_HUB_PARA_ID = 1000;
+  const ASSET_HUB_PARA_ID = 420420422; // Paseo Asset Hub parachain ID
   const DEFAULT_DEST_WEIGHT = 6000000000n;
 
   const currentXTokens = await xcmProxy.xTokensPrecompile();

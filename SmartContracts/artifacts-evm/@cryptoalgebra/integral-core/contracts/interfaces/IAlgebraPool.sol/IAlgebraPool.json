@@ -207,19 +207,6 @@
           "internalType": "uint256",
           "name": "amount1",
           "type": "uint256"
-        }
-      ],
-      "name": "Burn",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "owner",
-          "type": "address"
         },
         {
           "indexed": false,
@@ -228,7 +215,7 @@
           "type": "uint24"
         }
       ],
-      "name": "BurnFee",
+      "name": "Burn",
       "type": "event"
     },
     {
@@ -538,19 +525,6 @@
           "internalType": "int24",
           "name": "tick",
           "type": "int24"
-        }
-      ],
-      "name": "Swap",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "sender",
-          "type": "address"
         },
         {
           "indexed": false,
@@ -565,7 +539,7 @@
           "type": "uint24"
         }
       ],
-      "name": "SwapFee",
+      "name": "Swap",
       "type": "event"
     },
     {

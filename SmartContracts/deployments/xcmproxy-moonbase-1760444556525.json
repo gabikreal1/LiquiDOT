@@ -1,0 +1,12 @@
+{
+  "network": "moonbase",
+  "chainId": 1287,
+  "contract": "XCMProxy",
+  "address": "0xf7749B6A5aD0EB4ed059620B89f14FA8e916ee41",
+  "deployer": "0x2372cB955817cD5200a559c2faAC93d0B3a88f2d",
+  "owner": "0x2372cB955817cD5200a559c2faAC93d0B3a88f2d",
+  "operator": "0x2372cB955817cD5200a559c2faAC93d0B3a88f2d",
+  "timestamp": "2025-10-14T12:22:36.525Z",
+  "deploymentTx": "0x812bbfd8d83db5d6f85037e9d7646407bee73ee468a6b48653e19e331396f67f",
+  "blockNumber": null
+}
