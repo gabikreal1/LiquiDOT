@@ -7,8 +7,11 @@
  * Covers TEST-AHV-007 to TEST-AHV-013 (testnet-safe subset)
  * 
  * Usage:
- *   $env:ASSETHUB_CONTRACT="0xYourAddress"
- *   npx hardhat test test/AssetHubVault/testnet/2.deposits.test.js
+ *   npx hardhat test test/AssetHubVault/testnet/2.deposits.test.js --network passethub
+ * 
+ * Requirements:
+ *   - ASSET_PK in .env must have PAS tokens
+ *   - ASSETHUB_CONTRACT must point to deployed vault
  */
 
 const { expect } = require("chai");
@@ -24,14 +27,24 @@ describe("AssetHubVault Testnet - Deposits & Withdrawals", function () {
       throw new Error("Set ASSETHUB_CONTRACT environment variable");
     }
 
-    [user1, user2] = await ethers.getSigners();
+    // Get signers from the network (passethub network uses ASSET_PK from .env)
+    const signers = await ethers.getSigners();
+    user1 = signers[0]; // Your funded account
+    user2 = signers[1] || signers[0]; // Use same if only one available
 
     const AssetHubVault = await ethers.getContractFactory(
       "contracts/V1(Current)/AssetHubVault.sol:AssetHubVault"
     );
     vault = AssetHubVault.attach(VAULT_ADDRESS);
 
-    console.log(`\n✅ Connected to vault at: ${VAULT_ADDRESS}\n`);
+    console.log(`\n✅ Connected to vault at: ${VAULT_ADDRESS}`);
+    console.log(`✅ Network: ${network.name}`);
+    console.log(`✅ User1 (tester): ${user1.address}`);
+    if (user2 && user2.address !== user1.address) {
+      console.log(`✅ User2: ${user2.address}\n`);
+    } else {
+      console.log(`⚠️  Using single user for all tests\n`);
+    }
   });
 
   describe("Deposit Functionality", function () {
@@ -75,6 +88,10 @@ describe("AssetHubVault Testnet - Deposits & Withdrawals", function () {
     });
 
     it("should allow multiple users to deposit independently (TEST-AHV-009)", async function () {
+      if (user2.address === user1.address) {
+        this.skip(); // Skip if only one account available
+      }
+
       const user1BalanceBefore = await vault.getUserBalance(user1.address);
       const user2BalanceBefore = await vault.getUserBalance(user2.address);
 
@@ -119,23 +136,16 @@ describe("AssetHubVault Testnet - Deposits & Withdrawals", function () {
     });
 
     it("should emit Withdraw event", async function () {
-      const balance = await vault.getUserBalance(user1.address);
-
-      if (balance === 0n) {
-        await vault.connect(user1).deposit({ value: ethers.parseEther("0.1") });
-      }
-
+      // Need existing balance first
+      await vault.connect(user1).deposit({ value: ethers.parseEther("0.05") });
+      await new Promise(resolve => setTimeout(resolve, 6000)); // Wait for block
+      
       const withdrawAmount = ethers.parseEther("0.01");
-      const currentBalance = await vault.getUserBalance(user1.address);
-
-      if (currentBalance < withdrawAmount) {
-        this.skip();
-      }
 
       await expect(
         vault.connect(user1).withdraw(withdrawAmount)
       )
-        .to.emit(vault, "Withdraw")
+        .to.emit(vault, "Withdrawal") // Correct event name
         .withArgs(user1.address, withdrawAmount);
     });
 
@@ -158,12 +168,15 @@ describe("AssetHubVault Testnet - Deposits & Withdrawals", function () {
       // Deposit a specific amount and withdraw it all
       const depositAmount = ethers.parseEther("0.5");
       
-      await vault.connect(user2).deposit({ value: depositAmount });
-      const balance = await vault.getUserBalance(user2.address);
+      await vault.connect(user1).deposit({ value: depositAmount });
+      await new Promise(resolve => setTimeout(resolve, 6000)); // Wait for block
+      
+      const balance = await vault.getUserBalance(user1.address);
 
-      await vault.connect(user2).withdraw(balance);
+      await vault.connect(user1).withdraw(balance);
+      await new Promise(resolve => setTimeout(resolve, 6000)); // Wait for block
 
-      const finalBalance = await vault.getUserBalance(user2.address);
+      const finalBalance = await vault.getUserBalance(user1.address);
       expect(finalBalance).to.equal(0);
 
       console.log(`   ✓ Withdrew full balance: ${ethers.formatEther(balance)} ETH`);
@@ -176,11 +189,15 @@ describe("AssetHubVault Testnet - Deposits & Withdrawals", function () {
 
       // Deposit
       await vault.connect(user1).deposit({ value: ethers.parseEther("1") });
+      await new Promise(resolve => setTimeout(resolve, 6000)); // Wait for block
+      
       const afterDeposit = await vault.getUserBalance(user1.address);
       expect(afterDeposit).to.equal(initialBalance + ethers.parseEther("1"));
 
       // Withdraw
       await vault.connect(user1).withdraw(ethers.parseEther("0.5"));
+      await new Promise(resolve => setTimeout(resolve, 6000)); // Wait for block
+      
       const afterWithdraw = await vault.getUserBalance(user1.address);
       expect(afterWithdraw).to.equal(afterDeposit - ethers.parseEther("0.5"));
 
@@ -193,6 +210,10 @@ describe("AssetHubVault Testnet - Deposits & Withdrawals", function () {
     });
 
     it("should not affect other users' balances", async function () {
+      if (user2.address === user1.address) {
+        this.skip(); // Skip if only one account available
+      }
+
       const user2BalanceBefore = await vault.getUserBalance(user2.address);
 
       // User1 deposits
@@ -210,6 +231,7 @@ describe("AssetHubVault Testnet - Deposits & Withdrawals", function () {
       const depositAmount = ethers.parseEther("0.1");
 
       await vault.connect(user1).deposit({ value: depositAmount });
+      await new Promise(resolve => setTimeout(resolve, 6000)); // Wait for block
 
       const contractBalanceAfter = await ethers.provider.getBalance(VAULT_ADDRESS);
       expect(contractBalanceAfter).to.be.gte(contractBalanceBefore);

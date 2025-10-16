@@ -139,6 +139,7 @@ contract AssetHubVault is ReentrancyGuard {
         XCM_PRECOMPILE = address(0);
         xcmPrecompileFrozen = false;
         paused = false;
+        testMode = false;
     }
 
     event XcmPrecompileSet(address indexed precompile);
@@ -436,9 +437,165 @@ contract AssetHubVault is ReentrancyGuard {
 		return position.user == user && position.status == PositionStatus.Active;
 	}
 
-    function getUserPositions(address user) external view returns (Position[] memory) {
+    // ==================== PAGINATION FUNCTIONS ====================
+
+    /**
+     * @dev Get total count of user positions
+     * @param user The user address
+     * @return count Total number of positions for the user
+     * @notice Gas-efficient way to check position count before pagination
+     */
+    function getUserPositionCount(address user) external view returns (uint256 count) {
+        return userPositions[user].length;
+    }
+
+    /**
+     * @dev Get paginated user position IDs
+     * @param user The user address
+     * @param start Starting index (0-based)
+     * @param count Number of positions to return
+     * @return positionIds Array of position IDs for the requested range
+     * @notice Returns empty array if start >= total count
+     * @notice Returns fewer items if count exceeds available positions
+     */
+    function getUserPositionIds(
+        address user,
+        uint256 start,
+        uint256 count
+    ) external view returns (bytes32[] memory positionIds) {
+        bytes32[] storage allIds = userPositions[user];
+        
+        // Handle edge cases
+        if (start >= allIds.length) {
+            return new bytes32[](0);
+        }
+        
+        // Calculate actual return size
+        uint256 remaining = allIds.length - start;
+        uint256 returnSize = count > remaining ? remaining : count;
+        
+        // Build result array
+        positionIds = new bytes32[](returnSize);
+        for (uint256 i = 0; i < returnSize; i++) {
+            positionIds[i] = allIds[start + i];
+        }
+        
+        return positionIds;
+    }
+
+    /**
+     * @dev Get paginated user positions with full data
+     * @param user The user address
+     * @param start Starting index (0-based)
+     * @param count Number of positions to return
+     * @return list Array of Position structs for the requested range
+     * @notice RECOMMENDED: Use page size of 10-20 for safety
+     * @notice Returns empty array if start >= total count
+     */
+    function getUserPositionsPage(
+        address user,
+        uint256 start,
+        uint256 count
+    ) external view returns (Position[] memory list) {
+        bytes32[] storage allIds = userPositions[user];
+        
+        // Handle edge cases
+        if (start >= allIds.length) {
+            return new Position[](0);
+        }
+        
+        // Calculate actual return size
+        uint256 remaining = allIds.length - start;
+        uint256 returnSize = count > remaining ? remaining : count;
+        
+        // Build result array
+        list = new Position[](returnSize);
+        for (uint256 i = 0; i < returnSize; i++) {
+            list[i] = positions[allIds[start + i]];
+        }
+        
+        return list;
+    }
+
+    /**
+     * @dev Get positions filtered by status
+     * @param user The user address
+     * @param status Position status to filter by (0=Pending, 1=Active, 2=Liquidated)
+     * @param maxResults Maximum number of results to return (0 = return all)
+     * @return list Array of Position structs matching the status
+     * @notice More efficient than getUserPositions when you only need specific status
+     * @notice RECOMMENDED: Set maxResults to 20-50 to avoid gas issues
+     */
+    function getUserPositionsByStatus(
+        address user,
+        PositionStatus status,
+        uint256 maxResults
+    ) external view returns (Position[] memory list) {
+        bytes32[] storage allIds = userPositions[user];
+        
+        // First pass: count matching positions
+        uint256 matchCount = 0;
+        for (uint256 i = 0; i < allIds.length && (maxResults == 0 || matchCount < maxResults); i++) {
+            if (positions[allIds[i]].status == status) {
+                matchCount++;
+            }
+        }
+        
+        // Second pass: collect matching positions
+        list = new Position[](matchCount);
+        uint256 resultIndex = 0;
+        for (uint256 i = 0; i < allIds.length && resultIndex < matchCount; i++) {
+            if (positions[allIds[i]].status == status) {
+                list[resultIndex] = positions[allIds[i]];
+                resultIndex++;
+            }
+        }
+        
+        return list;
+    }
+
+    /**
+     * @dev Get position summary statistics
+     * @param user The user address
+     * @return total Total number of positions
+     * @return pending Number of pending positions
+     * @return active Number of active positions
+     * @return liquidated Number of liquidated positions
+     * @notice Gas-efficient way to get overview without loading all position data
+     */
+    function getUserPositionStats(address user) external view returns (
+        uint256 total,
+        uint256 pending,
+        uint256 active,
+        uint256 liquidated
+    ) {
+        bytes32[] storage allIds = userPositions[user];
+        total = allIds.length;
+        
+        for (uint256 i = 0; i < allIds.length; i++) {
+            PositionStatus status = positions[allIds[i]].status;
+            if (status == PositionStatus.PendingExecution) {
+                pending++;
+            } else if (status == PositionStatus.Active) {
+                active++;
+            } else if (status == PositionStatus.Liquidated) {
+                liquidated++;
+            }
+        }
+        
+        return (total, pending, active, liquidated);
+    }
+
+    /**
+     * @dev LEGACY: Get all user positions (kept for backwards compatibility)
+     * @param user The user address
+     * @return list Array of all Position structs
+     * @notice ⚠️ WARNING: May fail with ContractTrapped if user has 50+ positions
+     * @notice RECOMMENDED: Use getUserPositionsPage() instead for large position counts
+     */
+    function getUserPositions(address user) external view returns (Position[] memory list) {
         bytes32[] storage ids = userPositions[user];
-        Position[] memory list = new Position[](ids.length);
+        list = new Position[](ids.length);
         for (uint256 i = 0; i < ids.length; i++) {
             list[i] = positions[ids[i]];
         }

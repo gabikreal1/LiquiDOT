@@ -43,7 +43,7 @@ module.exports = {
     artifacts: "./artifacts-evm"
   },
   mocha: {
-    timeout: 40000
+    timeout: 120000 // 2 minutes for slow testnet transactions
   }
 };
 
