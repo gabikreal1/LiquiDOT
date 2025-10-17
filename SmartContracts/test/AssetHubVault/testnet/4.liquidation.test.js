@@ -56,6 +56,8 @@ describe("AssetHubVault Testnet - Liquidation Settlement", function () {
 
   describe("Liquidation Settlement - Basic Flow", function () {
     it("should allow operator to settle liquidation (TEST-AHV-024)", async function () {
+      this.timeout(180000); // 3 minutes for this test
+      
       // Create a fresh position for this test
       await vault.connect(operator).deposit({ value: ethers.parseEther("1.0") });
       await new Promise(resolve => setTimeout(resolve, 6000));
@@ -325,7 +327,7 @@ describe("AssetHubVault Testnet - Liquidation Settlement", function () {
 
   describe("Liquidation Settlement - Position State", function () {
     it("should track settled positions correctly", async function () {
-      // Use stats function instead of loading all positions
+      // Use stats function - more gas-efficient for Substrate EVM
       const stats = await vault.getUserPositionStats(operator.address);
       
       console.log(`\n   📊 Position State Summary`);
@@ -334,27 +336,32 @@ describe("AssetHubVault Testnet - Liquidation Settlement", function () {
       console.log(`   Active: ${stats.active}`);
       console.log(`   Liquidated: ${stats.liquidated}`);
       
-      // Get sample of liquidated positions for verification
-      const liquidatedPositions = await vault.getUserPositionsByStatus(
-        operator.address,
-        2, // Liquidated status
-        10 // Max 10
-      );
+      // Verify we have liquidated positions
+      expect(stats.total).to.be.gte(1n, "Should have at least 1 position");
+      expect(stats.liquidated).to.be.gte(1n, "Should have at least 1 liquidated position");
       
-      let totalLiquidated = 0n;
-      for (let i = 0; i < liquidatedPositions.length; i++) {
-        const amount = liquidatedPositions[i][8]; // amount
-        totalLiquidated += amount;
-      }
-      
-      if (liquidatedPositions.length > 0) {
-        console.log(`   Sample Liquidated: ${ethers.formatEther(totalLiquidated)} ETH (from ${liquidatedPositions.length} positions)`);
+      // Get small sample using pagination (avoids Substrate gas limits)
+      if (stats.liquidated > 0n) {
+        const pageSize = 5;
+        const firstPage = await vault.getUserPositionsPage(
+          operator.address,
+          0,
+          pageSize
+        );
+        
+        // Filter in JavaScript (not on-chain)
+        const liquidatedSample = firstPage.filter(pos => pos.status === 2n);
+        
+        if (liquidatedSample.length > 0) {
+          const sampleAmount = liquidatedSample.reduce(
+            (sum, pos) => sum + pos.amount,
+            0n
+          );
+          console.log(`   Sample (${liquidatedSample.length} positions): ${ethers.formatEther(sampleAmount)} ETH`);
+        }
       }
 
       console.log(`   ==========================================\n`);
-
-      expect(stats.total).to.be.gte(1n);
-      expect(stats.liquidated).to.be.gte(1n);
     });
 
     it("should maintain position data after settlement", async function () {

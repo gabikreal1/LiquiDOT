@@ -119,12 +119,16 @@ describe("AssetHubVault Testnet - Investment Dispatch", function () {
     });
 
     it("should create position with correct data (TEST-AHV-019)", async function () {
-      // Get user's positions (returns Position[] structs)
-      const positions = await vault.getUserPositions(operator.address);
-      expect(positions.length).to.be.gte(1);
+      // Get user's position count first
+      const positionCount = await vault.getUserPositionCount(operator.address);
+      expect(positionCount).to.be.gte(1n, "Should have at least 1 position");
 
-      // Get the last position - getUserPositions returns full structs, not IDs
-      const position = positions[positions.length - 1];
+      // Get the last position using pagination (avoid loading all positions)
+      const lastIndex = Number(positionCount) - 1;
+      const positions = await vault.getUserPositionsPage(operator.address, lastIndex, 1);
+      expect(positions.length).to.equal(1, "Should return exactly 1 position");
+      
+      const position = positions[0];
 
       // Position struct: (user, poolId, baseAsset, chainId, lowerRange, upperRange, timestamp, status, amount, remotePositionId)
       // Access by index
