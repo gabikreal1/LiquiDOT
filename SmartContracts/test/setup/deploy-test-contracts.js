@@ -31,27 +31,34 @@ async function deployTestTokens(options = {}) {
   const count = options.count || 2;
   const [defaultSigner] = await ethers.getSigners();
   const deployer = options.deployer || defaultSigner;
-  
-  console.log(`\n📦 Deploying ${count} test ERC20 token(s)...`);
-  
+  const existing = Array.isArray(options.addresses) ? options.addresses.filter(Boolean) : [];
+  const useExisting = existing.length > 0;
+
+  console.log(`\n📦 ${useExisting ? "Attaching" : "Deploying"} ${count} test ERC20 token(s)...`);
+
   const TestERC20 = await ethers.getContractFactory("TestERC20", deployer);
   const tokens = [];
-  
+
   for (let i = 0; i < count; i++) {
-    // Use custom names/symbols if provided, otherwise use defaults
     const name = options.names?.[i] || `TestToken${i}`;
     const symbol = options.symbols?.[i] || `TKN${i}`;
-    
-    // Deploy token with name and symbol
+
+    if (useExisting && existing[i]) {
+      const token = TestERC20.attach(existing[i]);
+      tokens.push(token);
+      console.log(`  ↺ Reusing ${name} (${symbol}): ${existing[i]}`);
+      continue;
+    }
+
     const token = await TestERC20.deploy(name, symbol);
     await token.waitForDeployment();
     const address = await token.getAddress();
-    
+
     tokens.push(token);
     console.log(`  ✓ ${name} (${symbol}): ${address}`);
   }
-  
-  console.log(`✅ ${count} test token(s) deployed\n`);
+
+  console.log(`✅ ${count} test token(s) ${useExisting ? "ready" : "deployed"}\n`);
   return tokens;
 }
 
@@ -245,27 +252,37 @@ async function createAndInitializePool(options) {
   // Algebra requires token0 < token1 (sorted order)
   // Swap if necessary to ensure correct ordering
   let [t0, t1] = token0 < token1 ? [token0, token1] : [token1, token0];
-  
-  // Create the pool through the factory
-  // Algebra Integral v1.2 requires empty bytes data parameter
-  const tx = await factory.createPool(t0, t1, "0x");
-  await tx.wait();
-  console.log(`  ✓ Pool creation tx: ${tx.hash}`);
-  
-  // Get the deployed pool address from the factory
-  const poolAddress = await factory.poolByPair(t0, t1);
-  const pool = await ethers.getContractAt("IAlgebraPool", poolAddress);
-  console.log(`  ✓ Pool deployed: ${poolAddress}`);
-  
-  // Initialize pool with starting price
-  // Default to 1:1 price ratio (sqrt(1) * 2^96)
-  const sqrtPriceX96 = options.sqrtPriceX96 || BigInt("79228162514264337593543950336");
-  const initTx = await pool.initialize(sqrtPriceX96);
-  await initTx.wait();
-  console.log(`  ✓ Pool initialized at 1:1 price`);
-  
+
+  let poolAddress = await factory.poolByPair(t0, t1);
+  let pool;
+  let created = false;
+
+  if (!poolAddress || poolAddress === ethers.ZeroAddress) {
+    // Algebra Integral v1.2 requires empty bytes data parameter
+    const tx = await factory.createPool(t0, t1, "0x");
+    await tx.wait();
+    console.log(`  ✓ Pool creation tx: ${tx.hash}`);
+
+    poolAddress = await factory.poolByPair(t0, t1);
+    created = true;
+  } else {
+    console.log(`  ↺ Pool already exists at ${poolAddress}`);
+  }
+
+  pool = await ethers.getContractAt("IAlgebraPool", poolAddress);
+
+  const shouldInitialize = options.initialize !== false;
+  if (created && shouldInitialize) {
+    const sqrtPriceX96 = options.sqrtPriceX96 || BigInt("79228162514264337593543950336");
+    const initTx = await pool.initialize(sqrtPriceX96);
+    await initTx.wait();
+    console.log(`  ✓ Pool initialized at 1:1 price`);
+  } else if (!created) {
+    console.log("  ↺ Skipping initialization (pool reused)");
+  }
+
   console.log(`✅ Pool ready for use\n`);
-  
+
   return pool;
 }
 
@@ -283,6 +300,7 @@ async function createAndInitializePool(options) {
  * @param {object} options - Liquidity provision options
  * @param {Contract} options.pool - Algebra pool contract instance
  * @param {Contract} options.nfpm - NonfungiblePositionManager contract instance
+ * @param {Contract} [options.poolDeployer] - Algebra pool deployer contract (optional - unused for mint params)
  * @param {Contract} options.token0 - First token contract instance
  * @param {Contract} options.token1 - Second token contract instance
  * @param {Signer} options.provider - Signer providing liquidity
@@ -296,42 +314,80 @@ async function addLiquidityToPool(options) {
     throw new Error("Missing required options: pool, nfpm, token0, token1, provider, amount");
   }
   
+  const providerAddress = provider.address || (await provider.getAddress());
   console.log(`\n💰 Adding liquidity: ${amount} of each token...`);
-  
-  // Convert amount to wei (18 decimals)
-  const amount0 = ethers.parseEther(amount.toString());
-  const amount1 = ethers.parseEther(amount.toString());
-  
-  // Step 1: Mint tokens to the provider
-  console.log(`  Minting tokens to ${provider.address}...`);
-  await (await token0.mint(provider.address, amount0)).wait();
-  await (await token1.mint(provider.address, amount1)).wait();
-  console.log(`    ✓ Tokens minted`);
+
+  const decimals0 = await token0.decimals();
+  const decimals1 = await token1.decimals();
+  const desired0 = ethers.parseUnits(amount.toString(), decimals0);
+  const desired1 = ethers.parseUnits(amount.toString(), decimals1);
+
+  // Step 1: Mint or top up tokens for the provider
+  console.log(`  Ensuring ${providerAddress} holds required tokens...`);
+  const current0 = await token0.balanceOf(providerAddress);
+  if (current0 < desired0) {
+    const delta0 = desired0 - current0;
+    const mintTx0 = await token0.mint(providerAddress, delta0);
+    console.log(`    ↳ token0.mint tx: ${mintTx0.hash} (+${ethers.formatUnits(delta0, decimals0)} tokens)`);
+    await mintTx0.wait();
+  } else {
+    console.log(`    ↺ token0 balance sufficient (${ethers.formatUnits(current0, decimals0)})`);
+  }
+
+  const current1 = await token1.balanceOf(providerAddress);
+  if (current1 < desired1) {
+    const delta1 = desired1 - current1;
+    const mintTx1 = await token1.mint(providerAddress, delta1);
+    console.log(`    ↳ token1.mint tx: ${mintTx1.hash} (+${ethers.formatUnits(delta1, decimals1)} tokens)`);
+    await mintTx1.wait();
+  } else {
+    console.log(`    ↺ token1 balance sufficient (${ethers.formatUnits(current1, decimals1)})`);
+  }
+  console.log("    ✓ Token balances ready");
   
   // Step 2: Approve NFPM to spend provider's tokens
   const nfpmAddress = await nfpm.getAddress();
   console.log(`  Approving NFPM to spend tokens...`);
-  await (await token0.connect(provider).approve(nfpmAddress, amount0)).wait();
-  await (await token1.connect(provider).approve(nfpmAddress, amount1)).wait();
-  console.log(`    ✓ Approvals granted`);
+  const allowance0 = await token0.allowance(providerAddress, nfpmAddress);
+  if (allowance0 < desired0) {
+    const approveTx0 = await token0.connect(provider).approve(nfpmAddress, desired0);
+    console.log(`    ↳ token0.approve tx: ${approveTx0.hash}`);
+    await approveTx0.wait();
+  } else {
+    console.log("    ↺ token0 allowance already sufficient");
+  }
+
+  const allowance1 = await token1.allowance(providerAddress, nfpmAddress);
+  if (allowance1 < desired1) {
+    const approveTx1 = await token1.connect(provider).approve(nfpmAddress, desired1);
+    console.log(`    ↳ token1.approve tx: ${approveTx1.hash}`);
+    await approveTx1.wait();
+  } else {
+    console.log("    ↺ token1 allowance already sufficient");
+  }
+  console.log(`    ✓ Approvals confirmed`);
   
   // Step 3: Mint liquidity position through NFPM
   // This creates an NFT representing the liquidity position
   console.log(`  Minting liquidity position...`);
   const token0Address = await token0.getAddress();
   const token1Address = await token1.getAddress();
+  if (token1Address.toLowerCase() < token0Address.toLowerCase()) {
+    throw new Error(`Token order mismatch: token0 must be < token1 (got ${token0Address} > ${token1Address})`);
+  }
   
   const mintParams = {
     token0: token0Address,
     token1: token1Address,
+    deployer: ethers.ZeroAddress,
     tickLower: -887220,  // Full range liquidity (min tick)
     tickUpper: 887220,   // Full range liquidity (max tick)
-    amount0Desired: amount0,
-    amount1Desired: amount1,
-    amount0Min: 0,       // Accept any amount (no slippage protection for testing)
+    amount0Desired: desired0,
+    amount1Desired: desired1,
+    amount0Min: 0,
     amount1Min: 0,
-    recipient: provider.address,
-    deadline: Math.floor(Date.now() / 1000) + 3600,  // 1 hour from now
+    recipient: providerAddress,
+    deadline: Math.floor(Date.now() / 1000) + 3600,
   };
   
   const tx = await nfpm.connect(provider).mint(mintParams);

@@ -16,15 +16,34 @@
 
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
+const { getMoonbaseTestConfig } = require("./config");
 
 describe("XCMProxy Testnet - Emergency & Admin Functions", function () {
   let proxy;
   let owner;
-  const PROXY_ADDRESS = process.env.XCMPROXY_CONTRACT;
+  const moonbase = getMoonbaseTestConfig();
+  const PROXY_ADDRESS = moonbase.proxyAddress;
+  const BASE_TOKEN = moonbase.baseToken;
+  const SUPPORTED_TOKENS = moonbase.supportedTokens || [];
+  const QUOTE_TOKEN =
+    moonbase.quoteToken ||
+    SUPPORTED_TOKENS.find((addr) =>
+      addr?.toLowerCase() !== BASE_TOKEN?.toLowerCase()
+    );
+  const TEST_POOL_ID = moonbase.poolAddress || ethers.ZeroAddress;
+  const BASE_DECIMALS = Number(moonbase.raw?.baseToken?.decimals ?? 18);
 
   before(async function () {
     if (!PROXY_ADDRESS || PROXY_ADDRESS === ethers.ZeroAddress) {
-      throw new Error("Set XCMPROXY_CONTRACT environment variable");
+      throw new Error(
+        "Proxy address missing. Run bootstrap script or export XCMPROXY_CONTRACT."
+      );
+    }
+
+    if (!BASE_TOKEN) {
+      throw new Error(
+        "Base token missing. Run scripts/bootstrap-moonbase-infra.js or set MOONBASE_BASE_TOKEN."
+      );
     }
 
     [owner] = await ethers.getSigners();
@@ -37,6 +56,16 @@ describe("XCMProxy Testnet - Emergency & Admin Functions", function () {
     console.log(`\n✅ Connected to XCMProxy at: ${PROXY_ADDRESS}`);
     console.log(`✅ Network: ${network.name}`);
     console.log(`✅ Owner Account: ${owner.address}`);
+    console.log(`✅ Base Token: ${BASE_TOKEN}`);
+    if (QUOTE_TOKEN) {
+      console.log(`✅ Quote Token: ${QUOTE_TOKEN}`);
+    }
+    if (TEST_POOL_ID && TEST_POOL_ID !== ethers.ZeroAddress) {
+      console.log(`✅ Pool ID: ${TEST_POOL_ID}`);
+    }
+    if (SUPPORTED_TOKENS.length > 0) {
+      console.log(`✅ Supported Tokens (${SUPPORTED_TOKENS.length}): ${SUPPORTED_TOKENS.join(", ")}`);
+    }
     
     const contractOwner = await proxy.owner();
     console.log(`   Contract owner: ${contractOwner}`);
@@ -107,9 +136,9 @@ describe("XCMProxy Testnet - Emergency & Admin Functions", function () {
       const investmentParams = ethers.AbiCoder.defaultAbiCoder().encode(
         ["address", "address", "uint256[]", "int24", "int24", "address", "uint16"],
         [
-          "0x1234567890abcdef1234567890abcdef12345678",
-          "0x1436aE0dF0A8663F18c0Ec51d7e2E46591730715",
-          [],
+          TEST_POOL_ID,
+          BASE_TOKEN,
+          [0, 0],
           -50,
           50,
           owner.address,
@@ -120,9 +149,9 @@ describe("XCMProxy Testnet - Emergency & Admin Functions", function () {
       await expect(
         proxy.receiveAssets(
           assetHubPositionId,
-          "0x1436aE0dF0A8663F18c0Ec51d7e2E46591730715",
+          BASE_TOKEN,
           owner.address,
-          ethers.parseEther("1.0"),
+          ethers.parseUnits("1.0", BASE_DECIMALS),
           investmentParams
         )
       ).to.be.revertedWithCustomError(proxy, "EnforcedPause");
@@ -294,7 +323,7 @@ describe("XCMProxy Testnet - Emergency & Admin Functions", function () {
         this.skip();
       }
 
-      const testToken = "0x0000000000000000000000000000000000000001";
+  const testToken = ethers.Wallet.createRandom().address;
       
       // Add token
       const addTx = await proxy.addSupportedToken(testToken);
@@ -380,10 +409,10 @@ describe("XCMProxy Testnet - Emergency & Admin Functions", function () {
 
   describe("Balance Queries", function () {
     it("should check contract token balances", async function () {
-      const WETH_MOONBASE = "0x1436aE0dF0A8663F18c0Ec51d7e2E46591730715";
-      
-      const balance = await proxy.getBalance(WETH_MOONBASE);
-      console.log(`   Contract WETH balance: ${ethers.formatEther(balance)}`);
+      const balance = await proxy.getBalance(BASE_TOKEN);
+      console.log(
+        `   Contract base token balance: ${ethers.formatUnits(balance, BASE_DECIMALS)}`
+      );
       
       expect(balance).to.be.gte(0);
     });

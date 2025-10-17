@@ -18,19 +18,29 @@
 
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
+const { getMoonbaseTestConfig } = require("./config");
 
 describe("XCMProxy Testnet - Position Execution", function () {
   let proxy;
   let operator;
-  const PROXY_ADDRESS = process.env.XCMPROXY_CONTRACT;
-
-  // Test parameters
-  const WETH_MOONBASE = "0x1436aE0dF0A8663F18c0Ec51d7e2E46591730715";
-  const TEST_POOL_ID = "0x1234567890abcdef1234567890abcdef12345678";
+  let lastRecordedPositionCounter = 0n;
+  const moonbase = getMoonbaseTestConfig();
+  const PROXY_ADDRESS = moonbase.proxyAddress;
+  const BASE_TOKEN = moonbase.baseToken;
+  const QUOTE_TOKEN = moonbase.quoteToken || moonbase.supportedTokens?.find((addr) => addr.toLowerCase() !== moonbase.baseToken?.toLowerCase());
+  const TEST_POOL_ID = moonbase.poolAddress;
   
   before(async function () {
     if (!PROXY_ADDRESS || PROXY_ADDRESS === ethers.ZeroAddress) {
-      throw new Error("Set XCMPROXY_CONTRACT environment variable");
+      throw new Error("Proxy address missing. Run bootstrap script or set XCMPROXY_ADDRESS / XCMPROXY_CONTRACT.");
+    }
+
+    if (!TEST_POOL_ID || TEST_POOL_ID === ethers.ZeroAddress) {
+      throw new Error("Pool address missing. Ensure bootstrap summary exported MOONBASE_REAL_POOL or set MOONBASE_REAL_POOL manually.");
+    }
+
+    if (!BASE_TOKEN) {
+      throw new Error("Base token missing. Ensure MOONBASE_BASE_TOKEN is set or bootstrap summary is available.");
     }
 
     [operator] = await ethers.getSigners();
@@ -75,13 +85,19 @@ describe("XCMProxy Testnet - Position Execution", function () {
     console.log(`\n✅ Connected to XCMProxy at: ${PROXY_ADDRESS}`);
     console.log(`✅ Network: ${network.name}`);
     console.log(`✅ Operator: ${operator.address}`);
-    console.log(`✅ NFPM: ${nfpm}\n`);
+    console.log(`✅ NFPM: ${nfpm}`);
+    console.log(`✅ Pool: ${TEST_POOL_ID}`);
+    console.log(`✅ Base Token: ${BASE_TOKEN}`);
+    if (QUOTE_TOKEN) {
+      console.log(`✅ Quote Token: ${QUOTE_TOKEN}`);
+    }
+    console.log();
   });
 
   describe("Position Execution - Basic Flow", function () {
     before(function() {
       // These tests require a real Algebra pool and funded contract
-      const skipIntegration = !process.env.MOONBASE_REAL_POOL;
+  const skipIntegration = !process.env.MOONBASE_REAL_POOL && !TEST_POOL_ID;
       if (skipIntegration) {
         console.log("\n⏭️  Skipping position execution tests (requires real pool setup)");
         console.log("   To enable these tests:");
@@ -101,11 +117,13 @@ describe("XCMProxy Testnet - Position Execution", function () {
         ethers.toUtf8Bytes(`test-exec-${Date.now()}`)
       );
 
+      const counterBefore = await proxy.positionCounter();
+
       const investmentParams = ethers.AbiCoder.defaultAbiCoder().encode(
         ["address", "address", "uint256[]", "int24", "int24", "address", "uint16"],
         [
           TEST_POOL_ID,
-          WETH_MOONBASE,
+          BASE_TOKEN,
           [ethers.parseEther("0.5"), ethers.parseEther("0.5")],
           -50,
           50,
@@ -117,7 +135,7 @@ describe("XCMProxy Testnet - Position Execution", function () {
       // Receive assets (create pending position)
       const receiveTx = await proxy.receiveAssets(
         assetHubPositionId,
-        WETH_MOONBASE,
+  BASE_TOKEN,
         operator.address,
         ethers.parseEther("1.0"),
         investmentParams
@@ -178,6 +196,11 @@ describe("XCMProxy Testnet - Position Execution", function () {
       console.log(`   ✓ Local Position ID: ${localPositionId}`);
       console.log(`   ✓ NFPM Token ID: ${position.tokenId}`);
       console.log(`   ✓ Liquidity: ${position.liquidity}`);
+
+      const counterAfter = await proxy.positionCounter();
+      expect(counterAfter).to.equal(counterBefore + 1n);
+      console.log(`   ✓ Position counter incremented: ${counterBefore} → ${counterAfter}`);
+      lastRecordedPositionCounter = counterAfter;
     });
 
     it("should fail on non-existent pending position", async function () {
@@ -233,7 +256,7 @@ describe("XCMProxy Testnet - Position Execution", function () {
         ["address", "address", "uint256[]", "int24", "int24", "address", "uint16"],
         [
           TEST_POOL_ID,
-          WETH_MOONBASE,
+          BASE_TOKEN,
           [ethers.parseEther("0.5"), ethers.parseEther("0.5")],
           -50,
           50,
@@ -244,7 +267,7 @@ describe("XCMProxy Testnet - Position Execution", function () {
 
       const tx = await proxy.receiveAssets(
         assetHubPositionId,
-        WETH_MOONBASE,
+  BASE_TOKEN,
         operator.address,
         ethers.parseEther("1.0"),
         investmentParams
@@ -272,7 +295,7 @@ describe("XCMProxy Testnet - Position Execution", function () {
         ["address", "address", "uint256[]", "int24", "int24", "address", "uint16"],
         [
           TEST_POOL_ID,
-          WETH_MOONBASE,
+          BASE_TOKEN,
           [ethers.parseEther("0.5"), ethers.parseEther("0.5")],
           wideRangeLower,
           wideRangeUpper,
@@ -283,7 +306,7 @@ describe("XCMProxy Testnet - Position Execution", function () {
 
       const tx = await proxy.receiveAssets(
         assetHubPositionId,
-        WETH_MOONBASE,
+          BASE_TOKEN,
         operator.address,
         ethers.parseEther("1.0"),
         investmentParams
@@ -300,54 +323,13 @@ describe("XCMProxy Testnet - Position Execution", function () {
   });
 
   describe("Position Counter Management", function () {
-    before(function() {
-      // This test also requires real pool setup
-      const skipIntegration = !process.env.MOONBASE_REAL_POOL;
-      if (skipIntegration) {
-        console.log("\n⏭️  Skipping position counter test (requires execution)");
-        this.skip();
+    it("should report increased counter after executions", async function () {
+      const currentCounter = await proxy.positionCounter();
+      expect(currentCounter).to.be.gte(1n);
+      if (lastRecordedPositionCounter !== 0n) {
+        expect(currentCounter).to.equal(lastRecordedPositionCounter);
       }
-    });
-
-    it("should increment position counter on execution", async function () {
-      const counterBefore = await proxy.positionCounter();
-
-      // Create and execute a position
-      const assetHubPositionId = ethers.keccak256(
-        ethers.toUtf8Bytes(`test-counter-${Date.now()}`)
-      );
-
-      const investmentParams = ethers.AbiCoder.defaultAbiCoder().encode(
-        ["address", "address", "uint256[]", "int24", "int24", "address", "uint16"],
-        [TEST_POOL_ID, WETH_MOONBASE, [], -50, 50, operator.address, 100]
-      );
-
-      const receiveTx = await proxy.receiveAssets(
-        assetHubPositionId,
-        WETH_MOONBASE,
-        operator.address,
-        ethers.parseEther("1.0"),
-        investmentParams
-      );
-      await receiveTx.wait();
-
-      // Verify pending position was created
-      const pending = await proxy.pendingPositions(assetHubPositionId);
-      expect(pending.exists).to.be.true;
-
-      // Skip execution if NFPM not set
-      const nfpm = await proxy.nfpmContract();
-      if (nfpm === ethers.ZeroAddress) {
-        console.log(`   ⚠️  Skipping execution - NFPM not configured`);
-        this.skip();
-      }
-
-      await proxy.executePendingInvestment(assetHubPositionId);
-
-      const counterAfter = await proxy.positionCounter();
-      expect(counterAfter).to.equal(counterBefore + 1n);
-
-      console.log(`   ✓ Position counter incremented: ${counterBefore} → ${counterAfter}`);
+      console.log(`   ✓ Current position counter: ${currentCounter}`);
     });
   });
 });

@@ -17,22 +17,32 @@
 
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
+const { getMoonbaseTestConfig } = require("./config");
 
 describe("XCMProxy Testnet - Liquidation", function () {
   let proxy;
   let operator;
-  const PROXY_ADDRESS = process.env.XCMPROXY_CONTRACT;
-
-  // Test parameters
-  const WETH_MOONBASE = "0x1436aE0dF0A8663F18c0Ec51d7e2E46591730715";
-  const TEST_POOL_ID = "0x1234567890abcdef1234567890abcdef12345678";
+  const moonbase = getMoonbaseTestConfig();
+  const PROXY_ADDRESS = moonbase.proxyAddress;
+  const TEST_POOL_ID = moonbase.poolAddress;
+  const BASE_TOKEN = moonbase.baseToken;
+  const QUOTE_TOKEN = moonbase.quoteToken || moonbase.supportedTokens?.find((addr) => addr.toLowerCase() !== (moonbase.baseToken || "").toLowerCase());
+  const SUPPORTED_TOKENS = moonbase.supportedTokens || [];
   
   // Mock XCM destination for asset return
   const MOCK_ASSET_HUB_DEST = "0x01010200a10f0100"; // Mock MultiLocation bytes
   
   before(async function () {
     if (!PROXY_ADDRESS || PROXY_ADDRESS === ethers.ZeroAddress) {
-      throw new Error("Set XCMPROXY_CONTRACT environment variable");
+      throw new Error("Proxy address missing. Run bootstrap script or set XCMPROXY_ADDRESS / XCMPROXY_CONTRACT.");
+    }
+
+    if (!TEST_POOL_ID || TEST_POOL_ID === ethers.ZeroAddress) {
+      throw new Error("Pool address missing. Ensure MOONBASE_REAL_POOL is set or rerun bootstrap.");
+    }
+
+    if (!BASE_TOKEN) {
+      throw new Error("Base token missing. Ensure MOONBASE_BASE_TOKEN is set or rerun bootstrap.");
     }
 
     [operator] = await ethers.getSigners();
@@ -60,6 +70,14 @@ describe("XCMProxy Testnet - Liquidation", function () {
     console.log(`\n✅ Connected to XCMProxy at: ${PROXY_ADDRESS}`);
     console.log(`✅ Network: ${network.name}`);
     console.log(`✅ Operator: ${operator.address}`);
+    console.log(`✅ Pool: ${TEST_POOL_ID}`);
+    console.log(`✅ Base Token: ${BASE_TOKEN}`);
+    if (QUOTE_TOKEN) {
+      console.log(`✅ Quote Token: ${QUOTE_TOKEN}`);
+    }
+    if (SUPPORTED_TOKENS.length > 0) {
+      console.log(`✅ Supported Tokens: ${SUPPORTED_TOKENS.join(", ")}`);
+    }
     console.log(`✅ Test Mode: Enabled (XCM calls will be skipped)\n`);
   });
 
@@ -69,7 +87,7 @@ describe("XCMProxy Testnet - Liquidation", function () {
 
     before(async function () {
       // These tests depend on executed positions from test 3
-      const skipIntegration = !process.env.MOONBASE_REAL_POOL;
+  const skipIntegration = !TEST_POOL_ID;
       if (skipIntegration) {
         console.log("\n⏭️  Skipping liquidation tests (requires executed positions)");
         console.log("   See test/XCMProxy/testnet/FAILURE_ANALYSIS.md for setup instructions.\n");
@@ -88,7 +106,7 @@ describe("XCMProxy Testnet - Liquidation", function () {
         ["address", "address", "uint256[]", "int24", "int24", "address", "uint16"],
         [
           TEST_POOL_ID,
-          WETH_MOONBASE,
+          BASE_TOKEN,
           [ethers.parseEther("0.5"), ethers.parseEther("0.5")],
           -50,
           50,
@@ -99,7 +117,7 @@ describe("XCMProxy Testnet - Liquidation", function () {
 
       const receiveTx = await proxy.receiveAssets(
         testAssetHubPositionId,
-        WETH_MOONBASE,
+  BASE_TOKEN,
         operator.address,
         ethers.parseEther("1.0"),
         investmentParams
@@ -209,7 +227,7 @@ describe("XCMProxy Testnet - Liquidation", function () {
         ["address", "address", "uint256[]", "int24", "int24", "address", "uint16"],
         [
           TEST_POOL_ID,
-          WETH_MOONBASE,
+          BASE_TOKEN,
           [ethers.parseEther("0.5"), ethers.parseEther("0.5")],
           -50,
           50,
@@ -220,7 +238,7 @@ describe("XCMProxy Testnet - Liquidation", function () {
 
       const receiveTx = await proxy.receiveAssets(
         fullFlowAssetHubId,
-        WETH_MOONBASE,
+  BASE_TOKEN,
         operator.address,
         ethers.parseEther("1.0"),
         investmentParams
@@ -266,8 +284,8 @@ describe("XCMProxy Testnet - Liquidation", function () {
       // Execute full liquidation flow with swap and return
       const tx = await proxy.liquidateSwapAndReturn(
         fullFlowPositionId,
-        position.token0,        // tokenIn (from liquidation)
-        WETH_MOONBASE,          // tokenOut (baseAsset)
+  position.token0,        // tokenIn (from liquidation)
+  BASE_TOKEN,             // tokenOut (baseAsset)
         0,                      // limitSqrtPrice (0 = no limit)
         MOCK_ASSET_HUB_DEST,    // destination
         operator.address,       // user
@@ -310,12 +328,12 @@ describe("XCMProxy Testnet - Liquidation", function () {
 
       const investmentParams = ethers.AbiCoder.defaultAbiCoder().encode(
         ["address", "address", "uint256[]", "int24", "int24", "address", "uint16"],
-        [TEST_POOL_ID, WETH_MOONBASE, [], -50, 50, operator.address, 100]
+  [TEST_POOL_ID, BASE_TOKEN, [], -50, 50, operator.address, 100]
       );
 
       const receiveTx = await proxy.receiveAssets(
         assetHubPositionId,
-        WETH_MOONBASE,
+  BASE_TOKEN,
         operator.address,
         ethers.parseEther("1.0"),
         investmentParams
@@ -409,7 +427,7 @@ describe("XCMProxy Testnet - Liquidation", function () {
       // returnAssets signature: (address token, address user, uint256 amount, bytes destination)
       // In test mode, XCM transfer is skipped
       const tx = await proxy.returnAssets(
-        WETH_MOONBASE,
+        BASE_TOKEN,
         operator.address,
         ethers.parseEther("0.1"),
         MOCK_ASSET_HUB_DEST

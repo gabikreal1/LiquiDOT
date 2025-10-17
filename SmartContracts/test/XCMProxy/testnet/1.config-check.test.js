@@ -11,20 +11,14 @@
 
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
+const { getMoonbaseTestConfig } = require("./config");
 
 describe("XCMProxy Testnet - Configuration Check", function () {
   let proxy;
-  const PROXY_ADDRESS = process.env.XCMPROXY_CONTRACT;
+  const moonbase = getMoonbaseTestConfig();
+  const PROXY_ADDRESS = moonbase.proxyAddress;
 
   before(async function () {
-    if (!PROXY_ADDRESS || PROXY_ADDRESS === ethers.ZeroAddress) {
-      throw new Error(
-        "❌ XCMPROXY_CONTRACT environment variable not set!\n" +
-        "   Set it to your deployed contract address:\n" +
-        "   $env:XCMPROXY_CONTRACT=\"0xYourAddress\""
-      );
-    }
-
     console.log(`\n🔗 Connecting to XCMProxy at: ${PROXY_ADDRESS}`);
 
     const XCMProxy = await ethers.getContractFactory(
