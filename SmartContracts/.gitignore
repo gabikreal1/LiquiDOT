@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.local
+
+# Build outputs
+artifacts/
+artifacts-evm/
+cache/
+cache-evm/
+out/
+build/
+
+# Test results
+*.log
+test-results-*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Hardhat
+coverage/
+coverage.json
+typechain/
+typechain-types/
+
+# Foundry
+broadcast/
