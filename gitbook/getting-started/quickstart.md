@@ -18,20 +18,82 @@ layout:
 
 # Quickstart
 
-<figure><img src="https://gitbookio.github.io/onboarding-template-images/quickstart-hero.png" alt=""><figcaption></figcaption></figure>
+Get started with LiquiDOT in minutes. This guide will walk you through setting up your first automated liquidity position.
 
-Beautiful documentation starts with the content you create — and GitBook makes it easy to get started with any pre-existing content.
+## Prerequisites
+
+Before you begin, make sure you have:
+
+* A Polkadot-compatible wallet (e.g., Polkadot.js, Talisman, SubWallet)
+* Testnet tokens:
+  * **Moonbase DEV** - Get from [Moonbeam Faucet](https://faucet.moonbeam.network/)
+  * **Paseo DOT** - Get from [Paseo Faucet](https://faucet.paseo.network/)
+* Basic understanding of liquidity provision
 
 {% hint style="info" %}
-Want to learn about writing content from scratch? Head to the [Basics](../basics/editor.md) section to learn more.
+Currently, LiquiDOT is in MVP phase and operates on testnets. Mainnet deployment is planned for future releases.
 {% endhint %}
 
-### Import
+## Step 1: Connect Your Wallet
 
-GitBook supports importing content from many popular writing tools and formats. If your content already exists, you can upload a file or group of files to be imported.
+1. Navigate to [liquidot.xyz](https://liquidot.xyz) (coming soon)
+2. Click **Connect Wallet**
+3. Select your preferred wallet provider
+4. Approve the connection request
 
-<div data-full-width="false"><figure><img src="https://gitbookio.github.io/onboarding-template-images/quickstart-import.png" alt=""><figcaption></figcaption></figure></div>
+## Step 2: Deposit Funds
 
-### Sync a repository
+1. Go to the **Dashboard**
+2. Click **Deposit**
+3. Select your asset (e.g., DOT, USDC)
+4. Enter the amount you want to deposit
+5. Confirm the transaction in your wallet
 
-GitBook also allows you to set up a bi-directional sync with an existing repository on GitHub or GitLab. Setting up Git Sync allows you and your team to write content in GitBook or in code, and never have to worry about your content becoming out of sync.
+Your funds will be securely held in the Asset Hub Vault Contract.
+
+## Step 3: Configure Your Strategy
+
+1. Navigate to **Strategy Settings**
+2. Choose your risk profile:
+   * **Conservative** - Lower risk, stable returns
+   * **Moderate** - Balanced risk/reward
+   * **Aggressive** - Higher risk, maximum returns
+3. Set your preferences:
+   * **Minimum APY** - Your target annual percentage yield
+   * **Max Allocation Per Pool** - Maximum percentage per LP position
+   * **Stop Loss** - Automatic exit threshold (e.g., -5%)
+   * **Take Profit** - Profit-taking threshold (e.g., +15%)
+4. Select your preferred assets
+5. Click **Save Strategy**
+
+## Step 4: Monitor Your Positions
+
+Once your strategy is configured, LiquiDOT will automatically:
+
+* Analyze available liquidity pools across parachains
+* Execute optimal LP positions based on your preferences
+* Monitor positions in real-time
+* Trigger stop-loss or take-profit when thresholds are met
+* Rebalance positions to maximize returns
+
+You can track everything from your **Dashboard**:
+
+* Active positions and their performance
+* Historical returns
+* Upcoming rebalancing actions
+* Risk metrics
+
+## Next Steps
+
+<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>📚 Learn the Architecture</strong></td><td>Understand how LiquiDOT works under the hood</td><td><a href="../basics/architecture.md">architecture.md</a></td></tr><tr><td><strong>⚙️ Advanced Configuration</strong></td><td>Fine-tune your strategy parameters</td><td><a href="../basics/risk-parameters.md">risk-parameters.md</a></td></tr><tr><td><strong>🔍 Monitor Positions</strong></td><td>Learn to track and analyze your LP positions</td><td><a href="../basics/monitoring-positions.md">monitoring-positions.md</a></td></tr></tbody></table>
+
+## Getting Help
+
+* Check our [FAQ](../basics/faq.md)
+* Join our [Discord community](https://discord.gg/liquidot)
+* Review the [Video Tutorial](https://youtube.com/liquidot)
+* Read the [User Guide](../basics/creating-position.md)
+
+{% hint style="success" %}
+Congratulations! You're now ready to start automated liquidity provision with LiquiDOT.
+{% endhint %}

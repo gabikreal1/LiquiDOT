@@ -16,12 +16,46 @@ layout:
     visible: true
 ---
 
-# Welcome
+# Welcome to LiquiDOT
 
-Welcome to the GitBook starter template! Here you'll get an overview of all the amazing features GitBook offers to help you build beautiful, interactive documentation.
+LiquiDOT is a customizable liquidity provider (LP) manager designed to simplify and improve participation in DeFi. It allows users to automate their LP strategies, set stop loss and take profit levels, and rebalance their positions without needing constant manual oversight.
 
-You'll see some of the best parts of GitBook in action — and find help on how you can turn this template into your own.
+With support for multiple DEXes and leveraging Polkadot's cross-chain capabilities, LiquiDOT offers a single, user-friendly platform for managing liquidity across different ecosystems. The goal is to bring meaningful control, automation, and flexibility to liquidity providers — something that's currently missing in the space.
+
+## 🌟 Key Features
+
+* **Automated LP Management** - Set your strategy and let LiquiDOT handle the rest
+* **Cross-Chain Support** - Manage liquidity across multiple parachains via XCM
+* **Risk Management** - Built-in stop-loss and take-profit mechanisms
+* **Customizable Strategies** - Tailor your LP positions to your risk tolerance
+* **User-Friendly Interface** - No constant manual oversight required
 
 ### Jump right in
 
-<table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-cover data-type="files"></th><th data-hidden></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><h4><i class="fa-bolt">:bolt:</i></h4></td><td><strong>Quickstart</strong></td><td>Create your first site</td><td></td><td></td><td><a href="getting-started/quickstart.md">quickstart.md</a></td></tr><tr><td><h4><i class="fa-leaf">:leaf:</i></h4></td><td><strong>Editor basics</strong></td><td>Learn the basics of GitBook</td><td></td><td></td><td><a href="https://github.com/GitbookIO/gitbook-templates/blob/main/product-docs/broken-reference/README.md">https://github.com/GitbookIO/gitbook-templates/blob/main/product-docs/broken-reference/README.md</a></td></tr><tr><td><h4><i class="fa-globe-pointer">:globe-pointer:</i></h4></td><td><strong>Publish your docs</strong></td><td>Share your docs online</td><td></td><td></td><td><a href="getting-started/publish-your-docs.md">publish-your-docs.md</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>🚀 Quickstart</strong></td><td>Get started with LiquiDOT</td><td></td><td><a href="getting-started/quickstart.md">quickstart.md</a></td></tr><tr><td><strong>🏗️ Architecture</strong></td><td>Understand the system design</td><td></td><td><a href="basics/architecture.md">architecture.md</a></td></tr><tr><td><strong>📜 Smart Contracts</strong></td><td>Deep dive into our contracts</td><td></td><td><a href="basics/smart-contracts.md">smart-contracts.md</a></td></tr></tbody></table>
+
+## Why LiquiDOT?
+
+### Integration with Polkadot
+
+Polkadot provides the ideal foundation for LiquiDOT by enabling seamless interaction across chains through smart contract deployment and cross-chain messaging. This allows us to connect with multiple parachains and decentralized exchanges, giving users the ability to manage liquidity across ecosystems from a single interface.
+
+### The Problem We Solve
+
+While trading platforms have long supported features like automation, stop loss, and take profit, these tools haven't yet made their way into LP management. LiquiDOT changes that by providing:
+
+* **Cross-chain liquidity optimization** using Polkadot's XCM
+* **User-defined strategies** tailored to risk tolerance
+* **Advanced risk management tools** with automated triggers
+* **Custom asset preferences** for personalized exposure
+* **Capital control** with allocation limits and APR thresholds
+
+## 🎯 Target Audience
+
+LiquiDOT is designed for:
+
+* **Crypto enthusiasts** looking to optimize their Polkadot ecosystem experience
+* **Experienced DeFi users** seeking higher yields than basic spot/HODL strategies
+* **LP newcomers** who want a reliable, automated entry into liquidity provision
+* **Developers and projects** building on parachains who need efficient liquidity management
+* **Institutional participants** managing large-scale cross-chain positions
