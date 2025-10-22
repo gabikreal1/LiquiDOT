@@ -1,202 +1,116 @@
 # LiquiDOT Test Suite
 
-## 🎯 Overview
-
-Complete test coverage for the LiquiDOT protocol, supporting **testnet-first testing** with existing deployed contracts and **integration testing** when XCM is connected.
-
-**Total Tests:** 128+ covering all components  
-**Currently Executable:** 28 tests on Asset Hub testnet  
-**Ready for XCM:** 21 integration tests  
+Complete test suite for the LiquiDOT protocol with **testnet-first design** - all tests work with existing deployed contracts.
 
 ## 📁 Test Structure
 
 ```
 test/
-├── AssetHubVault/
-│   ├── testnet/                    ✅ RUN NOW (28 tests)
-│   │   ├── 1.config-check.test.js      # Configuration validation
-│   │   └── 2.deposits.test.js          # Deposit/withdrawal behavior
-│   │
-│   ├── local/                      🔧 Local development only
-│   │   ├── 1.deployment.test.js        # Fresh contract deployment
-│   │   ├── 2.access.test.js            # Complete access control
-│   │   ├── 3.deposit.test.js           # Full deposit/withdraw tests
-│   │   ├── 4.investment.test.js        # Investment dispatch (test mode)
-│   │   └── 5.liquidation.test.js       # Liquidation settlement
-│   │
-│   ├── test-setup.js                # Helper for both modes
-│   ├── TESTING_MODES.md             # Local vs Testnet guide
-│   └── TESTNET_TESTING_GUIDE.md     # Detailed testnet guide
+├── AssetHubVault/testnet/          ✅ Asset Hub Tests (5 tests)
+│   ├── 1.config-check.test.js      # Verify deployment
+│   ├── 2.deposits.test.js          # Deposit/withdrawal
+│   ├── 3.investment.test.js        # Investment dispatch
+│   ├── 4.liquidation.test.js       # Liquidation settlement
+│   └── 5.emergency.test.js         # Emergency functions
 │
-├── Integration/
-│   ├── mock-xcm/                   ✅ RUN NOW (No XCM needed!)
-│   │   ├── 1.mock-investment-flow.test.js  # Complete investment flow (simulated XCM)
-│   │   ├── 2.mock-liquidation-flow.test.js # Complete liquidation flow (simulated XCM)
-│   │   └── README.md                       # Mock XCM guide
-│   │
-│   ├── 1.full-investment-flow.test.js  # ⏳ Real XCM (Asset Hub → Moonbase)
-│   ├── 2.full-liquidation-flow.test.js # ⏳ Real XCM (Moonbase → Asset Hub)
-│   ├── 3.multi-user.test.js            # (TODO)
-│   ├── 4.emergency-flow.test.js        # (TODO)
-│   ├── 5.state-consistency.test.js     # (TODO)
-│   └── 6.end-to-end.test.js            # (TODO)
+├── Integration/testnet/            ✅ Cross-Chain Tests (1 test)
+│   └── 1.guided-investment-flow.test.js  # End-to-end flow
 │
-├── XCMProxy/                       ⏳ WHEN MOONBASE READY (60 tests)
-│   └── (TODO when Moonbase deployment ready)
+├── XCMProxy/testnet/               ✅ Moonbase Tests (5 tests)
+│   ├── 1.config-check.test.js      # Verify deployment
+│   ├── 2.receive-assets.test.js    # XCM reception
+│   ├── 3.execute-position.test.js  # Position trading
+│   ├── 4.liquidation.test.js       # Liquidation flow
+│   └── 5.emergency.test.js         # Emergency functions
 │
-├── setup/                          # Test environment helpers
-│   ├── deploy-algebra-suite.js         # Algebra DEX deployment
-│   ├── deploy-xcm-proxy.js             # XCMProxy deployment
-│   ├── deploy-test-contracts.js        # Test contract helpers
-│   └── test-environment.js             # Complete test environment
+├── helpers/                        # Test & Setup Utilities
+│   ├── deploy-algebra-suite.js     # Algebra deployment (local testing)
+│   ├── deploy-xcm-proxy.js         # XCMProxy deployment (local)
+│   ├── deploy-test-contracts.js    # Test contracts (local)
+│   ├── test-environment.js         # Environment setup (local)
+│   ├── link-contracts.js           # ⭐ Link AssetHub ↔ Moonbase
+│   ├── enable-test-mode.js         # ⭐ Enable safe test mode
+│   ├── verify-xcmproxy-config.js   # ⭐ Verify deployment
 │
-├── COMPLETE_TEST_STRATEGY.md       # Overall testing strategy
-├── RUN_TESTS.md                    # How to run tests
-├── TEST_STRUCTURE.md               # Detailed test tracking
+├── .test-commands.md               # Quick command reference
+└── README.md                       # This file
+```
 └── README.md                       # This file
 ```
 
 ## 🚀 Quick Start
 
-### Testnet Testing (Now)
+### Step 1: Setup Contracts
+
+See `scripts/README.md` for deployment details. Then configure:
 
 ```powershell
-# 1. Set your deployed contract address
-$env:ASSETHUB_CONTRACT="0xYourAssetHubVaultAddress"
+# Set contract addresses
+$env:ASSETHUB_CONTRACT="0xYourDeployedAddress"
+$env:XCMPROXY_CONTRACT="0xYourProxyAddress"
 
-# 2. Quick configuration check
-npm run test:testnet:config
-
-# 3. Run deposit/withdrawal tests
-npm run test:testnet:deposits
-
-# 4. Run all testnet tests
-npm run test:testnet
+# Run setup scripts (in helpers/)
+npx hardhat run test/helpers/link-contracts.js --network passethub
+npx hardhat run test/helpers/link-contracts.js --network moonbase
+npx hardhat run test/helpers/enable-test-mode.js --network passethub
+npx hardhat run test/helpers/verify-xcmproxy-config.js --network moonbase
 ```
 
-### Integration Testing (Mock XCM - No XCM Needed!)
-
-```bash
-# Test complete integration logic WITHOUT real XCM
-# Deploys both contracts locally and simulates XCM
-
-# 1. Test investment flow (manual XCM simulation)
-npm run test:integration:mock:investment
-
-# 2. Test liquidation flow (manual XCM simulation)
-npm run test:integration:mock:liquidation
-
-# 3. Run all mock XCM tests
-npm run test:integration:mock
-```
-
-### Real XCM Integration (When XCM Ready)
+### Step 2: Run Tests
 
 ```powershell
-# 1. Set both contracts
-$env:ASSETHUB_CONTRACT="0xVaultAddress"
-$env:XCMPROXY_CONTRACT="0xProxyAddress"
+# Asset Hub Tests
+npx hardhat test test/AssetHubVault/testnet/**/*.test.js --network passethub
 
-# 2. Run real XCM tests (requires XCM channel)
-npm run test:integration:real
+# Moonbase Tests
+npx hardhat test test/XCMProxy/testnet/**/*.test.js --network moonbase
+
+# Integration Tests
+npx hardhat test test/Integration/testnet/**/*.test.js --network passethub
 ```
 
-## 📊 Test Coverage
+👉 **For all commands, see [.test-commands.md](./.test-commands.md)**
 
-### Phase 1: Testnet (NOW) ✅
+## 📊 Test Files
 
-| Test File | Tests | Status | Notes |
-|-----------|-------|--------|-------|
-| 1.config-check | 8 | ✅ Ready | Read-only, 100% safe |
-| 2.deposits | 20 | ✅ Ready | Small amounts, state-aware |
-| **Total** | **28** | **✅ Executable** | **Safe for testnet** |
+| File | Purpose | Status |
+|------|---------|--------|
+| **AssetHubVault/testnet/** |
+| 1.config-check.test.js | Deployment verification | ✅ |
+| 2.deposits.test.js | Deposit/withdrawal tests | ✅ |
+| 3.investment.test.js | Investment dispatch (test mode) | ✅ |
+| 4.liquidation.test.js | Liquidation settlement | ✅ |
+| 5.emergency.test.js | Emergency pause/unpause | ✅ |
+| **Integration/testnet/** |
+| 1.guided-investment-flow.test.js | End-to-end flow guidance | ✅ |
+| **XCMProxy/testnet/** |
+| 1.config-check.test.js | XCMProxy verification | ✅ |
+| 2.receive-assets.test.js | XCM asset reception | ✅ |
+| 3.execute-position.test.js | Position trading | ✅ |
+| 4.liquidation.test.js | Liquidation execution | ✅ |
+| 5.emergency.test.js | Emergency pause/unpause | ✅ |
 
-### Phase 2a: Mock XCM Integration (NOW - No XCM!) ✅
-
-| Test File | Tests | Status | Requires |
-|-----------|-------|--------|----------|
-| mock-investment-flow | 5 | ✅ Ready | Just Hardhat! |
-| mock-liquidation-flow | 7 | ✅ Ready | Just Hardhat! |
-| **Total** | **12** | **✅ Ready NOW** | **No XCM needed** |
-
-### Phase 2b: Real XCM Integration (When XCM Ready) ⏳
-
-| Test File | Tests | Status | Requires |
-|-----------|-------|--------|----------|
-| 1.full-investment-flow | 6 | ⏳ Ready | XCM channel |
-| 2.full-liquidation-flow | 8 | ⏳ Ready | XCM channel |
-| 3.multi-user | 4 | 📝 TODO | XCM channel |
-| 4.emergency-flow | 3 | 📝 TODO | XCM channel |
-| **Total** | **21** | **⏳ When XCM** | **Asset Hub ↔ Moonbase** |
-
-### Phase 3: Complete System (Future) 📝
-
-| Component | Tests | Status |
-|-----------|-------|--------|
-| AssetHubVault (full) | 47 | 28 ✅ / 19 ⏳ |
-| Integration | 21 | 2 ✅ / 19 📝 |
-| XCMProxy | 60 | 📝 TODO |
-| **Total** | **128** | **30 ready / 98 TODO** |
-
-## 🎯 Testing Philosophy
-
-### Testnet-First Approach
-
-Since you deploy **AssetHubVault manually via Remix** and **can't redeploy**, our tests:
-
-1. ✅ **Work with existing state** - No assumptions about clean state
-2. ✅ **Are idempotent** - Can run multiple times safely
-3. ✅ **Test behavior** - Not initial conditions
-4. ✅ **Auto-skip** - When prerequisites missing
-5. ✅ **Use small amounts** - Minimize cost and risk
-
-### Test Independence
-
-- **Testnet tests**: Independent of each other, state-aware
-- **Integration tests**: Test complete cross-chain flows
-- **Local tests**: Full coverage with fresh deployments
-
-## 📝 Available Test Scripts
-
-```json
-{
-  "test:testnet": "Run all testnet-safe tests",
-  "test:testnet:config": "Check deployed contract configuration",
-  "test:testnet:deposits": "Test deposits and withdrawals",
-  "test:integration": "Run ALL integration tests",
-  "test:integration:mock": "Mock XCM integration (no XCM needed!)",
-  "test:integration:mock:investment": "Mock investment flow",
-  "test:integration:mock:liquidation": "Mock liquidation flow",
-  "test:integration:real": "Real XCM integration (needs XCM)",
-  "test:local": "Run local development tests",
-  "test:all": "Run entire test suite"
-}
-```
-
-## 🔧 Configuration
+## 🔧 Environment & Configuration
 
 ### Environment Variables
 
 ```powershell
-# Required for testnet tests
-$env:ASSETHUB_CONTRACT="0xYourVaultAddress"
-
-# Required for integration tests
-$env:XCMPROXY_CONTRACT="0xYourProxyAddress"
-
-# Optional
-$env:ASSETHUB_RPC="https://your-rpc"
-$env:MOONBASE_RPC="https://your-rpc"
-$env:PRIVATE_KEY="your-private-key"
+$env:ASSETHUB_CONTRACT      # AssetHubVault address (required)
+$env:XCMPROXY_CONTRACT      # XCMProxy address (for integration)
+$env:PRIVATE_KEY            # Private key for transactions
+$env:ASSETHUB_RPC           # Asset Hub RPC (optional)
+$env:MOONBASE_RPC           # Moonbase RPC (optional)
 ```
 
-### Network Configuration
+### Networks
 
-Update `hardhat.config.js`:
+- **passethub** - Paseo Asset Hub testnet (1000)
+- **moonbase** - Moonbase Alpha testnet (1287)
 
+Configure in `hardhat.config.js`:
 ```javascript
 networks: {
-  assethub: {
+  passethub: {
     url: process.env.ASSETHUB_RPC || "https://rococo-asset-hub-rpc.polkadot.io",
     accounts: [process.env.PRIVATE_KEY],
     chainId: 1000
@@ -209,163 +123,90 @@ networks: {
 }
 ```
 
-## 📖 Documentation
+## ⭐ Setup Scripts in `helpers/`
 
-- **[RUN_TESTS.md](./RUN_TESTS.md)** - Detailed execution guide
-- **[COMPLETE_TEST_STRATEGY.md](./COMPLETE_TEST_STRATEGY.md)** - Overall strategy
-- **[TESTNET_TESTING_GUIDE.md](./AssetHubVault/TESTNET_TESTING_GUIDE.md)** - Testnet best practices
-- **[TEST_STRUCTURE.md](./TEST_STRUCTURE.md)** - Detailed test tracking
+Located in `test/helpers/`, these are used for testnet configuration:
 
-## 🎓 Example Workflow
+| Script | Purpose | Run | Command |
+|--------|---------|-----|---------|
+| link-contracts.js | Connect contracts | 2x | `npx hardhat run test/helpers/link-contracts.js --network [passethub\|moonbase]` |
+| enable-test-mode.js | Safe test mode | 1x | `npx hardhat run test/helpers/enable-test-mode.js --network passethub` |
+| verify-xcmproxy-config.js | Verify deployment | Optional | `npx hardhat run test/helpers/verify-xcmproxy-config.js --network moonbase` |
 
-### 1. Just Deployed AssetHubVault
+Other helpers are for local/mock testing:
+- `deploy-algebra-suite.js` - Algebra deployment utilities
+- `deploy-xcm-proxy.js` - XCMProxy deployment utilities
+- `deploy-test-contracts.js` - Test contract helpers
+- `test-environment.js` - Test environment setup
+
+## � Test Design
+
+### Testnet-First Approach
+- Tests work with **existing deployed contracts** (no fresh deployments)
+- **State-aware**: don't assume clean conditions
+- **Idempotent**: safe to run multiple times
+- **Auto-skip**: when prerequisites missing
+- **Small amounts**: minimize costs
+
+### Test Independence
+- Each file is independent
+- Can run in any order
+- No shared state
+- Clear prerequisites
+
+## � Common Workflows
+
+### Just Deployed AssetHubVault?
 
 ```powershell
-# Set contract address
 $env:ASSETHUB_CONTRACT="0xNewAddress"
-
-# Verify deployment and configuration
-npm run test:testnet:config
+npx hardhat test test/AssetHubVault/testnet/1.config-check.test.js --network passethub
 ```
 
-**Expected Output:**
-```
-✅ Connected to vault at 0x...
-  Admin: 0x...
-  Operator: 0x...
-  XCM Precompile: 0x...
-  Test Mode: true
-  Paused: false
-  
-  8 passing (3s)
-```
-
-### 2. Testing Basic Functionality
+### Test Investment Flow?
 
 ```powershell
-# Test deposits/withdrawals
-npm run test:testnet:deposits
+npx hardhat test test/AssetHubVault/testnet/3.investment.test.js --network passethub
+npx hardhat test test/Integration/testnet/1.guided-investment-flow.test.js --network passethub
 ```
 
-**Expected Output:**
-```
-AssetHubVault Testnet - Deposits & Withdrawals
-  Deposit Functionality
-    ✓ should accept deposits (TEST-AHV-007)
-       ✓ Deposited 0.1 ETH
-       ✓ New balance: 0.1 ETH
-    ✓ should emit Deposit event
-    ✓ should revert on zero deposit
-    
-  20 passing (5s)
-```
-
-### 3. When XCM Connects
+### XCMProxy Deployed on Moonbase?
 
 ```powershell
-# Set both contracts
-$env:XCMPROXY_CONTRACT="0xProxyAddress"
-
-# Test full flow
-npm run test:integration:investment
+$env:XCMPROXY_CONTRACT="0xYourProxyAddress"
+npx hardhat test test/XCMProxy/testnet/1.config-check.test.js --network moonbase
 ```
 
-**Expected Output:**
-```
-Integration - Complete Investment Flow
-  TEST-INT-001: Asset Hub → Moonbase Investment
-    ✓ should complete full investment flow (45s)
-       1. User depositing to AssetHubVault...
-          ✓ Deposited 10 ETH
-       2. Building XCM message...
-       3. Dispatching investment (XCM send)...
-          ✓ Position created: 0x...
-       4. Waiting for XCM message to process...
-       5. Verifying position on Moonbase...
-          ✓ User has 1 position(s) on Moonbase
-       6. Verifying position tracking on Asset Hub...
-          ✓ User has 1 active position(s)
-       
-    ✅ Complete investment flow successful!
-    
-  6 passing (2m 15s)
-```
+## ⚠️ Important Notes
 
-## 🚨 Important Notes
+### Gas Costs
+- Config checks are read-only (no cost)
+- Deposit tests use small amounts (~0.1 ETH)
+- Actual costs depend on gas prices
 
 ### State Management
-
-⚠️ **Testnet state persists** - Tests don't reset the contract
-- Each deposit adds to existing balance
-- Positions accumulate across test runs
-- Consider periodic cleanup/withdrawals
-
-### Test Costs
-
-⚠️ **Gas costs are real** on testnet
-- Config check: ~0 (read-only)
-- Deposit tests: ~0.5 ETH in deposits (recoverable)
-- Integration tests: ~2-5 ETH per flow (XCM fees)
+- Testnet state persists between test runs
+- Deposits accumulate over multiple runs
+- Consider periodic cleanup if needed
 
 ### Prerequisites
+Tests auto-skip if missing requirements:
+- **AssetHub tests** need: deployed contract + testnet tokens
+- **Integration tests** need: both contracts + tokens + test mode enabled
+- **XCMProxy tests** need: deployed contract + testnet tokens
 
-Different tests need different things:
+## 📊 Current Status
 
-| Test Type | Needs |
-|-----------|-------|
-| Testnet Config | ✅ Just deployed contract |
-| Testnet Deposits | ✅ Contract + testnet tokens |
-| Integration Investment | ⏳ Both contracts + XCM + tokens |
-| Integration Liquidation | ⏳ Above + active position |
+✅ **15 tests implemented and ready to run**
+- 5 AssetHubVault tests
+- 1 Integration test
+- 5 XCMProxy tests
 
-## 🎯 Current Status
+✅ **100% testnet-ready** - all tests work with deployed contracts
 
-**Implemented:** ✅
-- Testnet configuration tests (8 tests)
-- Testnet deposit/withdrawal tests (20 tests)
-- Integration investment flow (6 tests)
-- Integration liquidation flow (8 tests)
-- Test infrastructure and helpers
+## � Additional Resources
 
-**Ready to Run:** ✅
-- 28 testnet tests (safe, now)
-- 2 integration test files (when XCM ready)
-
-**TODO:** 📝
-- Additional integration scenarios (12 tests)
-- XCMProxy tests (60 tests)
-- Full coverage local tests (remaining)
-
-## 🔗 Quick Links
-
-- **Run Tests Now:** See [RUN_TESTS.md](./RUN_TESTS.md)
-- **Test Strategy:** See [COMPLETE_TEST_STRATEGY.md](./COMPLETE_TEST_STRATEGY.md)
-- **Test Requirements:** See `../TESTING-REQUIREMENTS.md`
-- **Testnet Guide:** See [AssetHubVault/TESTNET_TESTING_GUIDE.md](./AssetHubVault/TESTNET_TESTING_GUIDE.md)
-
-## 💡 Next Steps
-
-1. **Now:** Run testnet tests on your deployed contract
-   ```powershell
-   $env:ASSETHUB_CONTRACT="0xYour Address"
-   npm run test:testnet
-   ```
-
-2. **When XCM Ready:** Run integration tests
-   ```powershell
-   $env:XCMPROXY_CONTRACT="0xProxyAddress"
-   npm run test:integration
-   ```
-
-3. **Future:** Complete remaining test coverage
-   - Multi-user scenarios
-   - Emergency functions
-   - XCMProxy complete suite
-
----
-
-**Status:** ✅ **40 tests ready NOW (28 testnet + 12 mock XCM)**  
-**No XCM Needed:** ✅ **Mock XCM tests work without any XCM infrastructure!**  
-**Integration:** ⏳ **14 tests ready for when real XCM connects!**  
-**Total Coverage:** 📊 **140+ tests covering entire system!**
+- **Quick commands**: [.test-commands.md](./.test-commands.md)
+- **Deployment**: [../scripts/README.md](../scripts/README.md)
+- **Main setup**: [../../README.md](../../README.md)
 

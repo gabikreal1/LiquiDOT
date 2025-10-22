@@ -1,167 +1,105 @@
-# Deployment Scripts
+# Live Testnet Setup Scripts
 
-This directory contains production deployment scripts for LiquiDOT smart contracts.
+Deploy and configure LiquiDOT for live testnet testing on Moonbase Alpha.
 
-## 📁 Structure
-
-```
-scripts/
-├── deploy-moonbase.js       # Main Moonbase Alpha deployment script
-└── utils/
-    └── state-manager.js     # Deployment state persistence utility
-```
-
-## 🚀 Deploy to Moonbase Alpha
+## Quick Setup
 
 ### Prerequisites
 
 1. **Install dependencies:**
-   ```bash
+   ```powershell
    cd SmartContracts
    npm install
    ```
 
-2. **Get DEV tokens:**
-   - Visit [Moonbeam Faucet](https://faucet.moonbeam.network/)
-   - Connect your wallet
-   - Request DEV tokens for Moonbase Alpha
+2. **Get testnet tokens:**
+   - Moonbase DEV: https://faucet.moonbeam.network/
+   - Paseo (Asset Hub) DOT: https://faucet.paseo.network/
 
-3. **Set up environment:**
-   ```bash
-   # Create .env file in SmartContracts directory
-   echo "MOON=your_private_key_here" > .env
+3. **Environment setup:**
+   ```powershell
+   # Create .env in SmartContracts directory
+   $env:MOON_PK="your_private_key"
+   $env:ASSETHUB_CONTRACT="0x..."  # Deploy via Remix first
    ```
-   
-   ⚠️ **Never commit your private keys!** The `.env` file is gitignored.
 
-### Deploy Everything
+### Deployment Steps
 
-Deploy the complete LiquiDOT infrastructure (Algebra DEX + XCMProxy + test tokens):
+#### 1. Deploy AssetHubVault via Remix (Paseo Asset Hub)
 
-```bash
+- Go to [Polkadot Remix](https://remix.polkadot.network/)
+- Deploy `contracts/V1(Current)/AssetHubVault.sol`
+- Save the deployed address → `$env:ASSETHUB_CONTRACT`
+
+#### 2. Deploy Moonbase Infrastructure
+
+Deploy Algebra DEX suite + XCMProxy to Moonbase:
+
+```powershell
 npx hardhat run scripts/deploy-moonbase.js --network moonbase
 ```
 
-This will:
-1. ✅ Deploy Algebra DEX suite (Factory, Router, Quoter, NFPM)
-2. ✅ Deploy and configure XCMProxy contract
-3. ✅ Deploy test tokens (optional)
-4. ✅ Create test pool with liquidity (optional)
-5. ✅ Save all addresses to `deployments/` directory
+Saves addresses to `deployments/` directory.
 
-### Deploy Options
+#### 3. Link and Configure Contracts
 
-You can customize the deployment by modifying the script or passing options:
+See `test/helpers/` for setup scripts:
 
-```javascript
-// In deploy-moonbase.js, modify the main() call:
-main({
-  deployTestTokens: false,        // Skip test tokens
-  createTestPool: false,          // Skip test pool
-  operator: "0xOperatorAddress",  // Custom operator
-  assetHubVault: "0xVaultAddr",   // AssetHubVault address for trusted caller
-  defaultSlippageBps: 50,         // 0.5% slippage
-  freezeConfig: false,            // Don't freeze config yet
-})
+```powershell
+$env:ASSETHUB_CONTRACT="0x..."     # From Remix
+$env:XCMPROXY_CONTRACT="0x..."     # From deployment above
+
+# Configure AssetHub (run on Paseo)
+npx hardhat run test/helpers/link-contracts.js --network passethub
+
+# Configure XCMProxy (run on Moonbase)
+npx hardhat run test/helpers/link-contracts.js --network moonbase
+
+# Enable test mode
+npx hardhat run test/helpers/enable-test-mode.js --network passethub
+
+# Verify configuration
+npx hardhat run test/helpers/verify-xcmproxy-config.js --network moonbase
 ```
 
-### After Deployment
+## Environment Variables
 
-1. **Verify contracts** (optional but recommended):
-   ```bash
-   npx hardhat verify --network moonbase <CONTRACT_ADDRESS> <CONSTRUCTOR_ARGS>
-   ```
+| Variable | Example | Purpose |
+|----------|---------|---------|
+| `MOON_PK` | `0x...` | Private key for Moonbase |
+| `ASSETHUB_CONTRACT` | `0x...` | AssetHubVault address (from Remix) |
+| `XCMPROXY_CONTRACT` | `0x...` | XCMProxy address (from deployment) |
 
-2. **Test interaction:**
-   ```bash
-   npx hardhat console --network moonbase
-   ```
-   ```javascript
-   > const proxy = await ethers.getContractAt("XCMProxy", "0xYourProxyAddress")
-   > await proxy.owner()
-   '0xYourAddress'
-   ```
+## Running Tests
 
-3. **Update documentation:**
-   - Add addresses to `CONTRACT_ADDRESSES.md`
-   - Update `DEPLOYMENT_GUIDE.md` with deployment details
+```powershell
+# Testnet tests
+npx hardhat test test/AssetHubVault/testnet/**/*.test.js --network passethub
+npx hardhat test test/XCMProxy/testnet/**/*.test.js --network moonbase
 
-## 📝 Deployment State
-
-All deployment information is automatically saved to:
-
-```
-deployments/
-├── deployment-state.json      # Complete deployment state
-└── moonbase_algebra.json      # Algebra suite addresses
+# Integration tests
+npx hardhat test test/Integration/testnet/**/*.test.js --network passethub
 ```
 
-These files track:
-- Contract addresses
-- Deployer addresses
-- Transaction hashes
-- Configuration parameters
-- Timestamps
+See `test/README.md` for complete testing guide.
 
-## 🔍 Verify Deployment
+## Deployment State
 
-Check deployed contracts:
+All deployment info is saved automatically to `deployments/`:
+- `deployment-state.json` - Complete deployment state
+- `moonbase_algebra.json` - Algebra contract addresses
 
-```bash
-# Check XCMProxy configuration
-npx hardhat console --network moonbase
-```
+## Troubleshooting
 
-```javascript
-const proxy = await ethers.getContractAt("XCMProxy", "0xProxyAddress");
+**"Insufficient funds"**
+- Request more testnet tokens from faucets above
 
-// Verify configuration
-console.log("Owner:", await proxy.owner());
-console.log("Operator:", await proxy.operator());
-console.log("Quoter:", await proxy.quoterContract());
-console.log("Router:", await proxy.swapRouterContract());
-console.log("NFPM:", await proxy.nfpmContract());
-console.log("xTokens:", await proxy.xTokensPrecompile());
-console.log("Asset Hub ParaID:", await proxy.assetHubParaId());
-```
+**"Contract deployment failed"**
+- Verify Hardhat config has correct network RPC endpoints
+- Check Solidity 0.8.28 compatibility
 
-## ⚠️ Important Notes
+**"Not admin/owner"**
+- Verify signer account matches expected role
+- Check private key is correct in .env
 
-1. **Network Selection:** Always use `--network moonbase` flag
-2. **Gas Fees:** Keep ~5 DEV in deployer account for deployment
-3. **Configuration:** Review XCM precompile addresses in `deploy-moonbase.js`
-4. **Trusted Caller:** Set AssetHubVault address after both contracts are deployed
-5. **Test Mode:** For testing, enable test mode to bypass XCM calls
-
-## 🐛 Troubleshooting
-
-### "Insufficient funds" error
-- Get more DEV tokens from the faucet
-- Check balance: `npx hardhat console --network moonbase`, then `ethers.provider.getBalance("0xYourAddress")`
-
-### "Network not configured" error
-- Verify `hardhat.config.js` has moonbase network entry
-- Check RPC URL is correct: `https://rpc.api.moonbase.moonbeam.network`
-
-### "Contract deployment failed" error
-- Check gas price (may need to increase)
-- Verify Solidity version compatibility (should be 0.8.28)
-- Ensure optimizer is enabled in hardhat.config.js
-
-### Deployment hangs
-- Check network connection
-- Try restarting the script
-- Verify RPC endpoint is responsive
-
-## 📚 Related Documentation
-
-- [Moonbeam Documentation](https://docs.moonbeam.network/)
-- [Algebra Documentation](https://docs.algebra.finance/)
-- [Hardhat Documentation](https://hardhat.org/docs)
-- [XCM Documentation](https://wiki.polkadot.network/docs/learn-xcm)
-
-## 🤝 Need Help?
-
-- Check [TESTING_GUIDE.md](../TESTING_GUIDE.md) for testing setup
-- Review [MILESTONE_1_REQUIREMENTS.md](../MILESTONE_1_REQUIREMENTS.md) for requirements
-- Ask in Moonbeam Discord for deployment-specific issues
+See `test/helpers/` for additional setup scripts.
