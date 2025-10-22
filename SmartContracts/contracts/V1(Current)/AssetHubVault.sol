@@ -2,7 +2,6 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
  
 
 // XCM precompile interface - the ONLY precompile available on Asset Hub
@@ -40,6 +39,8 @@ contract AssetHubVault is ReentrancyGuard {
     error ChainIdMismatch();
     error AmountMismatch();
     error AssetMismatch();
+    error ChainNotSupported();
+    error ExecutorNotAuthorized();
 
     modifier onlyAdmin() { if (msg.sender != admin) revert NotAdmin(); _; }
     modifier onlyOperator() { if (msg.sender != operator) revert NotOperator(); _; }
@@ -50,24 +51,28 @@ contract AssetHubVault is ReentrancyGuard {
     modifier whenNotPaused() { if (paused) revert Paused(); _; }
 
     // State variables
-    mapping(address => mapping(address => uint256)) public userBalances; // user => token => balance
+    mapping(address => uint256) public userBalances; // user => native balance
     mapping(bytes32 => Position) public positions; // positionId => Position
 	mapping(address => bytes32[]) public userPositions; // user => positionIds
+    
+    // Chain registry for multi-chain support
+    mapping(uint32 => ChainConfig) public supportedChains; // chainId => config
+    mapping(uint32 => address) public chainExecutors; // chainId => authorized executor contract address
 
     // Events
-    event Deposit(address indexed user, address indexed token, uint256 amount);
-    event Withdrawal(address indexed user, address indexed token, uint256 amount);
+    event Deposit(address indexed user, uint256 amount);
+    event Withdrawal(address indexed user, uint256 amount);
     event InvestmentInitiated(
         bytes32 indexed positionId,
         address indexed user,
         uint32 chainId,
         address poolId,
-        uint256[] amounts
+        uint256 amount
     );
     event PositionLiquidated(
         bytes32 indexed positionId,
         address indexed user,
-        uint256[] finalAmounts
+        uint256 finalAmount
     );
     event XCMMessageSent(
         bytes32 indexed messageHash,
@@ -75,22 +80,56 @@ contract AssetHubVault is ReentrancyGuard {
         bytes message
     );
     event XcmSendAttempt(bytes32 indexed messageHash, bytes destination, bool success, bytes errorData);
+    event LiquidationSettled(
+        bytes32 indexed positionId,
+        address indexed user,
+        uint256 receivedAmount,
+        uint256 expectedAmount
+    );
+    event PositionExecutionConfirmed(
+        bytes32 indexed positionId,
+        uint32 indexed chainId,
+        bytes32 remotePositionId,
+        uint128 liquidity
+    );
+    event ChainAdded(uint32 indexed chainId, bytes xcmDestination, address executor);
+    event ChainRemoved(uint32 indexed chainId);
+    event ExecutorUpdated(uint32 indexed chainId, address executor);
+
+    // Position status enum
+    enum PositionStatus {
+        PendingExecution,  // Waiting for remote chain to execute
+        Active,            // Position is active on remote chain
+        Liquidated         // Position has been closed
+    }
+
+    // Chain configuration for multi-chain support
+    struct ChainConfig {
+        bool supported;
+        bytes xcmDestination;  // XCM MultiLocation for this chain
+        string chainName;      // Human-readable name (e.g., "Moonbeam", "Hydration")
+        uint64 timestamp;      // When chain was added
+    }
 
     // Structs (packed for smaller storage)
     struct Position {
         address user;
         address poolId;
         address baseAsset;
-        uint32 chainId;
+        uint32 chainId;                // Which chain is executing this position
         int24 lowerRangePercent;
         int24 upperRangePercent;
         uint64 timestamp;
-        bool active;
-        uint256[] amounts;
+        PositionStatus status;
+        uint256 amount;
+        bytes32 remotePositionId;      // Generic remote position identifier (could be uint256, tokenId, etc.)
     }
     // Polkadot XCM precompile (PolkaVM) configurable address; depends on runtime
     address public XCM_PRECOMPILE;
     bool public xcmPrecompileFrozen;
+    
+    // Test mode - allows direct contract calls without XCM for local testing
+    bool public testMode;
     
 
     constructor() {
@@ -100,6 +139,7 @@ contract AssetHubVault is ReentrancyGuard {
         XCM_PRECOMPILE = address(0);
         xcmPrecompileFrozen = false;
         paused = false;
+        testMode = false;
     }
 
     event XcmPrecompileSet(address indexed precompile);
@@ -121,6 +161,10 @@ contract AssetHubVault is ReentrancyGuard {
         xcmPrecompileFrozen = true;
     }
 
+    function setTestMode(bool _testMode) external onlyAdmin {
+        testMode = _testMode;
+    }
+
     // Role management
     function transferAdmin(address newAdmin) external onlyAdmin {
         if (newAdmin == address(0)) revert ZeroAddress();
@@ -138,55 +182,116 @@ contract AssetHubVault is ReentrancyGuard {
     }
 
     /**
-    * @dev Deposit tokens into the vault
+    * @dev Add a new execution chain (e.g., Moonbeam, Hydration, Acala)
+    * @param chainId Parachain ID or unique chain identifier
+    * @param xcmDestination XCM MultiLocation bytes for this chain
+    * @param chainName Human-readable chain name
+    * @param executor Address of the executor contract on this chain (for authorization)
     */
-    function deposit(address token, uint256 amount) external nonReentrant {
-        if (amount == 0) revert AmountZero();
-        if (token == address(0)) revert ZeroAddress();
-
-        require(IERC20(token).transferFrom(msg.sender, address(this), amount), "TRANSFER_FROM_FAILED");
-        userBalances[msg.sender][token] += amount;
-
-        emit Deposit(msg.sender, token, amount);
+    function addChain(
+        uint32 chainId,
+        bytes calldata xcmDestination,
+        string calldata chainName,
+        address executor
+    ) external onlyAdmin {
+        require(!supportedChains[chainId].supported, "Chain already supported");
+        require(xcmDestination.length > 0, "Invalid XCM destination");
+        
+        supportedChains[chainId] = ChainConfig({
+            supported: true,
+            xcmDestination: xcmDestination,
+            chainName: chainName,
+            timestamp: uint64(block.timestamp)
+        });
+        
+        if (executor != address(0)) {
+            chainExecutors[chainId] = executor;
+        }
+        
+        emit ChainAdded(chainId, xcmDestination, executor);
     }
 
     /**
-    * @dev Withdraw tokens from the vault
+    * @dev Remove support for a chain
     */
-    function withdraw(address token, uint256 amount) external nonReentrant {
-        if (amount == 0) revert AmountZero();
-        if (userBalances[msg.sender][token] < amount) revert InsufficientBalance();
-
-        userBalances[msg.sender][token] -= amount;
-        require(IERC20(token).transfer(msg.sender, amount), "TRANSFER_FAILED");
-
-        emit Withdrawal(msg.sender, token, amount);
+    function removeChain(uint32 chainId) external onlyAdmin {
+        require(supportedChains[chainId].supported, "Chain not supported");
+        delete supportedChains[chainId];
+        delete chainExecutors[chainId];
+        emit ChainRemoved(chainId);
     }
 
     /**
-    * @dev Dispatch cross-chain investment using off-chain prepared XCM message
-    * All XCM creation and configuration is handled off-chain by the operator
+    * @dev Update executor address for a chain
+    */
+    function updateChainExecutor(uint32 chainId, address executor) external onlyAdmin {
+        require(supportedChains[chainId].supported, "Chain not supported");
+        chainExecutors[chainId] = executor;
+        emit ExecutorUpdated(chainId, executor);
+    }
+
+    /**
+    * @dev Check if a chain is supported
+    */
+    function isChainSupported(uint32 chainId) external view returns (bool) {
+        return supportedChains[chainId].supported;
+    }
+
+    /**
+    * @dev Get chain configuration
+    */
+    function getChainConfig(uint32 chainId) external view returns (ChainConfig memory) {
+        return supportedChains[chainId];
+    }
+
+    /**
+    * @dev Deposit native assets into the vault
+    */
+    function deposit() external payable nonReentrant {
+        if (msg.value == 0) revert AmountZero();
+
+        userBalances[msg.sender] += msg.value;
+
+        emit Deposit(msg.sender, msg.value);
+    }
+
+    /**
+    * @dev Withdraw native assets from the vault
+    */
+    function withdraw(uint256 amount) external nonReentrant {
+        if (amount == 0) revert AmountZero();
+        if (userBalances[msg.sender] < amount) revert InsufficientBalance();
+
+        userBalances[msg.sender] -= amount;
+        (bool success, ) = payable(msg.sender).call{value: amount}("");
+        require(success, "TRANSFER_FAILED");
+
+        emit Withdrawal(msg.sender, amount);
+    }
+
+    /**
+    * @dev Dispatch cross-chain investment to any supported execution chain
+    * @notice Chain-agnostic: works with Moonbeam, Hydration, Acala, or any future chain
+    * @param chainId The target execution chain (must be registered via addChain)
     */
     function dispatchInvestment(
         address user,
         uint32 chainId,
         address poolId,
         address baseAsset,
-        uint256[] memory amounts,
+        uint256 amount,
         int24 lowerRangePercent,
         int24 upperRangePercent,
         bytes calldata destination,
         bytes calldata preBuiltXcmMessage
     ) external onlyOperator whenNotPaused {
         if (user == address(0)) revert ZeroAddress();
-        if (amounts.length == 0) revert AmountZero();
+        if (amount == 0) revert AmountZero();
         if (!(lowerRangePercent < upperRangePercent)) revert InvalidRange();
         if (XCM_PRECOMPILE == address(0)) revert XcmPrecompileNotSet();
+        if (!supportedChains[chainId].supported) revert ChainNotSupported();
 
-        uint256 totalAmount;
-        for (uint256 i = 0; i < amounts.length; ) { totalAmount += amounts[i]; unchecked { i++; } }
-
-        if (userBalances[user][baseAsset] < totalAmount) revert InsufficientBalance();
+        if (userBalances[user] < amount) revert InsufficientBalance();
 
         bytes32 positionId = keccak256(
             abi.encodePacked(
@@ -206,90 +311,122 @@ contract AssetHubVault is ReentrancyGuard {
             lowerRangePercent: lowerRangePercent,
             upperRangePercent: upperRangePercent,
             timestamp: uint64(block.timestamp),
-            active: true,
-            amounts: amounts
+            status: PositionStatus.PendingExecution,
+            amount: amount,
+            remotePositionId: bytes32(0)  // Will be set when execution confirms
         });
 
 		userPositions[user].push(positionId);
 
 
-        userBalances[user][baseAsset] -= totalAmount;
+        userBalances[user] -= amount;
 
-        emit InvestmentInitiated(positionId, user, chainId, poolId, amounts);
+        emit InvestmentInitiated(positionId, user, chainId, poolId, amount);
 
         // Dispatch the provided XCM message to the provided destination
-        bytes32 messageHash = keccak256(preBuiltXcmMessage);
-        bool success = false;
-        bytes memory err;
-        try IXcm(XCM_PRECOMPILE).send(destination, preBuiltXcmMessage) {
-            success = true;
-        } catch (bytes memory reason) {
-            err = reason;
+        // In test mode, skip actual XCM send to allow local testing
+        if (!testMode) {
+            bytes32 messageHash = keccak256(preBuiltXcmMessage);
+            bool success = false;
+            bytes memory err;
+            try IXcm(XCM_PRECOMPILE).send(destination, preBuiltXcmMessage) {
+                success = true;
+            } catch (bytes memory reason) {
+                err = reason;
+            }
+            emit XCMMessageSent(messageHash, destination, preBuiltXcmMessage);
+            emit XcmSendAttempt(messageHash, destination, success, err);
         }
-        emit XCMMessageSent(messageHash, destination, preBuiltXcmMessage);
-        emit XcmSendAttempt(messageHash, destination, success, err);
     }
 
+
+    /**
+    * @dev Confirm position execution from any execution chain
+    * @notice Chain-agnostic: works for Moonbeam, Hydration, Acala, etc.
+    * @notice Called by operator after remote chain successfully executes pending investment
+    * @param positionId The Asset Hub position ID
+    * @param remotePositionId Remote chain's position identifier (tokenId, positionId, etc.)
+    * @param liquidity The liquidity amount created
+    */
+    function confirmExecution(
+        bytes32 positionId,
+        bytes32 remotePositionId,
+        uint128 liquidity
+    ) external onlyOperator nonReentrant {
+        Position storage position = positions[positionId];
+        require(position.status == PositionStatus.PendingExecution, "Position not pending");
+
+        // Optional: Verify caller is authorized executor for this chain
+        address authorizedExecutor = chainExecutors[position.chainId];
+        if (authorizedExecutor != address(0) && msg.sender != operator) {
+            // If executor is set and caller is not operator, verify authorization
+            // This allows the remote chain contract to call directly in future
+            revert ExecutorNotAuthorized();
+        }
+
+        position.status = PositionStatus.Active;
+        position.remotePositionId = remotePositionId;
+
+        emit PositionExecutionConfirmed(positionId, position.chainId, remotePositionId, liquidity);
+    }
 
     
 
     /**
-    * @dev Handle incoming XCM messages (called by XCM precompile)
-    * @notice This function can be called by the XCM system to deliver assets or data
+    * @dev Settle liquidation after assets have been returned from Moonbeam
+    * @notice Called by operator after XTokens transfer deposits assets to this contract
+    * @notice Assets arrive at Substrate level without triggering execution - manual settlement required
+    * @param positionId The position being settled
+    * @param receivedAmount Amount of assets received (should match contract balance increase)
     */
-    function handleIncomingXCM(
-        address token,
-        uint256 amount,
-        bytes calldata data
-    ) external {
-        // Only allow calls from XCM precompile or authorized operators
-        if (XCM_PRECOMPILE == address(0) || msg.sender != XCM_PRECOMPILE && msg.sender != admin) revert UnauthorizedXcmCall();
-        if (amount == 0) revert AmountZero();
+    function settleLiquidation(
+        bytes32 positionId,
+        uint256 receivedAmount
+    ) external onlyOperator nonReentrant {
+        if (receivedAmount == 0) revert AmountZero();
 
-        if (data.length > 0) {
-            // Decode the XCM data to determine the action
-            (string memory action, bytes memory params) = abi.decode(data, (string, bytes));
-            
-            if (keccak256(bytes(action)) == keccak256(bytes("LIQUIDATION_PROCEEDS"))) {
-                // Handle liquidation proceeds
-                (bytes32 positionId, address user, uint256[] memory finalAmounts) = 
-                    abi.decode(params, (bytes32, address, uint256[]));
-                
-                Position storage position = positions[positionId];
-                require(position.user == user, "user mismatch");
-				if (!position.active) revert PositionNotActive();
-				if (token != position.baseAsset) revert AssetMismatch();
-                uint256 sum;
-                for (uint256 i = 0; i < finalAmounts.length; i++) { if (finalAmounts[i] > 0) sum += finalAmounts[i]; }
-                if (sum != amount) revert AmountMismatch();
-                position.active = false;
-                userBalances[user][token] += amount;
-                emit PositionLiquidated(positionId, user, finalAmounts);
-            }
-        }
+        Position storage position = positions[positionId];
+        require(position.status == PositionStatus.Active, "Position not active");
+
+        // Verify contract has sufficient balance to settle
+        // Note: In production, you may want to track expected amounts more precisely
+        require(address(this).balance >= receivedAmount, "Insufficient contract balance");
+
+        // Update position and user balance
+        position.status = PositionStatus.Liquidated;
+        userBalances[position.user] += receivedAmount;
+
+        emit PositionLiquidated(positionId, position.user, receivedAmount);
+        emit LiquidationSettled(positionId, position.user, receivedAmount, position.amount);
     }
 
+    
     /**
     * @dev Emergency liquidation override
     */
     function emergencyLiquidatePosition(
         uint32 chainId,
         bytes32 positionId
-    ) external onlyEmergency {
+    ) external payable onlyEmergency {
         Position storage position = positions[positionId];
-        if (!position.active) revert PositionNotActive();
+        require(position.status != PositionStatus.Liquidated, "Position already liquidated");
         if (position.chainId != chainId) revert ChainIdMismatch();
 
-		position.active = false;
+		position.status = PositionStatus.Liquidated;
 
-        emit PositionLiquidated(positionId, position.user, new uint256[](0));
+        // In emergency cases, may receive funds as part of liquidation
+        if (msg.value > 0) {
+            userBalances[position.user] += msg.value;
+        }
+
+        emit PositionLiquidated(positionId, position.user, msg.value);
     }
 
     /**
-    * @dev Get user balance for a specific token
+    * @dev Get user balance for native assets
     */
-    function getUserBalance(address user, address token) external view returns (uint256) {
-        return userBalances[user][token];
+    function getUserBalance(address user) external view returns (uint256) {
+        return userBalances[user];
     }
 
 	/**
@@ -297,12 +434,168 @@ contract AssetHubVault is ReentrancyGuard {
 	*/
 	function isPositionActive(address user, bytes32 positionId) external view returns (bool) {
 		Position storage position = positions[positionId];
-		return position.user == user && position.active;
+		return position.user == user && position.status == PositionStatus.Active;
 	}
 
-    function getUserPositions(address user) external view returns (Position[] memory) {
+    // ==================== PAGINATION FUNCTIONS ====================
+
+    /**
+     * @dev Get total count of user positions
+     * @param user The user address
+     * @return count Total number of positions for the user
+     * @notice Gas-efficient way to check position count before pagination
+     */
+    function getUserPositionCount(address user) external view returns (uint256 count) {
+        return userPositions[user].length;
+    }
+
+    /**
+     * @dev Get paginated user position IDs
+     * @param user The user address
+     * @param start Starting index (0-based)
+     * @param count Number of positions to return
+     * @return positionIds Array of position IDs for the requested range
+     * @notice Returns empty array if start >= total count
+     * @notice Returns fewer items if count exceeds available positions
+     */
+    function getUserPositionIds(
+        address user,
+        uint256 start,
+        uint256 count
+    ) external view returns (bytes32[] memory positionIds) {
+        bytes32[] storage allIds = userPositions[user];
+        
+        // Handle edge cases
+        if (start >= allIds.length) {
+            return new bytes32[](0);
+        }
+        
+        // Calculate actual return size
+        uint256 remaining = allIds.length - start;
+        uint256 returnSize = count > remaining ? remaining : count;
+        
+        // Build result array
+        positionIds = new bytes32[](returnSize);
+        for (uint256 i = 0; i < returnSize; i++) {
+            positionIds[i] = allIds[start + i];
+        }
+        
+        return positionIds;
+    }
+
+    /**
+     * @dev Get paginated user positions with full data
+     * @param user The user address
+     * @param start Starting index (0-based)
+     * @param count Number of positions to return
+     * @return list Array of Position structs for the requested range
+     * @notice RECOMMENDED: Use page size of 10-20 for safety
+     * @notice Returns empty array if start >= total count
+     */
+    function getUserPositionsPage(
+        address user,
+        uint256 start,
+        uint256 count
+    ) external view returns (Position[] memory list) {
+        bytes32[] storage allIds = userPositions[user];
+        
+        // Handle edge cases
+        if (start >= allIds.length) {
+            return new Position[](0);
+        }
+        
+        // Calculate actual return size
+        uint256 remaining = allIds.length - start;
+        uint256 returnSize = count > remaining ? remaining : count;
+        
+        // Build result array
+        list = new Position[](returnSize);
+        for (uint256 i = 0; i < returnSize; i++) {
+            list[i] = positions[allIds[start + i]];
+        }
+        
+        return list;
+    }
+
+    /**
+     * @dev Get positions filtered by status
+     * @param user The user address
+     * @param status Position status to filter by (0=Pending, 1=Active, 2=Liquidated)
+     * @param maxResults Maximum number of results to return (0 = return all)
+     * @return list Array of Position structs matching the status
+     * @notice More efficient than getUserPositions when you only need specific status
+     * @notice RECOMMENDED: Set maxResults to 20-50 to avoid gas issues
+     */
+    function getUserPositionsByStatus(
+        address user,
+        PositionStatus status,
+        uint256 maxResults
+    ) external view returns (Position[] memory list) {
+        bytes32[] storage allIds = userPositions[user];
+        
+        // First pass: count matching positions
+        uint256 matchCount = 0;
+        for (uint256 i = 0; i < allIds.length && (maxResults == 0 || matchCount < maxResults); i++) {
+            if (positions[allIds[i]].status == status) {
+                matchCount++;
+            }
+        }
+        
+        // Second pass: collect matching positions
+        list = new Position[](matchCount);
+        uint256 resultIndex = 0;
+        for (uint256 i = 0; i < allIds.length && resultIndex < matchCount; i++) {
+            if (positions[allIds[i]].status == status) {
+                list[resultIndex] = positions[allIds[i]];
+                resultIndex++;
+            }
+        }
+        
+        return list;
+    }
+
+    /**
+     * @dev Get position summary statistics
+     * @param user The user address
+     * @return total Total number of positions
+     * @return pending Number of pending positions
+     * @return active Number of active positions
+     * @return liquidated Number of liquidated positions
+     * @notice Gas-efficient way to get overview without loading all position data
+     */
+    function getUserPositionStats(address user) external view returns (
+        uint256 total,
+        uint256 pending,
+        uint256 active,
+        uint256 liquidated
+    ) {
+        bytes32[] storage allIds = userPositions[user];
+        total = allIds.length;
+        
+        for (uint256 i = 0; i < allIds.length; i++) {
+            PositionStatus status = positions[allIds[i]].status;
+            if (status == PositionStatus.PendingExecution) {
+                pending++;
+            } else if (status == PositionStatus.Active) {
+                active++;
+            } else if (status == PositionStatus.Liquidated) {
+                liquidated++;
+            }
+        }
+        
+        return (total, pending, active, liquidated);
+    }
+
+    /**
+     * @dev LEGACY: Get all user positions (kept for backwards compatibility)
+     * @param user The user address
+     * @return list Array of all Position structs
+     * @notice ⚠️ WARNING: May fail with ContractTrapped if user has 50+ positions
+     * @notice RECOMMENDED: Use getUserPositionsPage() instead for large position counts
+     */
+    function getUserPositions(address user) external view returns (Position[] memory list) {
         bytes32[] storage ids = userPositions[user];
-        Position[] memory list = new Position[](ids.length);
+        list = new Position[](ids.length);
         for (uint256 i = 0; i < ids.length; i++) {
             list[i] = positions[ids[i]];
         }
@@ -314,6 +607,15 @@ contract AssetHubVault is ReentrancyGuard {
     */
     function getPosition(bytes32 positionId) external view returns (Position memory) {
         return positions[positionId];
+    }
+
+    /**
+    * @dev Receive function to accept ETH transfers (for XCM returns and testing)
+    * @notice Only accepts ETH - no other functions can be called via this interface
+    */
+    receive() external payable {
+        // Accept ETH transfers for XCM returns and testing
+        // No additional logic needed - balance tracking is handled in settleLiquidation
     }
 
 } 

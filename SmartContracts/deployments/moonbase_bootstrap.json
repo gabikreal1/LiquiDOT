@@ -1,0 +1,56 @@
+{
+  "generatedAt": "2025-10-17T13:47:44.353Z",
+  "network": {
+    "name": "moonbase",
+    "chainId": 1287
+  },
+  "algebra": {
+    "poolDeployer": "0x94dC61d1BC73f11CE5Ec69F982c93C12C3558479",
+    "factory": "0xeCDf1a5F17b94b72339078d71c012Fe4d45b1032",
+    "router": "0x6a43f1f8F11C03991F462a9db2E2876b11dC959e",
+    "quoter": "0x56495A38335B9319304fa0C97A8CF6Cef67251CB",
+    "nfpm": "0x1A2e52315646EC23340C3b64409D7D16e4F2D632",
+    "wdev": "0x5bDdA8D0FDFB75c05cC9a64dc07B24EAC8058923"
+  },
+  "xcmProxy": {
+    "address": "0xf7749B6A5aD0EB4ed059620B89f14FA8e916ee41",
+    "operator": "0x2372cB955817cD5200a559c2faAC93d0B3a88f2d",
+    "testMode": true,
+    "assetHubParaId": 420420422,
+    "trustedXcmCaller": "0x3B0D87f3d0AE4CDC8C0102DAEfB7433aaED15CCF",
+    "defaultSlippageBps": 100,
+    "defaultDestWeight": "6000000000"
+  },
+  "tokens": [
+    {
+      "symbol": "BT0",
+      "address": "0x07770a7ff77bff34E2F4514c2dbeE9Cbe22d6510",
+      "decimals": "18"
+    },
+    {
+      "symbol": "BT1",
+      "address": "0x98166a53d39c778b3a98D3958135AB00D38148Ea",
+      "decimals": "18"
+    }
+  ],
+  "baseToken": {
+    "symbol": "BT0",
+    "address": "0x07770a7ff77bff34E2F4514c2dbeE9Cbe22d6510",
+    "decimals": "18"
+  },
+  "quoteToken": {
+    "symbol": "BT1",
+    "address": "0x98166a53d39c778b3a98D3958135AB00D38148Ea",
+    "decimals": "18"
+  },
+  "supportedTokens": [
+    "0x07770a7ff77bff34E2F4514c2dbeE9Cbe22d6510",
+    "0x98166a53d39c778b3a98D3958135AB00D38148Ea"
+  ],
+  "pool": {
+    "address": "0xD443A21F04e5139d058d0581b925206f701E8A02",
+    "token0": "0x07770a7ff77bff34E2F4514c2dbeE9Cbe22d6510",
+    "token1": "0x98166a53d39c778b3a98D3958135AB00D38148Ea",
+    "liquidity": "1000000000000000000054"
+  }
+}

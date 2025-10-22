@@ -34,10 +34,12 @@ PolkadotHack2025/
 ├── Backend/                 # Node.js workers and services
 ├── DataAggregatorService/   # Pool analytics service
 ├── Frontend/                # Next.js app (Wagmi + Polkadot integrations)
-├── SmartContracts/          # Solidity contracts and scripts
+├── SmartContracts/          # Solidity contracts and scripts (see SmartContracts/README.md)
 ├── local-dev/               # Local dev helper scripts and configs
 └── WhitePaper.md            # Project white paper
 ```
+
+For detailed smart contract documentation, deployment guides, and testing instructions, see **[SmartContracts/README.md](./SmartContracts/README.md)**.
 
 ### Architecture overview
 
