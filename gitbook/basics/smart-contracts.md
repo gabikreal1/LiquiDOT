@@ -10,28 +10,28 @@ LiquiDOT uses two production-focused contracts that coordinate via XCM to create
 
 ### Deployed Contracts
 
-| Contract | Chain | Network | Address |
-|----------|-------|---------|---------|
-| **AssetHubVault** | Asset Hub | Paseo Testnet | `0x3B0D87f3d0AE4CDC8C0102DAEfB7433aaED15CCF` |
-| **XCMProxy** | Moonbeam | Moonbase Alpha | `0xf7749B6A5aD0EB4ed059620B89f14FA8e916ee41` |
+| Contract          | Chain     | Network        | Address                                      |
+| ----------------- | --------- | -------------- | -------------------------------------------- |
+| **AssetHubVault** | Asset Hub | Paseo Testnet  | `0x3B0D87f3d0AE4CDC8C0102DAEfB7433aaED15CCF` |
+| **XCMProxy**      | Moonbeam  | Moonbase Alpha | `0xf7749B6A5aD0EB4ed059620B89f14FA8e916ee41` |
 
 ### Contract Roles
 
-| Contract | Purpose | Responsibilities |
-|----------|---------|-----------------|
-| **AssetHubVault** | Custody & Orchestration | • Holds user balances securely<br/>• Initiates cross-chain investments<br/>• Settles liquidation proceeds<br/>• Manages position lifecycle |
-| **XCMProxy** | Execution Engine | • Receives assets via XCM<br/>• Executes DEX operations<br/>• Manages LP positions<br/>• Returns proceeds to Asset Hub |
+| Contract          | Purpose                 | Responsibilities                                                                                                                               |
+| ----------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| **AssetHubVault** | Custody & Orchestration | <p>• Holds user balances securely<br>• Initiates cross-chain investments<br>• Settles liquidation proceeds<br>• Manages position lifecycle</p> |
+| **XCMProxy**      | Execution Engine        | <p>• Receives assets via XCM<br>• Executes DEX operations<br>• Manages LP positions<br>• Returns proceeds to Asset Hub</p>                     |
 
 ### Source Code
 
-- **AssetHubVault**: `SmartContracts/contracts/V1(Current)/AssetHubVault.sol`
-- **XCMProxy**: `SmartContracts/contracts/V1(Current)/XCMProxy.sol`
+* **AssetHubVault**: [`SmartContracts/contracts/V1(Current)/AssetHubVault.sol`](../../SmartContracts/contracts/V1\(Current\)/AssetHubVault.sol)
+* **XCMProxy**: [`SmartContracts/contracts/V1(Current)/XCMProxy.sol`](../../SmartContracts/contracts/V1\(Current\)/XCMProxy.sol)
 
----
+***
 
 ## AssetHubVault
 
-**Location:** Asset Hub (Paseo Testnet)  
+**Location:** Asset Hub (Paseo Testnet)\
 **Address:** `0x3B0D87f3d0AE4CDC8C0102DAEfB7433aaED15CCF`
 
 ### Overview
@@ -40,38 +40,42 @@ Primary custody layer and orchestrator on Asset Hub. Holds user balances, starts
 
 ### Access Roles
 
-| Role | Permissions | Purpose |
-|------|-------------|---------|
-| **Admin** | Configuration & pausing | System configuration and emergency controls |
-| **Operator** | Dispatch operations & confirmations | Execute investment flows and settle liquidations |
-| **Emergency** | Emergency liquidation | Force liquidate positions in critical situations |
+| Role          | Permissions                         | Purpose                                          |
+| ------------- | ----------------------------------- | ------------------------------------------------ |
+| **Admin**     | Configuration & pausing             | System configuration and emergency controls      |
+| **Operator**  | Dispatch operations & confirmations | Execute investment flows and settle liquidations |
+| **Emergency** | Emergency liquidation               | Force liquidate positions in critical situations |
 
-| Variable | Type | Description |
-|----------|------|-------------|
-| `userBalances` | `mapping(address => uint256)` | ETH/native balance per user |
-| `positions` | `mapping(bytes32 => Position)` | Position details: user, poolId, baseAsset, chainId, range percents, status, amount, remotePositionId, timestamp |
-| `supportedChains` | `mapping(uint32 => Chain)` | Registered chains: supported flag, xcmDestination, chainName, timestamp |
-| `chainExecutors` | `mapping(uint32 => address)` | Authorized remote executor per chain (optional) |
-| `testMode` | `bool` | Skips actual XCM send for local testing |
+| Variable          | Type                           | Description                                                                                                     |
+| ----------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `userBalances`    | `mapping(address => uint256)`  | ETH/native balance per user                                                                                     |
+| `positions`       | `mapping(bytes32 => Position)` | Position details: user, poolId, baseAsset, chainId, range percents, status, amount, remotePositionId, timestamp |
+| `supportedChains` | `mapping(uint32 => Chain)`     | Registered chains: supported flag, xcmDestination, chainName, timestamp                                         |
+| `chainExecutors`  | `mapping(uint32 => address)`   | Authorized remote executor per chain (optional)                                                                 |
+| `testMode`        | `bool`                         | Skips actual XCM send for local testing                                                                         |
 
 **User Operations:**
-- `Deposit(address indexed user, uint256 amount)`
-- `Withdrawal(address indexed user, uint256 amount)`
+
+* `Deposit(address indexed user, uint256 amount)`
+* `Withdrawal(address indexed user, uint256 amount)`
 
 **Investment Lifecycle:**
-- `InvestmentInitiated(bytes32 indexed positionId, address indexed user, uint32 chainId, address poolId, uint256 amount)`
-- `PositionExecutionConfirmed(bytes32 indexed positionId, uint32 chainId, bytes32 remotePositionId, uint128 liquidity)`
-- `LiquidationSettled(bytes32 indexed positionId, address indexed user, uint256 receivedAmount, uint256 expectedAmount)`
-- `PositionLiquidated(bytes32 indexed positionId, address indexed user, uint256 finalAmount)`
+
+* `InvestmentInitiated(bytes32 indexed positionId, address indexed user, uint32 chainId, address poolId, uint256 amount)`
+* `PositionExecutionConfirmed(bytes32 indexed positionId, uint32 chainId, bytes32 remotePositionId, uint128 liquidity)`
+* `LiquidationSettled(bytes32 indexed positionId, address indexed user, uint256 receivedAmount, uint256 expectedAmount)`
+* `PositionLiquidated(bytes32 indexed positionId, address indexed user, uint256 finalAmount)`
 
 **Chain Management:**
-- `ChainAdded(uint32 indexed chainId, string chainName)`
-- `ChainRemoved(uint32 indexed chainId)`
-- `ExecutorUpdated(uint32 indexed chainId, address executor)`
+
+* `ChainAdded(uint32 indexed chainId, string chainName)`
+* `ChainRemoved(uint32 indexed chainId)`
+* `ExecutorUpdated(uint32 indexed chainId, address executor)`
 
 **XCM Operations:**
-- `XCMMessageSent(bytes32 messageHash, uint32 chainId)`
-- `XcmSendAttempt(uint32 chainId, bool success, bytes reason)`
+
+* `XCMMessageSent(bytes32 messageHash, uint32 chainId)`
+* `XcmSendAttempt(uint32 chainId, bool success, bytes reason)`
 
 ### Custom Errors
 
@@ -82,11 +86,12 @@ InsufficientBalance, InvalidRange
 XcmPrecompileNotSet, ChainNotSupported
 ChainIdMismatch, ExecutorNotAuthorized
 ```
----
+
+***
 
 ## XCMProxy
 
-**Location:** Moonbeam (Moonbase Alpha)  
+**Location:** Moonbeam (Moonbase Alpha)\
 **Address:** `0xf7749B6A5aD0EB4ed059620B89f14FA8e916ee41`
 
 ### Overview
@@ -95,32 +100,33 @@ Execution engine on Moonbeam. Receives assets and instructions via XCM, performs
 
 ### Access Roles
 
-| Role | Permissions | Purpose |
-|------|-------------|---------|
-| **Owner** | Configuration & admin | Set integrations, XCM config, and system parameters |
+| Role         | Permissions                        | Purpose                                             |
+| ------------ | ---------------------------------- | --------------------------------------------------- |
+| **Owner**    | Configuration & admin              | Set integrations, XCM config, and system parameters |
 | **Operator** | Investment & liquidation execution | Execute pending investments and liquidate positions |
 
-| Variable | Type | Description |
-|----------|------|-------------|
-| `supportedTokens` | `mapping(address => bool)` | Allowlist for inbound assets |
-| `pendingPositions` | `mapping(bytes32 => PendingPosition)` | Positions awaiting execution (keyed by Asset Hub position ID) |
-| `positions` | `mapping(uint256 => Position)` | Active positions: owner, pool, tokens, ticks, liquidity, NFPM tokenId, ranges, entryPrice, timestamp, active |
-| `quoterContract` | `address` | Algebra Quoter for price quotes |
-| `swapRouterContract` | `address` | Algebra SwapRouter for token swaps |
-| `nfpmContract` | `address` | Algebra NFPM for LP position management |
-| `xTokensPrecompile` | `address` | XTokens precompile for cross-chain transfers |
-| `xcmTransactorPrecompile` | `address` | XCM Transactor for remote calls |
-| `defaultDestWeight` | `uint64` | Default XCM destination weight |
-| `assetHubParaId` | `uint32` | Asset Hub parachain ID |
-| `trustedXcmCaller` | `address` | Authorized XCM message sender |
-| `defaultSlippageBps` | `uint16` | Default slippage tolerance (basis points) |
-| `testMode` | `bool` | Skip XCM sends for local testing |
+| Variable                  | Type                                  | Description                                                                                                  |
+| ------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `supportedTokens`         | `mapping(address => bool)`            | Allowlist for inbound assets                                                                                 |
+| `pendingPositions`        | `mapping(bytes32 => PendingPosition)` | Positions awaiting execution (keyed by Asset Hub position ID)                                                |
+| `positions`               | `mapping(uint256 => Position)`        | Active positions: owner, pool, tokens, ticks, liquidity, NFPM tokenId, ranges, entryPrice, timestamp, active |
+| `quoterContract`          | `address`                             | Algebra Quoter for price quotes                                                                              |
+| `swapRouterContract`      | `address`                             | Algebra SwapRouter for token swaps                                                                           |
+| `nfpmContract`            | `address`                             | Algebra NFPM for LP position management                                                                      |
+| `xTokensPrecompile`       | `address`                             | XTokens precompile for cross-chain transfers                                                                 |
+| `xcmTransactorPrecompile` | `address`                             | XCM Transactor for remote calls                                                                              |
+| `defaultDestWeight`       | `uint64`                              | Default XCM destination weight                                                                               |
+| `assetHubParaId`          | `uint32`                              | Asset Hub parachain ID                                                                                       |
+| `trustedXcmCaller`        | `address`                             | Authorized XCM message sender                                                                                |
+| `defaultSlippageBps`      | `uint16`                              | Default slippage tolerance (basis points)                                                                    |
+| `testMode`                | `bool`                                | Skip XCM sends for local testing                                                                             |
 
 ### Events
-- AssetsReceived, PendingPositionCreated, PositionExecuted, PositionCreated, LiquidityAdded
-- PositionLiquidated, LiquidationCompleted, PendingPositionCancelled
-- AssetsReturned, ProceedsSwapped
-- Config events: XTokensPrecompileSet, DefaultDestWeightSet, AssetHubParaIdSet, TrustedXcmCallerSet, XcmConfigFrozen, XcmTransactorPrecompileSet, DefaultSlippageSet, OperatorUpdated
+
+* AssetsReceived, PendingPositionCreated, PositionExecuted, PositionCreated, LiquidityAdded
+* PositionLiquidated, LiquidationCompleted, PendingPositionCancelled
+* AssetsReturned, ProceedsSwapped
+* Config events: XTokensPrecompileSet, DefaultDestWeightSet, AssetHubParaIdSet, TrustedXcmCallerSet, XcmConfigFrozen, XcmTransactorPrecompileSet, DefaultSlippageSet, OperatorUpdated
 
 ```solidity
 // DEX Integration
@@ -257,7 +263,7 @@ function remoteCallAssetHub(
 ) external onlyOwner
 ```
 
----
+***
 
 ## Contract Flows
 
@@ -330,38 +336,40 @@ sequenceDiagram
     XCM-->>-Monitor: Liquidation confirmed
 ```
 
----
+***
 
 ## Additional Resources
 
 ### Deployment Information
 
 For complete deployment details including:
-- Bootstrap configurations
-- DEX integration addresses
-- Testnet faucets
-- Verification links
+
+* Bootstrap configurations
+* DEX integration addresses
+* Testnet faucets
+* Verification links
 
 See: `SmartContracts/deployments/`
 
 ### Testing
 
 Comprehensive test suites available:
-- Unit tests: `SmartContracts/test/AssetHubVault/*.test.js`
-- Integration tests: `SmartContracts/test/XCMProxy/*.test.js`
-- E2E flows: `SmartContracts/test/Integration/*.test.js`
+
+* Unit tests: `SmartContracts/test/AssetHubVault/*.test.js`
+* Integration tests: `SmartContracts/test/XCMProxy/*.test.js`
+* E2E flows: `SmartContracts/test/Integration/*.test.js`
 
 ### Related Documentation
 
-- [Contract Deployment Guide](contract-deployment.md) - Step-by-step deployment instructions
-- [Testing Guide](testing-guide.md) - How to test the contracts
-- [Architecture Overview](architecture.md) - System design and data flow
+* [Contract Deployment Guide](contract-deployment.md) - Step-by-step deployment instructions
+* [Testing Guide](testing-guide.md) - How to test the contracts
+* [Architecture Overview](architecture.md) - System design and data flow
 
----
+***
 
 ## Notes
 
 This documentation mirrors the current codebase. As features evolve (additional chains, new DEX integrations), this page will be updated to track function signatures and events from the Solidity sources referenced above.
 
-**Last Updated:** October 2025  
+**Last Updated:** October 2025\
 **Contract Version:** V1 (Current)
