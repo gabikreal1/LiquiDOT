@@ -31,7 +31,7 @@ await assetHubVault.investInPool(
 3. Construct XCM message
 4. Dispatch to Moonbeam
 
-### 2. XCM Message Transit
+### 2. XCM Message Transit & Execution Flow
 
 ```mermaid
 %%{init: {'theme':'dark', 'themeVariables': { 'primaryColor':'#4fc3f7','primaryTextColor':'#fff','primaryBorderColor':'#0288d1','actorBkg':'#1e1e1e','actorBorder':'#4fc3f7','actorTextColor':'#fff','signalColor':'#64b5f6','signalTextColor':'#fff','labelBoxBkgColor':'#2d2d2d','labelBoxBorderColor':'#4fc3f7','labelTextColor':'#fff','loopTextColor':'#fff','noteBkgColor':'#ba68c8','noteBorderColor':'#7b1fa2','noteTextColor':'#fff','sequenceNumberColor':'#fff','fontSize':'16px'}}}%%
@@ -41,38 +41,72 @@ sequenceDiagram
     participant RC as 🔗 Relay Chain
     participant MB as 🌙 Moonbeam
     participant XP as 🔄 XCM Proxy
-    participant DEX as 💧 Algebra Pool
+    participant OP as 🤖 Operator
+    participant DEX as 💧 Algebra NFPM
     
-    Note over AH,XP: Investment Flow
+    Note over AH,DEX: Investment Flow
     AH->>+RC: XCM Message with Assets
-    Note right of RC: Routing cross-chain<br/>message
+    Note right of RC: Cross-chain routing
     RC->>+MB: Route to Moonbeam
     MB->>+XP: Deliver Assets + Instructions
-    Note right of XP: Decode investment<br/>parameters
-    XP->>XP: Validate Parameters
-    XP->>+DEX: Swap & Mint LP
-    DEX-->>-XP: LP Position Created
-    Note over XP,DEX: Position recorded
-    XP-->>-MB: Success
-    MB-->>-RC: Confirmation
-    RC-->>-AH: Investment Complete
+    XP->>XP: receiveAssets()
+    Note right of XP: Create PendingPosition
+    XP-->>-MB: Assets received
+    MB-->>-RC: XCM Complete
+    RC-->>-AH: Message delivered
+    
+    Note over OP,DEX: Operator Execution
+    OP->>+XP: executePendingInvestment()
+    XP->>XP: Decode parameters
+    XP->>XP: Swap tokens if needed
+    XP->>+DEX: Mint NFPM position
+    DEX-->>+XP: tokenId, liquidity
+    XP->>XP: Create position record
+    XP-->>-OP: Execution complete
+    
+    Note over OP,AH: Confirmation
+    OP->>+AH: confirmExecution()
+    AH->>AH: Update status to Active
+    Note right of AH: Link remote position
+    AH-->>-OP: Position confirmed
 ```
 
-### 3. Asset Reception & Execution
+### 3. Asset Reception
 
-**XCM Proxy receives:**
-- 99.99 DOT (after XCM fees ~0.01 DOT)
-- Investment parameters
-- User address
+**XCM Proxy `receiveAssets()` creates pending position:**
+- Receives 99.99 DOT (after XCM fees ~0.01 DOT)
+- Stores investment parameters
+- Emits `PendingPositionCreated` event
+- Position awaits operator execution
 
-**Execution steps:**
-1. Decode investment parameters
-2. Swap to LP pair ratio if needed
+### 4. Investment Execution
+
+**Operator calls `executePendingInvestment()`:**
+1. Decode pending position parameters
+2. Swap tokens to LP pair ratio if needed
 3. Calculate tick range from percentages
-4. Mint LP position on Algebra
-5. Record position data
+4. Approve tokens and mint NFPM position
+5. Create local position record
+6. Delete pending position
 
-### 4. Position Monitoring
+### 5. Execution Confirmation
+
+**Operator confirms on Asset Hub:**
+```javascript
+// Call confirmExecution on AssetHubVault
+await assetHubVault.confirmExecution(
+  positionId,        // Asset Hub position ID
+  remotePositionId,  // Local XCMProxy position ID
+  liquidity          // Liquidity created
+);
+```
+
+**Updates position status:**
+- `PendingExecution` → `Active`
+- Links Asset Hub position to remote position
+- Emits `PositionExecutionConfirmed` event
+
+### 6. Position Monitoring
 
 **Stop-Loss Worker (every 12 seconds):**
 
@@ -94,20 +128,30 @@ async function monitorPositions() {
 }
 ```
 
-### 5. Liquidation & Return
+### 7. Liquidation & Return
 
-**XCM Proxy execution:**
-1. Validate trigger condition
-2. Burn LP position
-3. Collect fees
-4. Swap to base asset
-5. Send XCM message back to Asset Hub
+**Operator calls `liquidateSwapAndReturn()`:**
+1. Burn NFPM position and collect fees
+2. Swap all tokens to base asset
+3. Send assets back via XCM (if not test mode)
+4. Emit `LiquidationCompleted` event
 
-**Asset Hub Vault:**
-1. Receive proceeds
-2. Calculate profit/loss
+### 8. Liquidation Settlement
+
+**Operator settles on Asset Hub:**
+```javascript
+// After XCM transfer completes
+await assetHubVault.settleLiquidation(
+  positionId,
+  receivedAmount
+);
+```
+
+**Updates:**
+1. Verify contract received assets
+2. Update position status to `Liquidated`
 3. Credit user balance
-4. Update position status
+4. Emit `LiquidationSettled` event
 
 ## XCM Fee Handling
 
