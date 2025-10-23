@@ -17,4 +17,3 @@
 
 * [Contract Deployment](basics/contract-deployment.md)
 * [Testing Guide](basics/testing-guide.md)
-* [MVP Limitations](basics/mvp-limitations.md)
