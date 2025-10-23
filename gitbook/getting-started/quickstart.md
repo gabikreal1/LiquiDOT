@@ -1,4 +1,5 @@
 ---
+description: (Not yet live) Release Q4 2025
 icon: bolt
 layout:
   width: default
@@ -27,7 +28,7 @@ Before you begin, make sure you have:
 * A Polkadot-compatible wallet (e.g., Polkadot.js, Talisman, SubWallet)
 * Testnet tokens:
   * **Moonbase DEV** - Get from [Moonbeam Faucet](https://faucet.moonbeam.network/)
-  * **Paseo DOT** - Get from [Paseo Faucet](https://faucet.paseo.network/)
+  * **Paseo PAS** - Get from [Paseo Faucet](https://faucet.polkadot.io/)
 * Basic understanding of liquidity provision
 
 {% hint style="info" %}
@@ -45,9 +46,8 @@ Currently, LiquiDOT is in MVP phase and operates on testnets. Mainnet deployment
 
 1. Go to the **Dashboard**
 2. Click **Deposit**
-3. Select your asset (e.g., DOT, USDC)
-4. Enter the amount you want to deposit
-5. Confirm the transaction in your wallet
+3. Enter the amount you want to deposit in PAS
+4. Confirm the transaction in your wallet
 
 Your funds will be securely held in the Asset Hub Vault Contract.
 

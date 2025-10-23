@@ -16,11 +16,11 @@ layout:
     visible: true
 ---
 
-# Welcome to LiquiDOT
+# Welcome
 
-LiquiDOT is a customizable liquidity provider (LP) manager designed to simplify and improve participation in DeFi. It allows users to automate their LP strategies, set stop loss and take profit levels, and rebalance their positions without needing constant manual oversight.
+LiquiDOT is a customisable liquidity provider (LP) manager designed to simplify and improve participation in DeFi. It allows users to automate their LP strategies, set stop loss and take profit levels, and rebalance their positions without needing constant manual oversight.
 
-With support for multiple DEXes and leveraging Polkadot's cross-chain capabilities, LiquiDOT offers a single, user-friendly platform for managing liquidity across different ecosystems. The goal is to bring meaningful control, automation, and flexibility to liquidity providers — something that's currently missing in the space.
+With support for multiple DEXes and leveraging Polkadot's cross-chain capabilities, LiquiDOT offers a single, user-friendly platform for managing liquidity across different ecosystems. The goal is to bring meaningful control, automation, and flexibility to liquidity providers - something that's currently missing in the space.
 
 ## 🌟 Key Features
 
