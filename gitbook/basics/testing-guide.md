@@ -4,40 +4,19 @@ icon: vial
 
 # Testing Guide
 
-Comprehensive testing guide for LiquiDOT smart contracts, backend services, and integration flows.
-
-## Overview
-
-LiquiDOT uses multiple testing frameworks:
-* **Hardhat** - Primary smart contract testing
-* **Foundry** - Gas optimization and fuzzing
-* **Jest** - Backend service testing
-* **Cypress** - Frontend E2E testing (future)
+Test LiquiDOT smart contracts and integration flows.
 
 ## Quick Start
 
 ```bash
-# Install dependencies
 cd SmartContracts
 npm install
-
-# Run all tests
 npm test
-
-# Run specific test suites
-npm run test:unit
-npm run test:integration
-npm run test:coverage
 ```
 
-## Smart Contract Testing
+## Test Suites
 
 ### Unit Tests
-
-Test individual contract functions in isolation.
-
-**Location:** `SmartContracts/test/unit/`
-
 ```bash
 # Test Asset Hub Vault
 npx hardhat test test/AssetHubVault/unit/**/*.test.js
@@ -46,38 +25,58 @@ npx hardhat test test/AssetHubVault/unit/**/*.test.js
 npx hardhat test test/XCMProxy/unit/**/*.test.js
 ```
 
-**Example test:**
+### Integration Tests
+```bash
+# Full cross-chain flow
+npx hardhat test test/Integration/**/*.test.js
+```
+
+### Coverage
+```bash
+npm run test:coverage
+```
+
+## Test Structure
+
 ```javascript
 describe("AssetHubVault - Deposits", function() {
   it("Should accept user deposits", async function() {
     const [owner, user] = await ethers.getSigners();
     
-    // Deposit 100 DOT
-    await vault.connect(user).deposit(
-      ethers.parseUnits("100", 10),  // amount
-      dotAddress                      // asset
-    );
+    await vault.connect(user).deposit(ethers.parseUnits("100", 10), dotAddress);
     
-    // Verify balance
     const balance = await vault.getUserBalance(user.address, dotAddress);
     expect(balance).to.equal(ethers.parseUnits("100", 10));
   });
 });
 ```
 
+## Testing Frameworks
 
-## Test Documentation
+| Framework | Purpose |
+|-----------|---------|
+| **Hardhat** | Smart contract testing |
+| **Foundry** | Gas optimization & fuzzing |
+| **Jest** | Backend services |
 
-Each test file includes:
-* **Purpose** - What is being tested
-* **Setup** - Test environment configuration
-* **Execution** - Test steps
-* **Assertions** - Expected outcomes
-* **Cleanup** - Teardown procedures
+## Key Test Cases
 
-## Next Steps
+**AssetHubVault:**
+- ✓ Deposit/withdraw
+- ✓ Investment dispatch
+- ✓ Position confirmation
+- ✓ Liquidation settlement
 
-* [Contract Deployment](contract-deployment.md) - Deploy and test live
-* [Smart Contracts](smart-contracts.md) - Contract documentation
-* [Architecture](architecture.md) - System design
+**XCMProxy:**
+- ✓ Asset reception
+- ✓ LP minting/burning
+- ✓ Swap execution
+- ✓ XCM returns
+
+**Integration:**
+- ✓ Full investment flow
+- ✓ Liquidation flow
+- ✓ Emergency scenarios
+
+**Next:** [Contract Deployment](contract-deployment.md) • [Smart Contracts](smart-contracts.md)
 

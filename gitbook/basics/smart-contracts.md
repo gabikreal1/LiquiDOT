@@ -82,31 +82,6 @@ InsufficientBalance, InvalidRange
 XcmPrecompileNotSet, ChainNotSupported
 ChainIdMismatch, ExecutorNotAuthorized
 ```
-
-### Public Interface
-
-#### User Functions
-- deposit() external payable
-- withdraw(uint256 amount) external
-- addChain(uint32 chainId, bytes xcmDestination, string chainName, address executor) external onlyAdmin
-- removeChain(uint32 chainId) external onlyAdmin
-- updateChainExecutor(uint32 chainId, address executor) external onlyAdmin
-- dispatchInvestment(address user, uint32 chainId, address poolId, address baseAsset, uint256 amount, int24 lowerRangePercent, int24 upperRangePercent, bytes destination, bytes preBuiltXcmMessage) external onlyOperator
-- confirmExecution(bytes32 positionId, bytes32 remotePositionId, uint128 liquidity) external onlyOperator
-- settleLiquidation(bytes32 positionId, uint256 receivedAmount) external onlyOperator
-- emergencyLiquidatePosition(uint32 chainId, bytes32 positionId) external payable onlyEmergency
-- getUserBalance(address user) external view returns (uint256)
-- isPositionActive(address user, bytes32 positionId) external view returns (bool)
-- Pagination helpers: getUserPositionCount, getUserPositionIds, getUserPositionsPage, getUserPositionsByStatus, getUserPositionStats, getUserPositions
-- getPosition(bytes32 positionId) external view returns (Position)
-- receive() external payable
-
-### Admin config
-- setXcmPrecompile(address); freezeXcmPrecompile()
-- setTestMode(bool)
-- pause()/unpause()
-- transferAdmin(address), setOperator(address), setEmergency(address)
-
 ---
 
 ## XCMProxy
@@ -293,10 +268,10 @@ function remoteCallAssetHub(
 sequenceDiagram
     autonumber
     participant User
-    participant AVault as AssetHubVault
-    participant XCM as XCM Layer
-    participant Proxy as XCMProxy
-    participant DEX as Algebra NFPM
+    participant AVault as 💎 AssetHubVault
+    participant XCM as 🔗 XCM Layer
+    participant Proxy as 🌙 XCMProxy
+    participant DEX as 💧 Algebra NFPM
     
     User->>+AVault: deposit()
     Note over AVault: Balance updated
@@ -312,7 +287,7 @@ sequenceDiagram
     Proxy->>+Proxy: executePendingInvestment()
     Proxy->>Proxy: Swap tokens if needed
     Proxy->>+DEX: Mint LP position
-    DEX-->>-Proxy: NFT tokenId + liquidity
+    DEX-->>-Proxy: NFT tokenId & liquidity
     Note over Proxy: Position recorded
     Proxy-->>-Proxy: Position executed
     
@@ -328,11 +303,11 @@ sequenceDiagram
 %%{init: {'theme':'dark', 'themeVariables': { 'fontSize':'16px'}}}%%
 sequenceDiagram
     autonumber
-    participant Monitor as Stop-Loss Worker
-    participant Proxy as XCMProxy
-    participant DEX as Algebra NFPM
-    participant XCM as XCM Layer
-    participant AVault as AssetHubVault
+    participant Monitor as ⚡ Stop-Loss Worker
+    participant Proxy as 🌙 XCMProxy
+    participant DEX as 💧 Algebra NFPM
+    participant XCM as 🔗 XCM Layer
+    participant AVault as 💎 AssetHubVault
     participant User
     
     Monitor->>+Proxy: Trigger liquidation
@@ -340,7 +315,7 @@ sequenceDiagram
     
     Proxy->>+Proxy: executeFullLiquidation()
     Proxy->>+DEX: Burn LP position
-    DEX-->>-Proxy: Token0 + Token1 + fees
+    DEX-->>-Proxy: Token0 & Token1 & fees
     
     Proxy->>Proxy: Swap to base asset
     Note over Proxy: Convert all to DOT

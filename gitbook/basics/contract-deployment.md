@@ -4,276 +4,88 @@ icon: rocket
 
 # Contract Deployment
 
-Complete guide to deploying LiquiDOT smart contracts on Asset Hub and Moonbeam testnets.
-
-## Overview
-
-This guide covers deploying:
-1. **Asset Hub Vault Contract** (Paseo Asset Hub)
-2. **XCM Proxy Contract** (Moonbase Alpha)
-3. **Linking contracts** via XCM configuration
+Deploy LiquiDOT smart contracts on Paseo Asset Hub and Moonbase Alpha testnets.
 
 ## Prerequisites
 
-### Required Tools
+**Testnet Funds:**
+- Paseo Asset Hub: ~10 DOT from [faucet](https://faucet.paseo.network/)
+- Moonbase Alpha: ~50 DEV from [faucet](https://faucet.moonbeam.network/)
 
+**Environment (.env in `SmartContracts/`):**
 ```bash
-# Node.js v18+
-node --version
-
-# Hardhat
-npm install --global hardhat
-
-# Foundry (optional)
-curl -L https://foundry.paradigm.xyz | bash
-foundryup
-```
-
-### Required Funds
-
-**Paseo Asset Hub:**
-* ~10 DOT for deployment and testing
-* Get from: [Paseo Faucet](https://faucet.paseo.network/)
-
-**Moonbase Alpha:**
-* ~50 DEV for deployment and testing
-* Get from: [Moonbeam Faucet](https://faucet.moonbeam.network/)
-
-### Environment Setup
-
-Create `.env` in `SmartContracts/`:
-
-```bash
-# Private keys (WITHOUT 0x prefix)
 MOON=your_moonbase_private_key
 ASSET=your_asset_hub_private_key
-
-# RPC endpoints
 MOONBASE_RPC=https://rpc.api.moonbase.moonbeam.network
 ASSETHUB_RPC=wss://paseo-asset-hub-rpc.polkadot.io
-
-# Deployer addresses
-MOONBASE_DEPLOYER=0x...
-ASSETHUB_DEPLOYER=0x...
 ```
 
-## Step 1: Deploy Asset Hub Vault
+## Deployment Steps
 
-### Using Remix (Recommended)
+### 1. Deploy Asset Hub Vault
 
-1. **Open Remix IDE**
-   * Go to [remix.ethereum.org](https://remix.ethereum.org)
+**Using Remix:**
+1. Go to [remix.ethereum.org](https://remix.ethereum.org)
+2. Load `contracts/V1(Current)/AssetHubVault.sol`
+3. Compile with Solidity 0.8.20, optimization: 200 runs
+4. Deploy via MetaMask to Paseo Asset Hub:
+   - RPC: `https://paseo-asset-hub-eth-rpc.polkadot.io`
+   - Chain ID: 1000
+5. Save deployed address
 
-2. **Load Contract**
-   * Create new file: `AssetHubVault.sol`
-   * Paste contract code from `contracts/V1(Current)/AssetHubVault.sol`
-
-3. **Compile**
-   * Compiler version: 0.8.20
-   * Enable optimization: 200 runs
-
-4. **Connect to Asset Hub**
-   * In Deploy tab, select "Injected Provider - MetaMask"
-   * Configure MetaMask for Asset Hub:
-     * Network: Paseo Asset Hub
-     * RPC: `https://paseo-asset-hub-eth-rpc.polkadot.io`
-     * Chain ID: 1000 (parachain ID)
-
-5. **Deploy**
-   * Constructor parameters:
-     ```javascript
-     _supportedAssets: ["0xDOT...", "0xUSDC..."]
-     _investmentWorker: "0xYourWorkerAddress..."
-     _feeCollector: "0xFeeAddress..."
-     _emergencyAdmin: "0xAdminAddress..."
-     ```
-   * Click "Deploy"
-   * Confirm transaction in MetaMask
-   * Save deployed address!
-
-### Verification
-
-```bash
-# Verify deployment
-npx hardhat verify --network passethub 0xYourAssetHubVaultAddress \
-  "constructor_args"
-```
-
-## Step 2: Deploy Moonbase Infrastructure
-
-### A. Deploy Algebra Contracts (If not exists)
-
+**Using Hardhat:**
 ```bash
 cd SmartContracts
-npm run deploy:algebra
+npx hardhat run scripts/deploy-assethub-vault.js --network passethub
 ```
 
-This deploys:
-* Algebra Factory
-* Algebra Pool Deployer
-* Algebra Quoter
-* Algebra SwapRouter
-
-**Save addresses** to `deployments/moonbase_bootstrap.json`
-
-### B. Deploy XCM Proxy
+### 2. Deploy Moonbase Infrastructure
 
 ```bash
+# Deploy Algebra DEX (if needed)
+npm run deploy:algebra
+
+# Deploy XCM Proxy
 npx hardhat run scripts/deploy-xcmproxy.js --network moonbase
 ```
 
-**Constructor parameters:**
-```javascript
-{
-  owner: "0xAssetHubVaultAddress",  // From Step 1
-  quoter: "0xAlgebraQuoterAddress",
-  swapRouter: "0xAlgebraSwapRouterAddress"
-}
-```
+Save addresses to `deployments/deployment-state.json`
 
-**Save address** to `deployments/deployment-state.json`
-
-### Verification
+### 3. Link Contracts
 
 ```bash
-# Verify on Moonscan
-npx hardhat verify --network moonbase 0xYourXCMProxyAddress \
-  "0xOwner" "0xQuoter" "0xSwapRouter"
-```
-
-## Step 3: Create Test Pool
-
-Create a test liquidity pool for testing:
-
-```bash
-npx hardhat run scripts/create-test-pool.js --network moonbase
-```
-
-**This creates:**
-* DOT/USDC pool with 0.05% fee tier
-* Initial liquidity: 1000 DOT + $50,000 USDC
-* Returns pool address
-
-**Save pool address** for testing!
-
-## Step 4: Link Contracts
-
-### A. Configure Asset Hub Vault
-
-Set XCM Proxy address on Asset Hub:
-
-```bash
+# Configure Asset Hub Vault
 npx hardhat run scripts/configure-assethub.js --network passethub
+
+# Enable test mode
+npx hardhat run scripts/enable-testmode.js --network passethub
+npx hardhat run scripts/enable-testmode.js --network moonbase
 ```
 
-**Or manually via Remix:**
-```solidity
-assetHubVault.setXCMProxy(
-  1284,  // Moonbeam parachain ID
-  "0xYourXCMProxyAddress"
-);
-```
-
-### B. Enable Test Mode
-
-For testnet, enable test mode to skip XCM and test locally:
+### 4. Verify Deployment
 
 ```bash
-# On Asset Hub Vault
-assetHubVault.setTestMode(true);
+# Run tests
+npm test
 
-# On XCM Proxy
-xcmProxy.setTestMode(true);
+# Verify on explorers
+npx hardhat verify --network passethub <VAULT_ADDRESS>
+npx hardhat verify --network moonbase <PROXY_ADDRESS>
 ```
 
-**Test mode allows:**
-* Direct contract calls without XCM
-* Faster testing iteration
-* Bypass cross-chain delays
+## Deployed Addresses
 
-**⚠️ Disable before mainnet!**
+| Contract | Network | Address |
+|----------|---------|---------|
+| AssetHubVault | Paseo Asset Hub | `0x3B0D87f3d0AE4CDC8C0102DAEfB7433aaED15CCF` |
+| XCMProxy | Moonbase Alpha | `0xf7749B6A5aD0EB4ed059620B89f14FA8e916ee41` |
 
-## Step 5: Fund Contracts
+## Troubleshooting
 
-### Fund XCM Proxy
+| Issue | Solution |
+|-------|----------|
+| Insufficient gas | Increase gas limit in `hardhat.config.js` |
+| XCM message failed | Enable test mode or check XCM fees |
+| Connection timeout | Switch RPC endpoint |
 
-Send tokens to XCM Proxy for initial liquidity:
-
-```bash
-# Transfer DOT
-npx hardhat run scripts/fund-xcmproxy.js --network moonbase
-
-# Or manually
-# Send 100 DOT to 0xXCMProxyAddress
-```
-
-### Fund Asset Hub Vault
-
-Deposit to Asset Hub Vault:
-
-```bash
-npx hardhat run scripts/deposit-vault.js --network passethub
-
-# Or via frontend
-# Connect wallet → Deposit → 100 DOT
-```
-
-## Step 6: Verify Deployment
-
-Run comprehensive tests:
-
-```bash
-# Test Asset Hub Vault
-npx hardhat test test/AssetHubVault/testnet/**/*.test.js --network passethub
-
-# Test XCM Proxy
-npx hardhat test test/XCMProxy/testnet/**/*.test.js --network moonbase
-
-# Integration tests
-npx hardhat test test/Integration/testnet/**/*.test.js --network passethub
-```
-
-**Expected output:**
-```
-✓ Asset Hub: Deposit works
-✓ Asset Hub: Invest in pool works
-✓ XCM Proxy: Receive assets works
-✓ XCM Proxy: Mint LP works
-✓ XCM Proxy: Execute liquidation works
-✓ Integration: Full flow works
-
-6 passing (45s)
-```
-
-## Deployment Checklist
-
-- [ ] Asset Hub Vault deployed and verified
-- [ ] XCM Proxy deployed and verified
-- [ ] Test pool created
-- [ ] Contracts linked (Asset Hub ↔ Moonbeam)
-- [ ] Test mode enabled
-- [ ] Contracts funded
-- [ ] Tests passing
-- [ ] Addresses saved to deployment files
-
-## Common Issues
-
-### "Insufficient gas"
-**Solution:** Increase gas limit in hardhat.config.js
-
-### "Contract already deployed"
-**Solution:** Use different deployer account or redeploy
-
-### "XCM message failed"
-**Solution:** 
-* Verify XCM fees are sufficient
-* Check Asset Hub → Moonbeam connectivity
-* Enable test mode for local testing
-
-## Next Steps
-
-* [Testing Guide](testing-guide.md) - Comprehensive testing
-* [Smart Contracts](smart-contracts.md) - Contract documentation
-* [Architecture](architecture.md) - System design
-
-*Detailed deployment scripts available in `SmartContracts/scripts/README.md`*
+**Next:** [Testing Guide](testing-guide.md) • [Smart Contracts](smart-contracts.md)
