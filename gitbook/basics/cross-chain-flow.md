@@ -69,16 +69,28 @@ await assetHubVault.investInPool(
 **Route:** Asset Hub → Relay Chain → Moonbeam
 
 ```mermaid
+%%{init: {'theme':'dark', 'themeVariables': { 'primaryColor':'#4fc3f7','primaryTextColor':'#fff','primaryBorderColor':'#0288d1','actorBkg':'#1e1e1e','actorBorder':'#4fc3f7','actorTextColor':'#fff','signalColor':'#64b5f6','signalTextColor':'#fff','labelBoxBkgColor':'#2d2d2d','labelBoxBorderColor':'#4fc3f7','labelTextColor':'#fff','loopTextColor':'#fff','noteBkgColor':'#ba68c8','noteBorderColor':'#7b1fa2','noteTextColor':'#fff','sequenceNumberColor':'#fff','fontSize':'16px'}}}%%
 sequenceDiagram
-    participant AH as Asset Hub Vault
-    participant RC as Relay Chain
-    participant MB as Moonbeam
-    participant XP as XCM Proxy
+    autonumber
+    participant AH as 💎 Asset Hub Vault
+    participant RC as 🔗 Relay Chain
+    participant MB as 🌙 Moonbeam
+    participant XP as 🔄 XCM Proxy
+    participant DEX as 💧 Algebra Pool
     
-    AH->>RC: XCM Message with Assets
-    RC->>MB: Route to Moonbeam
-    MB->>XP: Deliver Assets and Instructions
-    XP->>XP: Execute Investment
+    Note over AH,XP: Investment Flow
+    AH->>+RC: XCM Message with Assets
+    Note right of RC: Routing cross-chain<br/>message
+    RC->>+MB: Route to Moonbeam
+    MB->>+XP: Deliver Assets + Instructions
+    Note right of XP: Decode investment<br/>parameters
+    XP->>XP: Validate Parameters
+    XP->>+DEX: Swap & Mint LP
+    DEX-->>-XP: LP Position Created
+    Note over XP,DEX: Position recorded
+    XP-->>-MB: Success
+    MB-->>-RC: Confirmation
+    RC-->>-AH: Investment Complete
 ```
 
 **XCM Message Contents:**

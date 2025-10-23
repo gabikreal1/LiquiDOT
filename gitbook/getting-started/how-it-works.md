@@ -9,18 +9,39 @@ LiquiDOT automates the entire lifecycle of liquidity provision through a sophist
 ## The Flow
 
 ```mermaid
+%%{init: {'theme':'dark', 'themeVariables': { 'primaryColor':'#4fc3f7','primaryTextColor':'#fff','primaryBorderColor':'#0288d1','lineColor':'#64b5f6','secondaryColor':'#ba68c8','tertiaryColor':'#66bb6a','fontSize':'16px'}}}%%
 graph TB
-    User[User] -->|1. Deposits Assets| AssetHub[Asset Hub Vault]
-    User -->|2. Sets Strategy| Backend[Investment Decision Worker]
-    Backend -->|3. Analyzes Markets| PoolData[Pool Analytics]
+    User([👤 User])
+    AssetHub[💎 Asset Hub Vault]
+    Backend[🤖 Investment Decision Worker]
+    PoolData[(📊 Pool Analytics)]
+    Moonbeam[🌙 XCM Proxy on Moonbeam]
+    DEX[🔄 Algebra DEX]
+    Monitor[⚡ Stop-Loss Worker]
+    
+    User -->|1. Deposits Assets| AssetHub
+    User -->|2. Sets Strategy| Backend
+    Backend -->|3. Analyzes Markets| PoolData
     Backend -->|4. Triggers Investment| AssetHub
-    AssetHub -->|5. XCM Transfer + Instructions| Moonbeam[XCM Proxy on Moonbeam]
-    Moonbeam -->|6. Swaps and Mints LP| DEX[Algebra DEX]
-    Monitor[Stop-Loss Worker] -->|7. Monitors 24/7| Moonbeam
-    Monitor -->|8. Detects Trigger| Moonbeam
-    Moonbeam -->|9. Burns LP and Swaps| DEX
-    Moonbeam -->|10. Returns Proceeds via XCM| AssetHub
+    AssetHub ==>|5. XCM Transfer + Instructions| Moonbeam
+    Moonbeam -->|6. Swaps & Mints LP| DEX
+    Monitor -.->|7. Monitors 24/7| Moonbeam
+    Monitor -.->|8. Detects Trigger| Moonbeam
+    Moonbeam -->|9. Burns LP & Swaps| DEX
+    Moonbeam ==>|10. Returns Proceeds via XCM| AssetHub
     AssetHub -->|11. Credits Account| User
+    
+    classDef userStyle fill:#4fc3f7,stroke:#0288d1,stroke-width:3px,color:#000
+    classDef vaultStyle fill:#66bb6a,stroke:#388e3c,stroke-width:3px,color:#fff
+    classDef backendStyle fill:#ba68c8,stroke:#7b1fa2,stroke-width:3px,color:#fff
+    classDef moonbeamStyle fill:#64b5f6,stroke:#1976d2,stroke-width:3px,color:#fff
+    classDef dexStyle fill:#f06292,stroke:#c2185b,stroke-width:3px,color:#fff
+    
+    class User userStyle
+    class AssetHub vaultStyle
+    class Backend,PoolData,Monitor backendStyle
+    class Moonbeam moonbeamStyle
+    class DEX dexStyle
 ```
 
 ## The Process Step by Step

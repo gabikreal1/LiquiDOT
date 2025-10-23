@@ -9,41 +9,49 @@ LiquiDOT's architecture follows a hub-and-spoke model designed for scalable cros
 ## High-Level System Diagram
 
 ```mermaid
+%%{init: {'theme':'dark', 'themeVariables': { 'fontSize':'16px'}}}%%
 graph TB
-    subgraph User[User Interaction]
-        Frontend[Frontend UI]
+    subgraph User["🖥️ User Layer"]
+        Frontend["💻 Frontend UI<br/><small>Next.js + Wagmi</small>"]
     end
-    subgraph Backend[Backend Services]
-        PoolAnalytics[LP Data Aggregator]
-        IDWorker[Investment Decision Worker]
-        StopLossWorker[Stop-Loss Worker]
-        PostgreSQL[(PostgreSQL)]
+    
+    subgraph Backend["⚙️ Backend Services"]
+        PoolAnalytics["📊 LP Data Aggregator<br/><small>Market Analysis</small>"]
+        IDWorker["🤖 Investment Decision Worker<br/><small>Strategy Execution</small>"]
+        StopLossWorker["⚡ Stop-Loss Worker<br/><small>24/7 Monitoring</small>"]
+        PostgreSQL[("🗄️ PostgreSQL<br/><small>Historical Data</small>")]
     end
-    subgraph AssetHub[Asset Hub]
-        AssetsPallet[Vault Contract]
+    
+    subgraph AssetHub["💎 Asset Hub Parachain"]
+        AssetsPallet["🔐 Vault Contract<br/><small>Asset Custody</small>"]
     end
-    subgraph Moonbeam[Moonbeam Parachain]
-        XCMProxy[XCM Proxy Contract]
+    
+    subgraph Moonbeam["🌙 Moonbeam Parachain"]
+        XCMProxy["🔗 XCM Proxy Contract<br/><small>Execution Layer</small>"]
     end
-    subgraph DEXes[DEX Pools]
-        AlgebraPools[Algebra Pools]
+    
+    subgraph DEXes["🔄 DEX Ecosystem"]
+        AlgebraPools["💧 Algebra Pools<br/><small>Liquidity Provision</small>"]
     end
+    
     Frontend -->|Deposit/Withdraw| AssetsPallet
-    Frontend -->|Configure Preferences| IDWorker
-    PostgreSQL -->|Historical Data| IDWorker
+    Frontend -->|Configure Strategy| IDWorker
+    PostgreSQL -.->|Historical Data| IDWorker
     PoolAnalytics -->|Pool Analytics| IDWorker
-    IDWorker -->|Execute Investment| AssetsPallet
-    AssetsPallet -->|XCM Transfer| XCMProxy
+    IDWorker ==>|Execute Investment| AssetsPallet
+    AssetsPallet ==>|XCM Transfer| XCMProxy
     XCMProxy -->|Mint/Burn LP| AlgebraPools
-    XCMProxy -->|Return Proceeds| AssetsPallet
-    StopLossWorker -->|Read Position Data| XCMProxy
-    StopLossWorker -->|Monitor Prices| AlgebraPools
+    XCMProxy ==>|Return Proceeds| AssetsPallet
+    StopLossWorker -.->|Monitor Positions| XCMProxy
+    StopLossWorker -.->|Check Prices| AlgebraPools
     StopLossWorker -->|Execute Liquidation| XCMProxy
-    classDef userLayer fill:#4fc3f7,stroke:#0288d1,stroke-width:3px,color:#000
-    classDef backendLayer fill:#ba68c8,stroke:#7b1fa2,stroke-width:3px,color:#fff
-    classDef assetHubLayer fill:#66bb6a,stroke:#388e3c,stroke-width:3px,color:#fff
-    classDef moonbeamLayer fill:#64b5f6,stroke:#1976d2,stroke-width:3px,color:#fff
-    classDef dexLayer fill:#f06292,stroke:#c2185b,stroke-width:3px,color:#fff
+    
+    classDef userLayer fill:#4fc3f7,stroke:#0288d1,stroke-width:4px,color:#000,rx:15,ry:15
+    classDef backendLayer fill:#ba68c8,stroke:#7b1fa2,stroke-width:3px,color:#fff,rx:10,ry:10
+    classDef assetHubLayer fill:#66bb6a,stroke:#388e3c,stroke-width:4px,color:#fff,rx:10,ry:10
+    classDef moonbeamLayer fill:#64b5f6,stroke:#1976d2,stroke-width:4px,color:#fff,rx:10,ry:10
+    classDef dexLayer fill:#f06292,stroke:#c2185b,stroke-width:3px,color:#fff,rx:10,ry:10
+    
     class Frontend userLayer
     class PoolAnalytics,IDWorker,StopLossWorker,PostgreSQL backendLayer
     class AssetsPallet assetHubLayer
