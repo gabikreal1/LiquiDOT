@@ -14,7 +14,7 @@ Cross-chain liquidity automation for the Polkadot ecosystem. Built on Asset Hub 
 
 ### Documentation
 
-[Our official documentation] (https://liquidot.gitbook.io/liquidot-docs)
+[Our official documentation](https://liquidot.gitbook.io/liquidot-docs)
 
 ### White paper
 
