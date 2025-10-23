@@ -8,7 +8,7 @@ LiquiDOT's architecture follows a hub-and-spoke model designed for scalable cros
 
 ## High-Level System Diagram
 
-```mermaid
+{% mermaid %}
 graph TB
     subgraph User[User Interaction]
         Frontend[Frontend UI]
@@ -49,7 +49,7 @@ graph TB
     class AssetsPallet assetHubLayer
     class XCMProxy moonbeamLayer
     class AlgebraPools dexLayer
-```
+{% endmermaid %}
 
 ## Core Components
 

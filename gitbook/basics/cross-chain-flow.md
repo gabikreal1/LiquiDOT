@@ -68,7 +68,7 @@ await assetHubVault.investInPool(
 
 **Route:** Asset Hub → Relay Chain → Moonbeam
 
-```mermaid
+{% mermaid %}
 sequenceDiagram
     participant AH as Asset Hub Vault
     participant RC as Relay Chain
@@ -79,7 +79,7 @@ sequenceDiagram
     RC->>MB: Route to Moonbeam
     MB->>XP: Deliver Assets and Instructions
     XP->>XP: Execute Investment
-```
+{% endmermaid %}
 
 **XCM Message Contents:**
 * **Assets:** 100 DOT (minus XCM fees)
