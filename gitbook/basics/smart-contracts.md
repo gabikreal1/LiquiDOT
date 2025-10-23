@@ -287,7 +287,7 @@ sequenceDiagram
     Proxy->>+Proxy: executePendingInvestment()
     Proxy->>Proxy: Swap tokens if needed
     Proxy->>+DEX: Mint LP position
-    DEX-->>-Proxy: NFT tokenId & liquidity
+    DEX-->>-Proxy: NFT tokenId, liquidity
     Note over Proxy: Position recorded
     Proxy-->>-Proxy: Position executed
     
@@ -315,7 +315,7 @@ sequenceDiagram
     
     Proxy->>+Proxy: executeFullLiquidation()
     Proxy->>+DEX: Burn LP position
-    DEX-->>-Proxy: Token0 & Token1 & fees
+    DEX-->>-Proxy: Token0, Token1, fees
     
     Proxy->>Proxy: Swap to base asset
     Note over Proxy: Convert all to DOT

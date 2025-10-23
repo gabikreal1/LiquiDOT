@@ -173,25 +173,7 @@ Once configured, users can:
 | **Secure Custody** | Funds remain on Asset Hub |
 | **Gas Efficiency** | Optimized Moonbeam execution |
 
-## What Makes LiquiDOT Different?
 
-### Traditional LP Management
-
-❌ Manual position creation
-❌ Constant monitoring required
-❌ Manual exit decisions
-❌ Single-chain limitation
-❌ Complex tick mathematics
-❌ No automated risk management
-
-### LiquiDOT Approach
-
-✅ Automated position creation
-✅ 24/7 monitoring built-in
-✅ Automatic stop-loss/take-profit
-✅ Cross-chain liquidity management
-✅ User-friendly percentage ranges
-✅ Complete risk automation
 
 ## Next Steps
 
