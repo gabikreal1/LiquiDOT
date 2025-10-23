@@ -10,35 +10,35 @@ LiquiDOT's architecture follows a hub-and-spoke model designed for scalable cros
 
 ```mermaid
 graph TB
-    subgraph User["User Interaction"]
-        Frontend["Frontend UI (Next.js)"]
+    subgraph User[User Interaction]
+        Frontend[Frontend UI]
     end
-    subgraph Backend["Backend Services"]
-        PoolAnalytics["LP Data Aggregator"]
-        IDWorker["Investment Decision Worker"]
-        StopLossWorker["Stop-Loss/Take-Profit Worker"]
+    subgraph Backend[Backend Services]
+        PoolAnalytics[LP Data Aggregator]
+        IDWorker[Investment Decision Worker]
+        StopLossWorker[Stop-Loss Worker]
         PostgreSQL[(PostgreSQL)]
     end
-    subgraph AssetHub["Asset Hub"]
-        AssetsPallet["Liquidity Provider/Vault Contract"]
+    subgraph AssetHub[Asset Hub]
+        AssetsPallet[Vault Contract]
     end
-    subgraph Moonbeam["Moonbeam Parachain"]
-        XCMProxy["XCM Proxy Contract"]
+    subgraph Moonbeam[Moonbeam Parachain]
+        XCMProxy[XCM Proxy Contract]
     end
-    subgraph DEXes["DEX Pools"]
-        AlgebraPools["Algebra Pools (Moonbeam)"]
+    subgraph DEXes[DEX Pools]
+        AlgebraPools[Algebra Pools]
     end
-    Frontend -->|Deposit/Withdraw Tokens| AssetsPallet
-    Frontend -->|Configure Investment Preferences| IDWorker
-    PostgreSQL -->|Historical Position Data| IDWorker
-    PoolAnalytics -->|Real-time Pool Analytics| IDWorker
-    IDWorker -->|Execute Investment Decisions| AssetsPallet
-    AssetsPallet -->|Cross-chain Asset Transfer with LP Instructions| XCMProxy
-    XCMProxy -->|Mint/Burn Liquidity Positions| AlgebraPools
-    XCMProxy -->|Liquidation Proceeds via XCM| AssetsPallet
+    Frontend -->|Deposit/Withdraw| AssetsPallet
+    Frontend -->|Configure Preferences| IDWorker
+    PostgreSQL -->|Historical Data| IDWorker
+    PoolAnalytics -->|Pool Analytics| IDWorker
+    IDWorker -->|Execute Investment| AssetsPallet
+    AssetsPallet -->|XCM Transfer| XCMProxy
+    XCMProxy -->|Mint/Burn LP| AlgebraPools
+    XCMProxy -->|Return Proceeds| AssetsPallet
     StopLossWorker -->|Read Position Data| XCMProxy
-    StopLossWorker -->|Monitor Pool Prices| AlgebraPools
-    StopLossWorker -->|Execute Stop-Loss Liquidations| XCMProxy
+    StopLossWorker -->|Monitor Prices| AlgebraPools
+    StopLossWorker -->|Execute Liquidation| XCMProxy
     classDef userLayer fill:#4fc3f7,stroke:#0288d1,stroke-width:3px,color:#000
     classDef backendLayer fill:#ba68c8,stroke:#7b1fa2,stroke-width:3px,color:#fff
     classDef assetHubLayer fill:#66bb6a,stroke:#388e3c,stroke-width:3px,color:#fff
