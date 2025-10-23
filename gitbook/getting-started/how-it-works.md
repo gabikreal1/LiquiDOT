@@ -15,10 +15,10 @@ graph TB
     Backend -->|3. Analyzes Markets| PoolData[Pool Analytics]
     Backend -->|4. Triggers Investment| AssetHub
     AssetHub -->|5. XCM Transfer + Instructions| Moonbeam[XCM Proxy on Moonbeam]
-    Moonbeam -->|6. Swaps & Mints LP| DEX[Algebra DEX]
+    Moonbeam -->|6. Swaps and Mints LP| DEX[Algebra DEX]
     Monitor[Stop-Loss Worker] -->|7. Monitors 24/7| Moonbeam
     Monitor -->|8. Detects Trigger| Moonbeam
-    Moonbeam -->|9. Burns LP & Swaps| DEX
+    Moonbeam -->|9. Burns LP and Swaps| DEX
     Moonbeam -->|10. Returns Proceeds via XCM| AssetHub
     AssetHub -->|11. Credits Account| User
 ```

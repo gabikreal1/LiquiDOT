@@ -4,565 +4,150 @@ icon: file-contract
 
 # Smart Contracts
 
-LiquiDOT's smart contract architecture consists of two primary contracts that work in tandem through XCM messaging to enable secure cross-chain liquidity management.
+LiquiDOT uses two production-focused contracts that coordinate via XCM to create and manage liquidity positions across chains. This section documents only what’s implemented today.
 
-## Contract Overview
+## Contract overview
 
-| Contract | Chain | Purpose | Language |
-|----------|-------|---------|----------|
-| Asset Hub Vault | Asset Hub (Paseo) | Custody & Orchestration | Solidity |
-| XCM Proxy | Moonbeam (Moonbase) | Execution & DEX Integration | Solidity |
+| Contract | Chain | Purpose |
+|----------|-------|---------|
+| AssetHubVault | Asset Hub (Paseo) | Custody, accounting, and XCM dispatch |
+| XCMProxy | Moonbeam (Moonbase) | Execution engine for swaps, LP mint/burn, and XCM returns |
 
-## Asset Hub Vault Contract
-
-### Location & Purpose
-
-**Deployed on:** Asset Hub / Paseo testnet  
-**Primary Role:** Secure custody and cross-chain orchestration
-
-The Asset Hub Vault Contract serves as the primary custody and accounting layer for user deposits, implementing a secure vault pattern with integrated XCM messaging capabilities. This contract acts as the single source of truth for user balances and orchestrates all cross-chain operations.
-
-### Core Responsibilities
-
-* **User Balance Management** - Tracks individual user deposits and withdrawals
-* **Asset Custody** - Securely holds user funds using battle-tested vault patterns
-* **Investment Orchestration** - Initiates cross-chain LP investments via XCM
-* **Proceeds Management** - Receives liquidation proceeds from cross-chain positions
-* **Multi-Modal Liquidation** - Supports emergency and strategic operations
-* **Operation State Tracking** - Maintains investment history
-* **Access Control** - Implements role-based permissions
-
-### Key Functions
-
-#### User Operations
-
-```solidity
-function deposit(uint256 amount, address asset) external
-```
-Accept user deposits with automatic balance updates.
-
-**Parameters:**
-* `amount` - Amount to deposit (in wei/smallest unit)
-* `asset` - Token contract address
-
-**Events:** `Deposited(user, asset, amount, timestamp)`
+Links to source:
+- AssetHubVault: `SmartContracts/contracts/V1(Current)/AssetHubVault.sol`
+- XCMProxy: `SmartContracts/contracts/V1(Current)/XCMProxy.sol`
 
 ---
 
-```solidity
-function withdraw(uint256 amount, address asset) external
-```
-Process withdrawals with safety checks and balance verification.
+## AssetHubVault
 
-**Parameters:**
-* `amount` - Amount to withdraw
-* `asset` - Token contract address
+Role: primary custody layer and orchestrator on Asset Hub. Holds user balances, starts cross-chain investments, confirms execution, and settles liquidations. Uses only the IXcm precompile available on Asset Hub.
 
-**Requires:**
-* Sufficient balance
-* No active locks on funds
+### Access and roles
+- admin: configuration and pausing
+- operator: dispatch operations and confirmations
+- emergency: emergency liquidation
 
-**Events:** `Withdrawn(user, asset, amount, timestamp)`
+### Key state
+- userBalances: ETH/native balance per user
+- positions: positionId => Position { user, poolId, baseAsset, chainId, range percents, status, amount, remotePositionId, timestamp }
+- supportedChains: chainId => { supported, xcmDestination, chainName, timestamp }
+- chainExecutors: chainId => authorized remote executor (optional)
+- testMode: skips actual XCM send for local testing
 
-#### Investment Management
+### Events (selected)
+- Deposit, Withdrawal
+- InvestmentInitiated(positionId, user, chainId, poolId, amount)
+- PositionExecutionConfirmed(positionId, chainId, remotePositionId, liquidity)
+- LiquidationSettled(positionId, user, receivedAmount, expectedAmount)
+- PositionLiquidated(positionId, user, finalAmount)
+- ChainAdded/Removed, ExecutorUpdated
+- XCMMessageSent, XcmSendAttempt
 
-```solidity
-function investInPool(
-    uint256 chainId,
-    address poolId,
-    address baseAsset,
-    uint256[] amounts,
-    int24 lowerRange,
-    int24 upperRange
-) external onlyInvestmentWorker
-```
-Initiate cross-chain LP investment via XCM.
+### Errors (selected)
+NotAdmin, NotOperator, NotEmergency, Paused, ZeroAddress, AmountZero, InsufficientBalance, InvalidRange, XcmPrecompileNotSet, ChainNotSupported, ChainIdMismatch, ExecutorNotAuthorized
 
-**Parameters:**
-* `chainId` - Target parachain ID (e.g., Moonbeam)
-* `poolId` - DEX pool address
-* `baseAsset` - Initial deposit token
-* `amounts` - Token amounts for LP
-* `lowerRange` - Lower price range (percentage)
-* `upperRange` - Upper price range (percentage)
+### External interface (what you can call)
+- deposit() external payable
+- withdraw(uint256 amount) external
+- addChain(uint32 chainId, bytes xcmDestination, string chainName, address executor) external onlyAdmin
+- removeChain(uint32 chainId) external onlyAdmin
+- updateChainExecutor(uint32 chainId, address executor) external onlyAdmin
+- dispatchInvestment(address user, uint32 chainId, address poolId, address baseAsset, uint256 amount, int24 lowerRangePercent, int24 upperRangePercent, bytes destination, bytes preBuiltXcmMessage) external onlyOperator
+- confirmExecution(bytes32 positionId, bytes32 remotePositionId, uint128 liquidity) external onlyOperator
+- settleLiquidation(bytes32 positionId, uint256 receivedAmount) external onlyOperator
+- emergencyLiquidatePosition(uint32 chainId, bytes32 positionId) external payable onlyEmergency
+- getUserBalance(address user) external view returns (uint256)
+- isPositionActive(address user, bytes32 positionId) external view returns (bool)
+- Pagination helpers: getUserPositionCount, getUserPositionIds, getUserPositionsPage, getUserPositionsByStatus, getUserPositionStats, getUserPositions
+- getPosition(bytes32 positionId) external view returns (Position)
+- receive() external payable
 
-**Access:** Investment Decision Worker only
-
-**Process:**
-1. Validates user has sufficient balance
-2. Locks funds for investment
-3. Constructs XCM message with investment instructions
-4. Transfers assets + instructions to target chain
-5. Records pending investment
-
-**Events:** `InvestmentInitiated(user, chainId, poolId, amount, timestamp)`
-
----
-
-```solidity
-function receiveProceeds(
-    uint256 chainId,
-    bytes32 positionId,
-    uint256[] finalAmounts
-) external onlyXCMProxy
-```
-Receive liquidation proceeds from XCM Proxy.
-
-**Parameters:**
-* `chainId` - Source parachain
-* `positionId` - LP position identifier
-* `finalAmounts` - Returned token amounts
-
-**Access:** XCM Proxy only (via XCM)
-
-**Process:**
-1. Validates position exists
-2. Credits user's balance
-3. Updates position status to 'closed'
-4. Records final P&L
-
-**Events:** `ProceedsReceived(user, positionId, amounts, profit, timestamp)`
-
-#### Emergency Functions
-
-```solidity
-function emergencyLiquidatePosition(
-    uint256 chainId,
-    bytes32 positionId
-) external onlyAdmin
-```
-Emergency liquidation override (admin only).
-
-**Use Cases:**
-* System security threats
-* Critical bugs detected
-* User protection
+### Admin config
+- setXcmPrecompile(address); freezeXcmPrecompile()
+- setTestMode(bool)
+- pause()/unpause()
+- transferAdmin(address), setOperator(address), setEmergency(address)
 
 ---
 
-```solidity
-function rebalancePosition(
-    uint256 chainId,
-    bytes32 positionId
-) external onlyInvestmentWorker
-```
-Strategic position rebalancing for portfolio optimization.
+## XCMProxy
+
+Role: execution engine on Moonbeam. Receives assets and instructions via XCM, performs swaps and LP mint/burn with Algebra’s NFPM, tracks positions, and returns proceeds to Asset Hub. Includes optional Moonbeam XCM-Transactor integration for remote runtime calls.
+
+### Access and roles
+- owner: contract admin (can set integrations and XCM config)
+- operator: executes investments and liquidations
+
+### Key state
+- supportedTokens: allowlist for inbound assets
+- pendingPositions: assetHubPositionId => PendingPosition
+- positions: local position registry (owner, pool, tokens, ticks, liquidity, nfpm tokenId, ranges, entryPrice, timestamp, active)
+- Integrations: quoterContract, swapRouterContract, nfpmContract
+- XCM config: xTokensPrecompile, defaultDestWeight, assetHubParaId, trustedXcmCaller, xcmTransactorPrecompile, defaultSlippageBps, testMode
+
+### Events (selected)
+- AssetsReceived, PendingPositionCreated, PositionExecuted, PositionCreated, LiquidityAdded
+- PositionLiquidated, LiquidationCompleted, PendingPositionCancelled
+- AssetsReturned, ProceedsSwapped
+- Config events: XTokensPrecompileSet, DefaultDestWeightSet, AssetHubParaIdSet, TrustedXcmCallerSet, XcmConfigFrozen, XcmTransactorPrecompileSet, DefaultSlippageSet, OperatorUpdated
+
+### External interface (what you can call)
+Configuration:
+- setIntegrations(address quoter, address router) onlyOwner
+- setNFPM(address nfpm) onlyOwner
+- setXTokensPrecompile, setDefaultDestWeight, setAssetHubParaId, setTrustedXcmCaller, freezeXcmConfig (onlyOwner)
+- setXcmTransactorPrecompile(address), setDefaultSlippageBps(uint16) (onlyOwner)
+- setOperator(address) onlyOwner, setTestMode(bool) onlyOwner, pause()/unpause() onlyOwner
+
+XCM and execution:
+- receiveAssets(address token, address user, uint256 amount, bytes investmentParams) external
+  - Called via XCM; records a PendingPosition keyed by AssetHub position id and emits AssetsReceived/PendingPositionCreated.
+- executePendingInvestment(bytes32 assetHubPositionId) external onlyOperator returns (uint256 localPositionId)
+  - Swaps as needed, computes ticks from percent ranges, mints via NFPM, records Position, emits PositionExecuted/PositionCreated.
+- cancelPendingPosition(bytes32 assetHubPositionId, bytes destination) external onlyOperator
+  - Cancels pending and returns funds to Asset Hub via XCM.
+- executeFullLiquidation(uint256 positionId) external onlyOperator returns (uint256 amount0, uint256 amount1)
+  - Burns liquidity, collects tokens, optionally swaps to base asset, and prepares for return.
+- liquidateSwapAndReturn(...) external onlyOperator
+  - Burn → swap via router → send back via XCM; emits ProceedsSwapped/AssetsReturned.
+- returnAssets(address token, address user, uint256 amount, bytes destination) external onlyOwner
+  - Sends assets back to Asset Hub using XTokens/XCM when configured.
+
+Queries and helpers:
+- calculateTickRange(int24 lowerRangePercent, int24 upperRangePercent) public view returns (int24 bottomTick, int24 topTick)
+- isPositionOutOfRange(uint256 positionId) public view returns (bool outOfRange, uint256 currentPrice)
+- collectFees(uint256 positionId) external returns (uint256 amount0, uint256 amount1)
+- swapExactInputSingle(..., uint160 limitSqrtPrice) external onlyOwner returns (uint256 amountOut)
+- quoteExactInputSingle(..., uint160 limitSqrtPrice) external returns (uint256 amountOut)
+- getActivePositions() external view returns (Position[] memory)
+- getUserPositions(address user) external view returns (uint256[] memory)
+- addSupportedToken/removeSupportedToken (onlyOwner)
+
+Moonbeam XCM-Transactor helper:
+- buildPalletCallBytes(uint8 palletIndex, uint8 callIndex, bytes args) pure returns (bytes)
+- remoteCallAssetHub(uint16 feeLocation, uint64 weightAtMost, bytes call, uint256 feeAmount, uint64 overallWeight) external onlyOwner
 
 ---
 
-```solidity
-function emergencyPause() external onlyAdmin
-```
-Circuit breaker for system-wide operations.
+## Flows (concise)
 
-#### Query Functions
+Investment
+1) User deposits native asset to AssetHubVault (deposit)
+2) Operator dispatches to a registered chain (dispatchInvestment)
+3) Assets + instruction arrive on Moonbeam; XCMProxy receiveAssets → pending
+4) Operator executes pending (executePendingInvestment) → LP minted via NFPM
+5) Operator confirms on AssetHub (confirmExecution)
 
-```solidity
-function getUserBalance(address user, address asset) 
-    external view returns (uint256)
-```
-Query user balance for specific asset.
-
----
-
-```solidity
-function getActiveInvestments(address user) 
-    external view returns (Investment[] memory)
-```
-Query user's active cross-chain positions.
-
-### Contract Initialization
-
-```solidity
-function initialize(
-    address[] memory _supportedAssets,
-    XCMDestination[] memory _xcmDestinations,
-    address _investmentDecisionWorker,
-    address _feeCollector,
-    address _emergencyAdmin
-) external initializer
-```
-
-**Configuration:**
-* List of supported tokens
-* XCM destination configurations
-* Authorized worker addresses
-* Fee collection address
-* Emergency admin
-
-### State Variables
-
-```solidity
-// User balances: user => asset => amount
-mapping(address => mapping(address => uint256)) public balances;
-
-// Active investments: user => Investment[]
-mapping(address => Investment[]) public activeInvestments;
-
-// Position tracking: positionId => PositionData
-mapping(bytes32 => PositionData) public positions;
-
-// Access control
-address public investmentDecisionWorker;
-address public emergencyAdmin;
-bool public paused;
-```
-
-## XCM Proxy Contract
-
-### Location & Purpose
-
-**Deployed on:** Moonbeam / Moonbase Alpha testnet  
-**Primary Role:** Execution engine for DEX interactions
-
-The XCM Proxy Contract functions as the execution engine for all DEX interactions, implementing sophisticated liquidity management with automated position monitoring.
-
-### Core Responsibilities
-
-* **Cross-Chain Asset Reception** - Receive assets via XCM
-* **Token Swapping** - Execute optimal swaps for LP ratios
-* **Asymmetric Range LP Management** - Handle flexible price ranges
-* **Dynamic Tick Conversion** - Convert percentages to precise ticks
-* **Position Tracking** - Maintain comprehensive position records
-* **Advanced DEX Integration** - Full Algebra protocol integration
-* **Multi-Source Liquidation** - Handle various liquidation triggers
-* **Security Validation** - Verify position health before liquidation
-
-### Key Functions
-
-#### Cross-Chain Investment Execution
-
-```solidity
-function executeInvestment(
-    address baseAsset,
-    uint256[] amounts,
-    address poolId,
-    int24 lowerRangePercent,
-    int24 upperRangePercent,
-    address positionOwner
-) external onlyOwner
-```
-Complete investment flow: receive assets, swap if needed, mint LP position.
-
-**Process:**
-1. Receive assets from Asset Hub via XCM
-2. Calculate optimal token ratio for LP
-3. Execute swaps if needed
-4. Convert percentage ranges to ticks
-5. Mint LP position on Algebra
-6. Record position data
-
-**Access:** Asset Hub Vault only (via XCM)
+Liquidation
+1) Operator triggers executeFullLiquidation/liquidateSwapAndReturn on XCMProxy
+2) Proceeds are swapped to base asset and returned (returnAssets)
+3) Operator settles on AssetHub (settleLiquidation) → user balance credited
 
 ---
 
-```solidity
-function processSwapAndMint(
-    IAlgebraPool pool,
-    address token0,
-    address token1,
-    int24 lowerRangePercent,
-    int24 upperRangePercent,
-    uint128 liquidityDesired,
-    address positionOwner
-) internal returns (bytes32 positionId)
-```
-Internal function to handle token swapping and LP minting.
+## Addresses
+See `SmartContracts/deployments/` for deployed testnet addresses and bootstrap configs.
 
----
-
-```solidity
-function calculateOptimalSwap(
-    address baseAsset,
-    address targetToken0,
-    address targetToken1,
-    uint256[] amounts
-) internal view returns (uint256 swapAmount)
-```
-Determine optimal swap amounts for LP position.
-
-#### Liquidity Management
-
-```solidity
-function calculateTickRange(
-    IAlgebraPool pool,
-    int24 lowerRangePercent,
-    int24 upperRangePercent
-) internal view returns (int24 bottomTick, int24 topTick)
-```
-Convert asymmetric percentage ranges to precise tick boundaries.
-
-**Example:**
-```
-Current price: $100
-lowerRangePercent: -5 (5% below)
-upperRangePercent: +10 (10% above)
-
-Output:
-bottomTick: tick at $95
-topTick: tick at $110
-```
-
----
-
-```solidity
-function executeBurn(
-    IAlgebraPool pool,
-    int24 bottomTick,
-    int24 topTick,
-    uint128 liquidity
-) internal returns (uint256 amount0, uint256 amount1)
-```
-Remove liquidity from existing position with automatic token collection.
-
----
-
-```solidity
-function findPosition(
-    IAlgebraPool pool,
-    int24 bottomTick,
-    int24 topTick
-) public view returns (Position memory)
-```
-Locate specific position by pool and tick range.
-
----
-
-```solidity
-function getActivePositions() 
-    external view returns (Position[] memory)
-```
-Query all active LP positions for stop-loss monitoring.
-
----
-
-```solidity
-function getUserPositions(address user) 
-    external view returns (Position[] memory)
-```
-Get all positions owned by specific user with range details.
-
-#### Stop-Loss & Liquidation
-
-```solidity
-function getPositionDetails(bytes32 positionId) 
-    external view returns (PositionDetails memory)
-```
-Provide raw position data for backend analysis:
-* Entry price
-* Price ranges (percentage)
-* Token amounts
-* Pool information
-* Current tick
-
----
-
-```solidity
-function executeFullLiquidation(
-    bytes32 positionId,
-    LiquidationType liquidationType
-) external
-```
-Complete liquidation flow with validation.
-
-**Process:**
-1. Validate liquidation is authorized
-2. Verify position is out of range (if stop-loss)
-3. Burn LP position
-4. Collect tokens
-5. Swap to base asset
-6. Return proceeds to Asset Hub via XCM
-
-**Liquidation Types:**
-* `STOP_LOSS` - Price hit stop-loss threshold
-* `TAKE_PROFIT` - Price hit profit target
-* `EMERGENCY` - Admin override
-* `REBALANCE` - Strategic reposition
-
----
-
-```solidity
-function isPositionOutOfRange(bytes32 positionId) 
-    internal view returns (bool)
-```
-Validate if position is actually beyond user's asymmetric range.
-
-**Security Check:** Prevents unauthorized liquidations.
-
----
-
-```solidity
-function swapToBaseAsset(
-    uint256 token0Amount,
-    uint256 token1Amount,
-    address baseAsset
-) internal returns (uint256 baseAssetAmount)
-```
-Convert position tokens back to original base asset.
-
-#### Asset Management
-
-```solidity
-function receiveAssets(
-    address token,
-    address user,
-    uint256 amount,
-    bytes calldata investmentParams
-) external onlyOwner
-```
-Receive assets and investment instructions from Asset Hub via XCM.
-
-**Access:** Asset Hub only
-
----
-
-```solidity
-function returnAssets(
-    address token,
-    address user,
-    uint256 amount,
-    address recipient
-) external onlyOwner
-```
-Return liquidation proceeds to Asset Hub via XCM.
-
-#### DEX Integration
-
-```solidity
-function swapExactInputSingle(
-    address tokenIn,
-    address tokenOut,
-    address recipient,
-    uint256 amountIn,
-    uint256 amountOutMinimum,
-    uint160 limitSqrtPrice
-) external returns (uint256 amountOut)
-```
-Execute exact input swaps for position liquidations.
-
----
-
-```solidity
-function quoteExactInputSingle(
-    address tokenIn,
-    address tokenOut,
-    uint256 amountIn,
-    uint160 limitSqrtPrice
-) external returns (uint256 amountOut)
-```
-Get real-time swap quotes without execution.
-
----
-
-```solidity
-function algebraMintCallback(
-    uint256 amount0,
-    uint256 amount1,
-    bytes calldata data
-) external override
-```
-Handle Algebra pool mint callbacks securely.
-
-### Contract Initialization
-
-```solidity
-constructor(
-    address _owner,           // Asset Hub contract address
-    address _quoterContract,  // Algebra Quoter
-    address _swapRouterContract // Algebra SwapRouter
-) {
-    owner = _owner;
-    quoterContract = _quoterContract;
-    swapRouterContract = _swapRouterContract;
-}
-```
-
-### State Variables
-
-```solidity
-// Position tracking: positionId => Position
-mapping(bytes32 => Position) public positions;
-
-// User positions: user => positionId[]
-mapping(address => bytes32[]) public userPositions;
-
-// DEX integration
-address public quoterContract;
-address public swapRouterContract;
-
-// Access control
-address public owner; // Asset Hub contract
-```
-
-## Integration Architecture
-
-### Cross-Chain Investment Flow
-
-```
-1. User deposits → Asset Hub Vault
-2. Decision Worker → Asset Hub: investInPool()
-3. Asset Hub → XCM Message → Moonbeam
-4. XCM Proxy: executeInvestment()
-   ├── Swap tokens (if needed)
-   ├── Calculate tick ranges
-   └── Mint LP on Algebra
-5. Position active and monitored
-```
-
-### Liquidation Flow
-
-```
-1. Stop-Loss Worker detects trigger
-2. Worker → XCM Proxy: executeFullLiquidation()
-3. XCM Proxy validates position health
-4. Burn LP → Collect tokens
-5. Swap to base asset
-6. XCM Proxy → Asset Hub: returnAssets()
-7. Asset Hub credits user balance
-```
-
-## Security Features
-
-### Access Control
-* **Role-Based Permissions** - Only authorized contracts can call sensitive functions
-* **XCM Validation** - Verify messages come from trusted sources
-* **Owner-Only Functions** - Critical operations require owner authority
-
-### Safety Mechanisms
-* **Reentrancy Guards** - Protect against reentrancy attacks
-* **Validation Checks** - Verify position health before liquidation
-* **Emergency Pause** - Circuit breaker for system issues
-* **Balance Verification** - Ensure sufficient funds before operations
-
-### Testing Coverage
-* **Unit Tests** - Individual function testing
-* **Integration Tests** - Cross-contract testing
-* **Testnet Deployment** - Real-world validation
-* **Security Audits** - Professional code review (planned)
-
-## Gas Optimization
-
-* Efficient storage patterns
-* Minimal cross-contract calls
-* Batched operations where possible
-* Optimized loop iterations
-* Cached calculations
-
-## Contract Addresses
-
-### Testnet Deployments
-
-**Moonbase Alpha:**
-* XCM Proxy: `0x...` (see deployments/)
-* Algebra Pool Factory: `0x...`
-* Swap Router: `0x...`
-
-**Paseo Asset Hub:**
-* Asset Hub Vault: `0x...` (see deployments/)
-
-## Next Steps
-
-* [Contract Deployment Guide](contract-deployment.md)
-* [Testing Guide](testing-guide.md)
-* [API Reference](api-reference.md)
-* [Architecture Overview](architecture.md)
+## Notes
+This documentation mirrors the current codebase. As features evolve (additional chains, new DEX integrations), this page should track function signatures and events from the Solidity sources referenced above.

@@ -69,10 +69,16 @@ await assetHubVault.investInPool(
 **Route:** Asset Hub → Relay Chain → Moonbeam
 
 ```mermaid
-graph LR
-    AssetHub[Asset Hub<br/>Vault Contract] -->|XCM Message| RelayChain[Polkadot<br/>Relay Chain]
-    RelayChain -->|Routed| Moonbeam[Moonbeam<br/>Parachain]
-    Moonbeam -->|Delivers to| XCMProxy[XCM Proxy<br/>Contract]
+sequenceDiagram
+    participant AH as Asset Hub Vault
+    participant RC as Relay Chain
+    participant MB as Moonbeam
+    participant XP as XCM Proxy
+    
+    AH->>RC: XCM Message with Assets
+    RC->>MB: Route to Moonbeam
+    MB->>XP: Deliver Assets and Instructions
+    XP->>XP: Execute Investment
 ```
 
 **XCM Message Contents:**
