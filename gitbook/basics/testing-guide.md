@@ -6,17 +6,17 @@ icon: vial
 
 Test LiquiDOT smart contracts and integration flows.
 
-## Quick Start
+## Test Suites
+
+Prior to testing ensure you install all necessary libraries
 
 ```bash
 cd SmartContracts
-npm install
-npm test
+npm install 
 ```
 
-## Test Suites
-
 ### Unit Tests
+
 ```bash
 # Test Asset Hub Vault
 npx hardhat test test/AssetHubVault/unit/**/*.test.js
@@ -26,12 +26,14 @@ npx hardhat test test/XCMProxy/unit/**/*.test.js
 ```
 
 ### Integration Tests
+
 ```bash
 # Full cross-chain flow
 npx hardhat test test/Integration/**/*.test.js
 ```
 
 ### Coverage
+
 ```bash
 npm run test:coverage
 ```
@@ -53,30 +55,32 @@ describe("AssetHubVault - Deposits", function() {
 
 ## Testing Frameworks
 
-| Framework | Purpose |
-|-----------|---------|
-| **Hardhat** | Smart contract testing |
+| Framework   | Purpose                    |
+| ----------- | -------------------------- |
+| **Hardhat** | Smart contract testing     |
 | **Foundry** | Gas optimization & fuzzing |
-| **Jest** | Backend services |
+| **Jest**    | Backend services           |
 
 ## Key Test Cases
 
 **AssetHubVault:**
-- ✓ Deposit/withdraw
-- ✓ Investment dispatch
-- ✓ Position confirmation
-- ✓ Liquidation settlement
+
+* ✓ Deposit/withdraw
+* ✓ Investment dispatch
+* ✓ Position confirmation
+* ✓ Liquidation settlement
 
 **XCMProxy:**
-- ✓ Asset reception
-- ✓ LP minting/burning
-- ✓ Swap execution
-- ✓ XCM returns
+
+* ✓ Asset reception
+* ✓ LP minting/burning
+* ✓ Swap execution
+* ✓ XCM returns
 
 **Integration:**
-- ✓ Full investment flow
-- ✓ Liquidation flow
-- ✓ Emergency scenarios
+
+* ✓ Full investment flow
+* ✓ Liquidation flow
+* ✓ Emergency scenarios
 
 **Next:** [Contract Deployment](contract-deployment.md) • [Smart Contracts](smart-contracts.md)
-
