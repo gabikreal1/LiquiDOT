@@ -8,7 +8,7 @@ LiquiDOT automates the entire lifecycle of liquidity provision through a sophist
 
 ## The Flow
 
-{% mermaid %}
+```mermaid
 graph TB
     User[User] -->|1. Deposits Assets| AssetHub[Asset Hub Vault]
     User -->|2. Sets Strategy| Backend[Investment Decision Worker]
@@ -21,7 +21,7 @@ graph TB
     Moonbeam -->|9. Burns LP and Swaps| DEX
     Moonbeam -->|10. Returns Proceeds via XCM| AssetHub
     AssetHub -->|11. Credits Account| User
-{% endmermaid %}
+```
 
 ## The Process Step by Step
 
