@@ -281,8 +281,7 @@ sequenceDiagram
     AVault->>AVault: Lock funds
     AVault->>+XCM: dispatchInvestment()
     XCM->>+Proxy: receiveAssets()
-    Note over Proxy: Create PendingPosition
-    Proxy-->>-XCM: Assets received
+ 
     
     Proxy->>+Proxy: executePendingInvestment()
     Proxy->>Proxy: Swap tokens if needed
@@ -327,7 +326,7 @@ sequenceDiagram
     AVault->>AVault: Credit user balance
     AVault-->>-User: Proceeds available
     
-    Proxy-->>-XCM: Return complete
+    Proxy-->>+XCM: Return complete
     XCM-->>-Monitor: Liquidation confirmed
 ```
 

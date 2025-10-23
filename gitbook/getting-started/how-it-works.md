@@ -181,5 +181,5 @@ Ready to dive deeper? Explore:
 
 * [Architecture Details](../basics/architecture.md) - Technical deep-dive
 * [Smart Contracts](../basics/smart-contracts.md) - Contract documentation
-* [Risk Parameters](../basics/risk-parameters.md) - Configure your strategy
-* [Creating Positions](../basics/creating-position.md) - Detailed user guide
+* [Cross-Chain Flow](../basics/cross-chain-flow.md) - XCM messaging details
+* [Contract Deployment](../basics/contract-deployment.md) - Deployment guide

@@ -85,14 +85,8 @@ You can track everything from your **Dashboard**:
 
 ## Next Steps
 
-<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>📚 Learn the Architecture</strong></td><td>Understand how LiquiDOT works under the hood</td><td><a href="../basics/architecture.md">architecture.md</a></td></tr><tr><td><strong>⚙️ Advanced Configuration</strong></td><td>Fine-tune your strategy parameters</td><td><a href="../basics/risk-parameters.md">risk-parameters.md</a></td></tr><tr><td><strong>🔍 Monitor Positions</strong></td><td>Learn to track and analyze your LP positions</td><td><a href="../basics/monitoring-positions.md">monitoring-positions.md</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>🏗️ System Architecture</strong></td><td>Understand how LiquiDOT works under the hood</td><td><a href="../basics/architecture.md">architecture.md</a></td></tr><tr><td><strong>📋 Smart Contracts</strong></td><td>Explore contract functions and deployment</td><td><a href="../basics/smart-contracts.md">smart-contracts.md</a></td></tr><tr><td><strong>� Cross-Chain Flow</strong></td><td>Learn about XCM messaging and cross-chain operations</td><td><a href="../basics/cross-chain-flow.md">cross-chain-flow.md</a></td></tr></tbody></table>
 
-## Getting Help
-
-* Check our [FAQ](../basics/faq.md)
-* Join our [Discord community](https://discord.gg/liquidot)
-* Review the [Video Tutorial](https://youtube.com/liquidot)
-* Read the [User Guide](../basics/creating-position.md)
 
 {% hint style="success" %}
 Congratulations! You're now ready to start automated liquidity provision with LiquiDOT.
