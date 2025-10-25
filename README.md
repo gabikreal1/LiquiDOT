@@ -4,12 +4,10 @@
 
 Cross-chain liquidity automation for the Polkadot ecosystem. Built on Asset Hub for custody and using XCM for execution across parachains, LiquiDOT lets users deposit into a vault, define LP strategy, and earn fees without manual rebalancing.
 
-[![Demo Video](https://img.youtube.com/vi/9bX0Up0pLww/0.jpg)](https://youtu.be/9bX0Up0pLww)
-
 ### Current status
 
 - Ongoing development; MVP targeting Moonbeam Algebra pools with Asset Hub custody and an XCM Proxy on Moonbeam.
-- Prototype contracts and frontend are in this repo; cross-chain wiring and production hardening are in progress.
+- Contracts are deployed on testnet, currently bringing the backend to production grade.
 - Have been approved a grant application to support development: see Polkadot Fast Grants PR [#86](https://github.com/Polkadot-Fast-Grants/apply/pull/86).
 
 ### Documentation
@@ -27,11 +25,6 @@ Cross-chain liquidity automation for the Polkadot ecosystem. Built on Asset Hub 
 - Asymmetric range selection with automatic tick conversion
 - Stop-loss/take-profit style liquidations returned back to Asset Hub
 - Data-driven decision engine (backend) aligned with user preferences
-
-### Demos
-
-- Smart Contracts walkthrough: https://youtu.be/uR1Q-MbCqyc
-- UI walkthrough: https://youtu.be/kveBw8GVIVk
 
 ### Repository structure
 

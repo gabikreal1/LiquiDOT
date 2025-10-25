@@ -32,11 +32,6 @@ npx hardhat test test/XCMProxy/unit/**/*.test.js
 npx hardhat test test/Integration/**/*.test.js
 ```
 
-### Coverage
-
-```bash
-npm run test:coverage
-```
 
 ## Test Structure
 
