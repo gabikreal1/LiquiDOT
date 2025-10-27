@@ -22,6 +22,7 @@ const { getMoonbaseTestConfig } = require("./config");
 describe("XCMProxy Testnet - Liquidation", function () {
   let proxy;
   let operator;
+  const DEFAULT_EXECUTION_SLIPPAGE = Number(process.env.MOONBASE_EXEC_SLIPPAGE_BPS || "5000");
   const moonbase = getMoonbaseTestConfig();
   const PROXY_ADDRESS = moonbase.proxyAddress;
   const TEST_POOL_ID = moonbase.poolAddress;
@@ -111,13 +112,12 @@ describe("XCMProxy Testnet - Liquidation", function () {
           -50,
           50,
           operator.address,
-          100
+          DEFAULT_EXECUTION_SLIPPAGE
         ]
       );
-
       const receiveTx = await proxy.receiveAssets(
         testAssetHubPositionId,
-  BASE_TOKEN,
+        BASE_TOKEN,
         operator.address,
         ethers.parseEther("1.0"),
         investmentParams
@@ -232,7 +232,7 @@ describe("XCMProxy Testnet - Liquidation", function () {
           -50,
           50,
           operator.address,
-          100
+          DEFAULT_EXECUTION_SLIPPAGE
         ]
       );
 
@@ -284,12 +284,12 @@ describe("XCMProxy Testnet - Liquidation", function () {
       // Execute full liquidation flow with swap and return
       const tx = await proxy.liquidateSwapAndReturn(
         fullFlowPositionId,
-  position.token0,        // tokenIn (from liquidation)
-  BASE_TOKEN,             // tokenOut (baseAsset)
-        0,                      // limitSqrtPrice (0 = no limit)
-        MOCK_ASSET_HUB_DEST,    // destination
-        operator.address,       // user
-        fullFlowAssetHubId      // assetHubPositionId
+        BASE_TOKEN,
+        MOCK_ASSET_HUB_DEST,
+        0,
+        0,
+        0,
+        fullFlowAssetHubId
       );
 
       const receipt = await tx.wait();
@@ -328,7 +328,15 @@ describe("XCMProxy Testnet - Liquidation", function () {
 
       const investmentParams = ethers.AbiCoder.defaultAbiCoder().encode(
         ["address", "address", "uint256[]", "int24", "int24", "address", "uint16"],
-  [TEST_POOL_ID, BASE_TOKEN, [], -50, 50, operator.address, 100]
+        [
+          TEST_POOL_ID,
+          BASE_TOKEN,
+          [],
+          -50,
+          50,
+          operator.address,
+          DEFAULT_EXECUTION_SLIPPAGE
+        ]
       );
 
       const receiveTx = await proxy.receiveAssets(

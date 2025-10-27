@@ -35,6 +35,67 @@ contract XCMProxyTest is TestBase {
         proxy.setIntegrations(address(0), address(0));
     }
 
+
+    // ============ Range Math: percent -> tick tests ============
+
+    function testCalculateTickRange_MonotonicAndSymmetric() public {
+        // Ensure current tick centered at 0 for symmetry
+        pool.setState(uint160(1 << 96), int24(0));
+
+        (int24 b1, int24 t1) = proxy.calculateTickRange(address(pool), int24(-1), int24(1));
+        (int24 b5, int24 t5) = proxy.calculateTickRange(address(pool), int24(-5), int24(5));
+        (int24 b10, int24 t10) = proxy.calculateTickRange(address(pool), int24(-10), int24(10));
+
+        // Symmetry around current tick (0)
+    assertTrue(b1 < 0 && t1 > 0, "+/-1% not around current");
+    assertTrue(b5 < 0 && t5 > 0, "+/-5% not around current");
+    assertTrue(b10 < 0 && t10 > 0, "+/-10% not around current");
+
+        // Monotonic: larger absolute percent expands range
+        assertTrue(b10 < b5 && b5 < b1, "bottom not monotonic");
+        assertTrue(t10 > t5 && t5 > t1, "top not monotonic");
+
+        // Snap to spacing (60)
+        int24 spacing = pool.tickSpacing();
+        assertEq(int256(b1 % spacing), int256(0), "b1 not snapped");
+        assertEq(int256(t1 % spacing), int256(0), "t1 not snapped");
+        assertEq(int256(b10 % spacing), int256(0), "b10 not snapped");
+        assertEq(int256(t10 % spacing), int256(0), "t10 not snapped");
+    }
+
+    function testCalculateTickRange_SpacingSnapAndBoundary() public {
+        // Move current tick near spacing boundary
+        pool.setState(uint160(1 << 96), int24(59)); // spacing=60
+        (int24 b, int24 t) = proxy.calculateTickRange(address(pool), int24(-5), int24(5));
+        int24 spacing = pool.tickSpacing();
+        assertEq(int256(b % spacing), int256(0), "bottom not snapped");
+        assertEq(int256(t % spacing), int256(0), "top not snapped");
+        assertTrue(b < 59 && t > 59, "range should straddle current tick");
+    }
+
+    function testCalculateTickRange_TightRangeCollapseAutoWiden() public {
+        // Create a pool with very large spacing so small % collapses after snapping
+        MockAlgebraPool widePool = new MockAlgebraPool(address(tokenA), address(tokenB), int24(100000), uint160(1 << 96), int24(0));
+        (int24 b, int24 t) = proxy.calculateTickRange(address(widePool), int24(-1), int24(1));
+        // Should auto-adjust to currentTick ± spacing when snap collapses
+        assertEq(int256(b), int256(-100000), "auto-widen bottom mismatch");
+        assertEq(int256(t), int256(100000), "auto-widen top mismatch");
+    }
+
+    function testCalculateTickRange_InvalidPercentsRevert() public {
+        // lower <= -100 should revert (range out of bounds)
+        vm.expectRevert();
+        proxy.calculateTickRange(address(pool), int24(-100), int24(10));
+
+        // upper <= -100 should revert as well
+        vm.expectRevert();
+        proxy.calculateTickRange(address(pool), int24(-10), int24(-100));
+
+        // lower >= upper should revert
+        vm.expectRevert();
+        proxy.calculateTickRange(address(pool), int24(-5), int24(-10));
+    }
+
     function testReceiveAssetsCreatesPending() public {
         bytes32 assetHubPositionId = keccak256(abi.encodePacked("test-recv", block.timestamp));
         uint256 amount = 1 ether;
@@ -53,12 +114,7 @@ contract XCMProxyTest is TestBase {
         proxy.receiveAssets(assetHubPositionId, address(tokenA), USER, amount, investmentParams);
 
         // Assert pending exists
-        (,,,,,,,,,, bool exists) = proxy.pendingPositions(assetHubPositionId);
-        // can't destructure struct directly via solidity getter; so use interface pattern: check mapping by calling a view that returns 'exists' - but pendingPositions is public mapping so getter returns full struct
-        // However solidity returns multiple values; adjust by calling via try/catch not possible here. Instead, call a low-level view via staticcall.
-        // For simplicity, check assetHubPositionToLocalId (should be zero) and pendingPositions existence by reading the struct via ABI decode.
-
-        // We'll verify by executing and ensuring executePendingInvestment can run.
+    // We'll verify by executing and ensuring executePendingInvestment can run.
         uint256 localId = proxy.executePendingInvestment(assetHubPositionId);
         assertTrue(localId > 0, "position created");
 

@@ -1,13 +1,3 @@
-/**
- * Enable Test Mode on Deployed AssetHubVault
- * 
- * This script enables test mode on the deployed AssetHubVault contract.
- * Must be run by the admin account.
- * 
- * Usage:
- *   npx hardhat run scripts/enable-test-mode.js --network passethub
- */
-
 const hre = require("hardhat");
 
 async function main() {

@@ -1,56 +1,6 @@
-/**
- * XCMProxy Deployment and Configuration
- * 
- * This module deploys and configures the XCMProxy contract, which is the core
- * component enabling cross-chain liquidity operations between Moonbeam and Asset Hub.
- * 
- * XCMProxy responsibilities:
- * - Manages cross-chain message (XCM) communication via Substrate precompiles
- * - Integrates with Algebra DEX for swap operations
- * - Handles liquidity position management through NFPM
- * - Enforces security controls (operator, trusted callers, supported tokens)
- * - Provides configurable slippage protection and weight parameters
- * 
- * Configuration is designed to be:
- * - Flexible: Supports environment variables and programmatic options
- * - Safe: Validates settings and allows config freezing
- * - Stateful: Saves deployment data for auditing and future reference
- * 
- * @module test/setup/deploy-xcm-proxy
- */
-
 const { ethers } = require("hardhat");
 const { loadState, saveState, ensureNetwork, ensureContract } = require("../../scripts/utils/state-manager");
 
-/**
- * Deploys and configures the XCMProxy contract
- * 
- * The deployment process follows these steps:
- * 1. Deploy XCMProxy contract with initial owner
- * 2. Configure operational parameters (operator, integrations)
- * 3. Set XCM-specific settings (precompiles, weights, parachain IDs)
- * 4. Add supported tokens for cross-chain operations
- * 5. Optionally freeze configuration to prevent further changes
- * 6. Save deployment state for future reference
- * 
- * @param {object} options - Configuration options for XCMProxy deployment
- * @param {string} [options.owner] - Contract owner address (can transfer ownership, update configs)
- * @param {string} [options.operator] - Operator address (can execute operations but not change config)
- * @param {string} [options.quoter] - Algebra Quoter contract address for price quotes
- * @param {string} [options.router] - Algebra SwapRouter contract address for executing swaps
- * @param {string} [options.nfpm] - Algebra NFPM contract address for liquidity position management
- * @param {string} [options.xtokensPrecompile] - xTokens precompile address for cross-chain transfers
- * @param {bigint} [options.destWeight=6000000000n] - Default XCM execution weight on destination chain
- * @param {number} [options.assetHubParaId=0] - Asset Hub parachain ID for XCM routing
- * @param {string} [options.trustedCaller] - Trusted XCM caller address (for receiving XCM messages)
- * @param {string} [options.xcmTransactor] - XCM Transactor precompile address (for advanced XCM operations)
- * @param {number} [options.defaultSlippageBps=100] - Default slippage tolerance in basis points (100 = 1%)
- * @param {string[]} [options.supportedTokens=[]] - Array of token addresses allowed for XCM operations
- * @param {boolean} [options.freezeConfig=false] - Whether to freeze config after setup (prevents changes)
- * @param {string} [options.deployer] - Custom deployer signer (defaults to first signer)
- * @param {boolean} [options.saveState=true] - Whether to save deployment state to file
- * @returns {Promise<object>} Deployed XCMProxy contract and configuration data
- */
 async function deployXCMProxy(options = {}) {
   // ===== STEP 1: Setup deployment context =====
   
@@ -186,28 +136,6 @@ async function deployXCMProxy(options = {}) {
   };
 }
 
-/**
- * Configures XCMProxy with provided settings
- * 
- * This function handles all post-deployment configuration:
- * - Sets operator for operational control
- * - Configures Algebra DEX integrations (quoter, router, NFPM)
- * - Sets XCM precompiles and parameters
- * - Adds supported tokens
- * - Optionally freezes configuration
- * 
- * Each configuration step:
- * 1. Checks if change is needed (compares current vs desired state)
- * 2. Only sends transaction if state differs (saves gas)
- * 3. Waits for confirmation before proceeding
- * 4. Logs the action and transaction hash
- * 5. Records transaction for audit trail
- * 
- * @param {Contract} proxy - Deployed XCMProxy contract instance
- * @param {object} config - Configuration object with desired settings
- * @returns {Promise<Array>} Array of configuration transaction records
- * @private
- */
 async function configureXCMProxy(proxy, config) {
   const configTxs = [];
 
@@ -363,10 +291,6 @@ async function configureXCMProxy(proxy, config) {
   return configTxs;
 }
 
-/**
- * Standalone script execution
- * Runs when this file is executed directly (not imported as a module)
- */
 async function main() {
   try {
     const result = await deployXCMProxy({

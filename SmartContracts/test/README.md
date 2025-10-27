@@ -24,18 +24,18 @@ test/
 │   └── 5.emergency.test.js         # Emergency functions
 │
 ├── helpers/                        # Test & Setup Utilities
-│   ├── deploy-algebra-suite.js     # Algebra deployment (local testing)
-│   ├── deploy-xcm-proxy.js         # XCMProxy deployment (local)
-│   ├── deploy-test-contracts.js    # Test contracts (local)
-│   ├── test-environment.js         # Environment setup (local)
-│   ├── link-contracts.js           # ⭐ Link AssetHub ↔ Moonbase
+│   ├── debug-execute.js            # Manual receive/execute debug harness
+│   ├── deploy-algebra-suite.js     # Algebra deployment utilities
+│   ├── deploy-test-contracts.js    # Test token & pool helpers
+│   ├── deploy-xcm-proxy.js         # XCMProxy deployment utilities
 │   ├── enable-test-mode.js         # ⭐ Enable safe test mode
+│   ├── link-contracts.js           # ⭐ Link AssetHub ↔ Moonbase
+│   ├── provide-liquidity.js        # Seed pools with liquidity
 │   ├── verify-xcmproxy-config.js   # ⭐ Verify deployment
 │
 ├── .test-commands.md               # Quick command reference
 └── README.md                       # This file
 ```
-└── README.md                       # This file
 ```
 
 ## 🚀 Quick Start
@@ -53,7 +53,24 @@ $env:XCMPROXY_CONTRACT="0xYourProxyAddress"
 npx hardhat run test/helpers/link-contracts.js --network passethub
 npx hardhat run test/helpers/link-contracts.js --network moonbase
 npx hardhat run test/helpers/enable-test-mode.js --network passethub
+npx hardhat run test/helpers/provide-liquidity.js --network moonbase   # Optional but recommended for NFPM tests
 npx hardhat run test/helpers/verify-xcmproxy-config.js --network moonbase
+```
+
+### Helper Workflow (Recommended Order)
+
+1. `link-contracts.js --network passethub`
+   - Adds Moonbase Alpha to AssetHubVault's chain registry.
+2. `link-contracts.js --network moonbase`
+   - Sets AssetHubVault as the trusted XCM caller on XCMProxy.
+3. `enable-test-mode.js --network passethub`
+   - Turns on test mode so AssetHubVault uses mocked XCM flows.
+4. `provide-liquidity.js --network moonbase`
+   - Seeds Algebra pools with deterministic liquidity so position execution never reverts on slippage.
+5. `verify-xcmproxy-config.js --network moonbase`
+   - Read-only sanity check once everything is wired together.
+
+Use `debug-execute.js` only when you need a manual receive/execute reproduction, and lean on `deploy-*` helpers exclusively for local Hardhat development environments.
 ```
 
 ### Step 2: Run Tests
@@ -69,7 +86,18 @@ npx hardhat test test/XCMProxy/testnet/**/*.test.js --network moonbase
 npx hardhat test test/Integration/testnet/**/*.test.js --network passethub
 ```
 
-👉 **For all commands, see [.test-commands.md](./.test-commands.md)**
+### Step 3: Capture Test Logs
+
+Wrap any Hardhat command with `test/save-test-log.sh` to persist console output automatically:
+
+```bash
+./test/save-test-log.sh moonbase-all npx hardhat test test/XCMProxy/testnet/**/*.test.js --network moonbase
+```
+
+Logs are stored under `test/logs/<timestamp>-<tag>.log` and the wrapper preserves the original exit code.
+```
+
+
 
 ## 📊 Test Files
 
@@ -133,13 +161,14 @@ Located in `test/helpers/`, these are used for testnet configuration:
 | enable-test-mode.js | Safe test mode | 1x | `npx hardhat run test/helpers/enable-test-mode.js --network passethub` |
 | verify-xcmproxy-config.js | Verify deployment | Optional | `npx hardhat run test/helpers/verify-xcmproxy-config.js --network moonbase` |
 
-Other helpers are for local/mock testing:
+Other helpers are available for local or manual workflows:
+- `debug-execute.js` - Single-run harness for receiveAssets/executePendingInvestment
 - `deploy-algebra-suite.js` - Algebra deployment utilities
+- `deploy-test-contracts.js` - Test token and pool helpers
 - `deploy-xcm-proxy.js` - XCMProxy deployment utilities
-- `deploy-test-contracts.js` - Test contract helpers
-- `test-environment.js` - Test environment setup
+- `provide-liquidity.js` - Seeds Algebra pools with deterministic liquidity
 
-## � Test Design
+## Test Design
 
 ### Testnet-First Approach
 - Tests work with **existing deployed contracts** (no fresh deployments)
@@ -154,7 +183,7 @@ Other helpers are for local/mock testing:
 - No shared state
 - Clear prerequisites
 
-## � Common Workflows
+## Common Workflows
 
 ### Just Deployed AssetHubVault?
 
@@ -204,7 +233,7 @@ Tests auto-skip if missing requirements:
 
 ✅ **100% testnet-ready** - all tests work with deployed contracts
 
-## � Additional Resources
+## Additional Resources
 
 - **Quick commands**: [.test-commands.md](./.test-commands.md)
 - **Deployment**: [../scripts/README.md](../scripts/README.md)

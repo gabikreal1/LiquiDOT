@@ -3,7 +3,7 @@
  * 
  * This script deploys the complete LiquiDOT infrastructure to Moonbase Alpha testnet:
  * 1. Algebra DEX suite (Factory, Router, Quoter, NFPM, PoolDeployer)
- * 2. XCMProxy contract with full configuration
+ * 2. XCMProxy contract with improved tick math (TickMath.getTickAtSqrtRatio for precise percent→tick)
  * 3. Test tokens (optional, for testing purposes)
  * 4. Test pool with liquidity (optional, for testing purposes)
  * 
@@ -19,9 +19,9 @@
  */
 
 const { ethers } = require("hardhat");
-const { deployAlgebraSuite } = require("../test/setup/deploy-algebra-suite");
-const { deployXCMProxy } = require("../test/setup/deploy-xcm-proxy");
-const { deployTestTokens, createAndInitializePool, addLiquidityToPool } = require("../test/setup/deploy-test-contracts");
+const { deployAlgebraSuite } = require("../test/helpers/deploy-algebra-suite");
+const { deployXCMProxy } = require("../test/helpers/deploy-xcm-proxy");
+const { deployTestTokens, createAndInitializePool, addLiquidityToPool } = require("../test/helpers/deploy-test-contracts");
 
 // Moonbase Alpha XCM precompile addresses
 // See: https://docs.moonbeam.network/builders/interoperability/xcm/core-concepts/multilocations/
@@ -102,30 +102,53 @@ async function main(options = {}) {
   console.log("-".repeat(60));
   
   const operatorAddress = options.operator || deployer.address;
-  const trustedCaller = options.assetHubVault || ethers.ZeroAddress;
+  const assetHubVault = options.assetHubVault || ethers.ZeroAddress;
   
-  const xcmProxyResult = await deployXCMProxy({
-    deployer,
-    owner: deployer.address,
-    operator: operatorAddress,
-    quoter: algebraAddresses.quoter,
-    router: algebraAddresses.router,
-    nfpm: algebraAddresses.nfpm,
-    xtokensPrecompile: MOONBASE_PRECOMPILES.xTokens,
-    xcmTransactor: MOONBASE_PRECOMPILES.xcmTransactor,
-    destWeight: 6_000_000_000n, // 6 billion weight units (adjust as needed)
-    assetHubParaId: ASSET_HUB_PARAID,
-    trustedCaller: trustedCaller,
-    defaultSlippageBps: options.defaultSlippageBps || 100,
-    supportedTokens: [], // Add token addresses as needed
-    freezeConfig: options.freezeConfig || false,
-    saveState: true,
-  });
+
+  console.log("   Deploying XCMProxy");
+  const XCMProxy = await ethers.getContractFactory("XCMProxy");
+  const xcmProxy = await XCMProxy.deploy(deployer.address);
+  await xcmProxy.waitForDeployment();
+  const xcmProxyAddress = await xcmProxy.getAddress();
+  
+  console.log(`   ✓ Deployed at: ${xcmProxyAddress}`);
+  console.log("   Configuring XCMProxy...");
+  
+  // Configure integrations
+  let tx = await xcmProxy.setIntegrations(algebraAddresses.quoter, algebraAddresses.router);
+  await tx.wait();
+  console.log(`   ✓ Integrations set`);
+  
+  tx = await xcmProxy.setNFPM(algebraAddresses.nfpm);
+  await tx.wait();
+  console.log(`   ✓ NFPM set`);
+  
+  tx = await xcmProxy.setXTokensPrecompile(MOONBASE_PRECOMPILES.xTokens);
+  await tx.wait();
+  console.log(`   ✓ XTokens precompile set`);
+  
+  tx = await xcmProxy.setAssetHubParaId(ASSET_HUB_PARAID);
+  await tx.wait();
+  console.log(`   ✓ Asset Hub ParaID set`);
+  
+  tx = await xcmProxy.setXcmTransactorPrecompile(MOONBASE_PRECOMPILES.xcmTransactor);
+  await tx.wait();
+  console.log(`   ✓ XCM Transactor precompile set`);
+  
+  tx = await xcmProxy.setDefaultSlippageBps(options.defaultSlippageBps || 100);
+  await tx.wait();
+  console.log(`   ✓ Default slippage set to ${options.defaultSlippageBps || 100} bps`);
+  
+  // Enable test mode for local/testnet testing
+  tx = await xcmProxy.setTestMode(true);
+  await tx.wait();
+  console.log(`   ✓ Test mode enabled`);
   
   console.log("\n✅ XCMProxy deployed and configured successfully!");
-  console.log(`   XCMProxy: ${xcmProxyResult.address}`);
+  console.log(`   XCMProxy: ${xcmProxyAddress}`);
   console.log(`   Operator: ${operatorAddress}`);
-  console.log(`   Trusted Caller: ${trustedCaller === ethers.ZeroAddress ? "Not set (will need to set later)" : trustedCaller}`);
+  console.log(`   Test Mode: Enabled (disable via setTestMode(false) for production)`);
+  console.log(`   Asset Hub Vault: ${assetHubVault === ethers.ZeroAddress ? "Not set (set later via updateChainExecutor)" : assetHubVault}`);
   
   console.log("\n" + "=".repeat(60) + "\n");
 
@@ -169,7 +192,7 @@ async function main(options = {}) {
   console.log(`   SwapRouter: ${algebraAddresses.router}`);
   console.log(`   Quoter: ${algebraAddresses.quoter}`);
   console.log(`   NFPM: ${algebraAddresses.nfpm}`);
-  console.log(`   XCMProxy: ${xcmProxyResult.address}`);
+  console.log(`   XCMProxy: ${xcmProxyAddress}`);
   
   if (testTokens.length > 0) {
     console.log("\n🧪 Test Infrastructure:");
@@ -210,7 +233,7 @@ async function main(options = {}) {
     deployer: deployer.address,
     contracts: {
       algebra: algebraAddresses,
-      xcmProxy: xcmProxyResult.address,
+      xcmProxy: xcmProxyAddress,
       testTokens: testTokens.length > 0 ? await Promise.all(testTokens.map(t => t.getAddress())) : [],
       testPool: testPool ? await testPool.getAddress() : null,
     },

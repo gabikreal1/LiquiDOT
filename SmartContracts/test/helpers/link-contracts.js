@@ -1,26 +1,3 @@
-/**
- * Link AssetHubVault and XCMProxy Contracts
- * 
- * This script connects the two deployed contracts by:
- * 1. Adding Moonbase to AssetHubVault's chain registry
- * 2. Setting AssetHubVault as trusted XCM caller on XCMProxy
- * 
- * NOTE: This script needs to be run TWICE on DIFFERENT NETWORKS:
- * - First on Paseo (passethub) to configure AssetHub
- * - Then on Moonbase (moonbase) to configure XCMProxy
- * 
- * Usage:
- *   # Step 1: Configure AssetHub on Paseo
- *   $env:ASSETHUB_CONTRACT="0xYourAssetHubAddress"
- *   $env:XCMPROXY_CONTRACT="0xYourXCMProxyAddress"
- *   npx hardhat run scripts/link-contracts.js --network passethub
- * 
- *   # Step 2: Configure XCMProxy on Moonbase
- *   $env:ASSETHUB_CONTRACT="0xYourAssetHubAddress"
- *   $env:XCMPROXY_CONTRACT="0xYourXCMProxyAddress"
- *   npx hardhat run scripts/link-contracts.js --network moonbase
- */
-
 const hre = require("hardhat");
 
 async function main() {
@@ -81,10 +58,6 @@ async function main() {
   }
 }
 
-/**
- * Configure AssetHubVault on Paseo
- * Adds Moonbase to the chain registry
- */
 async function configureAssetHub(assetHubAddress, xcmProxyAddress, signer) {
   console.log("📝 Configuring AssetHubVault on Paseo Asset Hub...\n");
 
@@ -159,10 +132,6 @@ async function configureAssetHub(assetHubAddress, xcmProxyAddress, signer) {
   console.log(`   - XCM Destination: ${chainInfo.xcmDestination}`);
 }
 
-/**
- * Configure XCMProxy on Moonbase
- * Sets AssetHub as trusted XCM caller
- */
 async function configureXCMProxy(xcmProxyAddress, assetHubAddress, signer) {
   console.log("📝 Configuring XCMProxy on Moonbase Alpha...\n");
 

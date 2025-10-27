@@ -1,32 +1,5 @@
-/**
- * Test Contract Deployment
- * 
- * This module deploys additional contracts needed for comprehensive testing:
- * - TestERC20 tokens: Mintable ERC20 tokens for simulating trading pairs
- * - Mock XCM Precompiles: Simulated Substrate precompiles for local testing
- * - AssetHubVault: Core LiquiDOT contract for Asset Hub liquidity management
- * 
- * These contracts complement the production Algebra DEX and XCMProxy contracts
- * to create a complete testing environment that mirrors mainnet behavior.
- * 
- * @module test/setup/deploy-test-contracts
- */
-
 const { ethers } = require("hardhat");
 
-/**
- * Deploys mintable test ERC20 tokens
- * 
- * These tokens have a mint() function that allows unlimited token creation
- * for testing purposes. Each token is deployed with a unique name and symbol.
- * 
- * @param {object} options - Token deployment options
- * @param {number} [options.count=2] - Number of tokens to deploy
- * @param {string[]} [options.names] - Custom token names (defaults to Token0, Token1, ...)
- * @param {string[]} [options.symbols] - Custom token symbols (defaults to TKN0, TKN1, ...)
- * @param {string} [options.deployer] - Custom deployer signer
- * @returns {Promise<Array>} Array of deployed token contract instances
- */
 async function deployTestTokens(options = {}) {
   const count = options.count || 2;
   const [defaultSigner] = await ethers.getSigners();
@@ -62,24 +35,6 @@ async function deployTestTokens(options = {}) {
   return tokens;
 }
 
-/**
- * Deploys mock Substrate XCM precompiles
- * 
- * Note: As of the current refactor, the mock precompile contracts
- * (MockXcmPrecompile.sol and MockXTokens.sol) have been removed.
- * 
- * For local testing, you should either:
- * 1. Use a test mode flag in the main contracts that bypasses XCM calls
- * 2. Deploy to a Moonbeam-compatible local chain with real precompiles
- * 3. Re-add simplified mocks if needed for unit testing
- * 
- * This function is kept as a placeholder for backward compatibility
- * and to document the expected interface.
- * 
- * @param {object} options - Mock precompile deployment options
- * @param {string} [options.deployer] - Custom deployer signer
- * @returns {Promise<object>} Object with mock precompile addresses (currently returns zero addresses)
- */
 async function deployMockXcmPrecompiles(options = {}) {
   console.log("\n⚠️  Mock XCM precompiles not available (contracts removed in refactor)");
   console.log("   For testing XCM functionality:");
@@ -95,31 +50,6 @@ async function deployMockXcmPrecompiles(options = {}) {
   };
 }
 
-/**
- * Connects to an existing AssetHubVault deployment and optionally configures it
- * 
- * AssetHubVault is deployed separately (e.g., via Remix) and this function
- * connects to the existing deployment for integration with the test environment.
- * 
- * The vault manages liquidity deposits and withdrawals on Asset Hub,
- * coordinating with XCMProxy on Moonbeam for cross-chain operations.
- * 
- * Key features:
- * - Multi-role access control (owner, operator, emergency)
- * - Cross-chain communication via XCM precompiles
- * - Emergency pause mechanism for security
- * - Integration with XCMProxy for DEX operations
- * 
- * @param {object} options - Configuration options
- * @param {string} options.vaultAddress - Address of deployed AssetHubVault (from ASSETHUB_CONTRACT env var)
- * @param {string} [options.deployer] - Custom deployer signer
- * @param {string} [options.operator] - Operator address for normal operations (optional config)
- * @param {string} [options.emergency] - Emergency address for pause/unpause (optional config)
- * @param {string} [options.xcmPrecompile] - XCM precompile address (optional config)
- * @param {boolean} [options.testMode=false] - Enable test mode (optional config)
- * @param {boolean} [options.configureVault=false] - Whether to configure vault settings
- * @returns {Promise<object>} Connected AssetHubVault contract and metadata
- */
 async function connectToAssetHubVault(options = {}) {
   const [defaultSigner] = await ethers.getSigners();
   const deployer = options.deployer || defaultSigner;
@@ -221,25 +151,6 @@ async function connectToAssetHubVault(options = {}) {
   };
 }
 
-/**
- * Creates and initializes an Algebra pool
- * 
- * Algebra pools must be created through the factory and initialized with
- * a starting price before they can be used for swaps or liquidity provision.
- * 
- * The initialization price is expressed as sqrtPriceX96, which is:
- *   sqrt(price) * 2^96
- * 
- * For a 1:1 price ratio:
- *   sqrt(1) * 2^96 = 79228162514264337593543950336
- * 
- * @param {object} options - Pool creation options
- * @param {Contract} options.factory - Algebra Factory contract instance
- * @param {string} options.token0 - Address of first token (must be < token1)
- * @param {string} options.token1 - Address of second token (must be > token0)
- * @param {BigNumber} [options.sqrtPriceX96] - Initial price (defaults to 1:1)
- * @returns {Promise<Contract>} Initialized Algebra pool contract instance
- */
 async function createAndInitializePool(options) {
   const { factory, token0, token1 } = options;
   
@@ -286,27 +197,6 @@ async function createAndInitializePool(options) {
   return pool;
 }
 
-/**
- * Adds liquidity to an Algebra pool through NFPM
- * 
- * This helper function:
- * 1. Mints tokens to the liquidity provider
- * 2. Approves NFPM to spend those tokens
- * 3. Calls NFPM.mint() to create a liquidity position (as an NFT)
- * 
- * The tick range (-887220 to 887220) represents the full price range,
- * meaning this liquidity will be active at all prices.
- * 
- * @param {object} options - Liquidity provision options
- * @param {Contract} options.pool - Algebra pool contract instance
- * @param {Contract} options.nfpm - NonfungiblePositionManager contract instance
- * @param {Contract} [options.poolDeployer] - Algebra pool deployer contract (optional - unused for mint params)
- * @param {Contract} options.token0 - First token contract instance
- * @param {Contract} options.token1 - Second token contract instance
- * @param {Signer} options.provider - Signer providing liquidity
- * @param {string|number} options.amount - Amount of each token to provide (in ether units)
- * @returns {Promise<object>} Transaction receipt and position NFT ID
- */
 async function addLiquidityToPool(options) {
   const { pool, nfpm, token0, token1, provider, amount } = options;
   
@@ -399,45 +289,18 @@ async function addLiquidityToPool(options) {
   return { receipt, tx };
 }
 
-/**
- * Helper: Mint tokens to an address
- * 
- * Simple wrapper for minting test tokens. Useful for setting up
- * test scenarios with specific token balances.
- * 
- * @param {Contract} token - TestERC20 contract instance
- * @param {string} to - Recipient address
- * @param {BigNumber|string} amount - Amount to mint (in wei)
- * @returns {Promise<object>} Transaction receipt
- */
 async function mintTokens(token, to, amount) {
   const tx = await token.mint(to, amount);
   const receipt = await tx.wait();
   return receipt;
 }
 
-/**
- * Helper: Approve token spending
- * 
- * Simple wrapper for approving token spending. Useful for setting up
- * test scenarios where contracts need to transfer user tokens.
- * 
- * @param {Contract} token - ERC20 token contract instance
- * @param {Signer} owner - Token owner who is granting approval
- * @param {string} spender - Address receiving approval to spend tokens
- * @param {BigNumber|string} amount - Amount to approve (in wei)
- * @returns {Promise<object>} Transaction receipt
- */
 async function approveTokens(token, owner, spender, amount) {
   const tx = await token.connect(owner).approve(spender, amount);
   const receipt = await tx.wait();
   return receipt;
 }
 
-/**
- * Standalone script execution
- * Demonstrates deploying all test contracts
- */
 async function main() {
   try {
     console.log("\n=== Deploying Test Contracts ===\n");

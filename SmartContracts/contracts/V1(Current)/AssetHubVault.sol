@@ -352,16 +352,16 @@ contract AssetHubVault is ReentrancyGuard {
         bytes32 positionId,
         bytes32 remotePositionId,
         uint128 liquidity
-    ) external onlyOperator nonReentrant {
+    ) external nonReentrant {
         Position storage position = positions[positionId];
         require(position.status == PositionStatus.PendingExecution, "Position not pending");
 
-        // Optional: Verify caller is authorized executor for this chain
-        address authorizedExecutor = chainExecutors[position.chainId];
-        if (authorizedExecutor != address(0) && msg.sender != operator) {
-            // If executor is set and caller is not operator, verify authorization
-            // This allows the remote chain contract to call directly in future
-            revert ExecutorNotAuthorized();
+        // Access control: allow operator OR authorized executor for the target chain
+        if (msg.sender != operator) {
+            address authorizedExecutor = chainExecutors[position.chainId];
+            if (authorizedExecutor == address(0) || msg.sender != authorizedExecutor) {
+                revert ExecutorNotAuthorized();
+            }
         }
 
         position.status = PositionStatus.Active;

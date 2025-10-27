@@ -11,6 +11,15 @@ import "@cryptoalgebra/integral-core/contracts/interfaces/IAlgebraPool.sol";
 import "@cryptoalgebra/integral-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
 import "@cryptoalgebra/integral-periphery/contracts/interfaces/ISwapRouter.sol";
 import "@cryptoalgebra/integral-periphery/contracts/interfaces/IQuoter.sol";
+import "@cryptoalgebra/integral-periphery/contracts/libraries/LiquidityAmounts.sol";
+import "@cryptoalgebra/integral-core/contracts/libraries/TickMath.sol";
+import "@cryptoalgebra/integral-core/contracts/libraries/FullMath.sol";
+
+
+int24 constant MIN_TICK = -887272;
+int24 constant MAX_TICK =  887272;
+uint256 constant SCALE_1E6 = 1_000_000;        
+uint256 constant SCALE_SQRT_AUX = 1_000_000_000_000; 
 
 
 
@@ -513,10 +522,34 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
             IERC20(token1).forceApprove(nfpmContract, amount1Desired);
         }
 
-        // Calculate slippage
-        uint256 bps = slippageBps > 0 ? slippageBps : defaultSlippageBps;
-        uint256 amount0Min = amount0Desired == 0 ? 0 : (amount0Desired * (10_000 - bps)) / 10_000;
-        uint256 amount1Min = amount1Desired == 0 ? 0 : (amount1Desired * (10_000 - bps)) / 10_000;
+    uint256 amount0Min = 0;
+    uint256 amount1Min = 0;
+
+        if (amount0Desired > 0 || amount1Desired > 0) {
+            (uint160 sqrtPriceX96, , , , , ) = IAlgebraPool(poolId).globalState();
+            uint160 sqrtRatioLowerX96 = TickMath.getSqrtRatioAtTick(bottomTick);
+            uint160 sqrtRatioUpperX96 = TickMath.getSqrtRatioAtTick(topTick);
+
+            uint128 liquidityPreview = LiquidityAmounts.getLiquidityForAmounts(
+                sqrtPriceX96,
+                sqrtRatioLowerX96,
+                sqrtRatioUpperX96,
+                amount0Desired,
+                amount1Desired
+            );
+            require(liquidityPreview > 0, "zero liquidity preview");
+
+            (uint256 expected0, uint256 expected1) = LiquidityAmounts.getAmountsForLiquidity(
+                sqrtPriceX96,
+                sqrtRatioLowerX96,
+                sqrtRatioUpperX96,
+                liquidityPreview
+            );
+
+            uint256 bps = slippageBps > 0 ? slippageBps : defaultSlippageBps;
+            amount0Min = expected0 == 0 ? 0 : (expected0 * (10_000 - bps)) / 10_000;
+            amount1Min = expected1 == 0 ? 0 : (expected1 * (10_000 - bps)) / 10_000;
+        }
 
         // Mint the position
         (uint256 tokenId, uint128 liquidityCreated, , ) = INonfungiblePositionManager(nfpmContract).mint(
@@ -624,23 +657,84 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         int24 lowerRangePercent,
         int24 upperRangePercent
     ) public view returns (int24 bottomTick, int24 topTick) {
-        // Sanity caps: [-1000%, 1000%]
-        require(lowerRangePercent > -1000 && upperRangePercent <= 1000 && lowerRangePercent < upperRangePercent, "range out of bounds");
-        // Use current pool tick and tick spacing; approximate 1% ~= 100 ticks
-        (, int24 currentTick, , , , ) = IAlgebraPool(pool).globalState();
+        // Require factors remain positive: percent must be > -100%
+        require(lowerRangePercent > -100 && upperRangePercent > -100 && lowerRangePercent < upperRangePercent, "range out of bounds");
+
+        (uint160 sqrtPriceX96, int24 currentTick, , , , ) = IAlgebraPool(pool).globalState();
         int24 spacing = IAlgebraPool(pool).tickSpacing();
 
-        int24 downTicks = int24(lowerRangePercent * 100);
-        int24 upTicks = int24(upperRangePercent * 100);
+        // Compute target sqrt prices from percent factors
+        uint160 sqrtLower = _targetSqrtFromPercent(sqrtPriceX96, lowerRangePercent);
+        uint160 sqrtUpper = _targetSqrtFromPercent(sqrtPriceX96, upperRangePercent);
 
-        // Align to tick spacing
-        int24 rawBottom = currentTick + downTicks;
-        int24 rawTop = currentTick + upTicks;
+        // Convert to ticks via helper; Algebra TickMath provides getTickAtSqrtRatio
+        int24 rawBottom = TickMath.getTickAtSqrtRatio(sqrtLower);
+        int24 rawTop = TickMath.getTickAtSqrtRatio(sqrtUpper);
 
-        bottomTick = rawBottom - (rawBottom % spacing);
-        topTick = rawTop - (rawTop % spacing);
+        // Snap to spacing: floor lower, ceil upper
+        bottomTick = _floorToSpacing(rawBottom, spacing);
+        topTick = _ceilToSpacing(rawTop, spacing);
+
+        // Clamp to MIN/MAX multiples
+        int24 minAllowed = _ceilToSpacing(MIN_TICK, spacing);
+        int24 maxAllowed = _floorToSpacing(MAX_TICK, spacing);
+        if (bottomTick < minAllowed) bottomTick = minAllowed;
+        if (topTick > maxAllowed) topTick = maxAllowed;
+
+        // Ensure strictly ordered and non-equal after snapping
+        if (bottomTick >= topTick) {
+            bottomTick = _floorToSpacing(currentTick - spacing, spacing);
+            topTick = _ceilToSpacing(currentTick + spacing, spacing);
+            if (bottomTick < minAllowed) bottomTick = minAllowed;
+            if (topTick > maxAllowed) topTick = maxAllowed;
+        }
 
         return (bottomTick, topTick);
+    }
+
+    function _targetSqrtFromPercent(uint160 sqrtCurrentX96, int24 percent) internal pure returns (uint160) {
+        uint256 sqrtFactor = _sqrtFactorScaledFromPercent(percent); // 1e6-scaled
+        uint256 target = FullMath.mulDiv(uint256(sqrtCurrentX96), sqrtFactor, SCALE_1E6);
+        if (target < TickMath.MIN_SQRT_RATIO) target = TickMath.MIN_SQRT_RATIO;
+        if (target >= TickMath.MAX_SQRT_RATIO) target = TickMath.MAX_SQRT_RATIO - 1;
+        return uint160(target);
+    }
+
+    function _floorToSpacing(int24 tick, int24 spacing) internal pure returns (int24) {
+        int24 rem = tick % spacing;
+        if (rem == 0) return tick;
+        if (tick >= 0) return tick - rem;
+        // for negative ticks, floor away from zero
+        return tick - (rem + spacing);
+    }
+
+    function _ceilToSpacing(int24 tick, int24 spacing) internal pure returns (int24) {
+        int24 rem = tick % spacing;
+        if (rem == 0) return tick;
+        if (tick >= 0) return tick + (spacing - rem);
+        // for negative ticks, ceil towards zero
+        return tick - rem;
+    }
+
+    function _sqrtFactorScaledFromPercent(int24 percent) internal pure returns (uint256) {
+        // factor f = 1 + percent/100 => scaled as 1e6
+        int256 scaled = int256(SCALE_1E6) + (int256(percent) * 10_000); // 1% => 10_000 (since 1e6 * 1/100)
+        require(scaled > 0, "invalid percent");
+        // Compute sqrt(f) in 1e6 scale by: sqrt(scaled * 1e12) / 1e3
+        uint256 sqrtArg = uint256(scaled) * SCALE_SQRT_AUX;
+        uint256 s = _sqrt(sqrtArg) / 1_000; // yields 1e6-scaled sqrt(f)
+        return s;
+    }
+
+    function _sqrt(uint256 x) internal pure returns (uint256 y) {
+        if (x == 0) return 0;
+        // Initial guess: 2^(log2(x)/2)
+        uint256 z = (x + 1) / 2;
+        y = x;
+        while (z < y) {
+            y = z;
+            z = (x / z + z) / 2;
+        }
     }
 
     /**
@@ -1003,6 +1097,9 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         positionCounter++;
         positionId = positionCounter;
 
+        // Capture entry at creation time; store current tick as entry reference for monitoring
+        (, int24 entryTick, , , , ) = IAlgebraPool(pool).globalState();
+
         positions[positionId] = Position({
             assetHubPositionId: assetHubPositionId,
             pool: pool,
@@ -1015,7 +1112,7 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
             owner: owner,
             lowerRangePercent: lowerRangePercent,
             upperRangePercent: upperRangePercent,
-            entryPrice: 1000, // placeholder
+            entryPrice: uint256(int256(entryTick)),
             timestamp: block.timestamp,
             active: true
         });

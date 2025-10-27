@@ -1,0 +1,267 @@
+
+
+  XCMProxy Testnet - Configuration Check
+
+🔗 Connecting to XCMProxy at: 0xf935e063b2108cc064bB356107ac01Dc90f96652
+✅ Successfully connected to contract
+
+    Contract Deployment
+      ✔ should be deployed at correct address
+      ✔ should respond to function calls (53ms)
+    Role Configuration
+   Owner: 0x2372cB955817cD5200a559c2faAC93d0B3a88f2d
+      ✔ should have owner configured (55ms)
+   Operator: 0x2372cB955817cD5200a559c2faAC93d0B3a88f2d
+      ✔ should have operator configured (46ms)
+    Integration Configuration
+   NFPM Contract: 0xFAA10aBB2F3C0eE3c6c51C67bA870D08A5e457C3
+      ✔ should have NFPM contract set (38ms)
+   Quoter Contract: 0x0fcf84e13e4551a12b6bfF7e3504e45C1a1CC1eF
+      ✔ should have Quoter contract set (46ms)
+   SwapRouter Contract: 0x78d99c9EED0C6B31Ef961F5372b6f2000E7a912a
+      ✔ should have SwapRouter contract set (46ms)
+    XCM Configuration
+   XTokens Precompile: 0x0000000000000000000000000000000000000804
+      ✔ should check XTokens precompile configuration (45ms)
+   XCM Transactor Precompile: 0x0000000000000000000000000000000000000806
+      ✔ should check XCM Transactor precompile configuration
+   Asset Hub Para ID: 1000
+      ✔ should check Asset Hub parachain ID
+   Default Dest Weight: 6000000000
+      ✔ should check default destination weight (63ms)
+   XCM Config Frozen: false
+      ✔ should check if XCM config is frozen
+   Trusted XCM Caller: 0x67E5293e374219C515bD9838B23C792C555e51D4
+      ✔ should check trusted XCM caller
+    Operating Parameters
+   Paused: false
+      ✔ should check pause status (38ms)
+   Test Mode: true
+   ✅ Test mode enabled - XCM calls will be skipped
+      ✔ should check test mode status (39ms)
+   Default Slippage: 100 bps (1.00%)
+      ✔ should check default slippage (85ms)
+   Position Counter: 12 positions created
+      ✔ should check position counter (52ms)
+    Health Check Summary
+
+📊 XCMProxy Configuration Summary:
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Owner:          0x2372cB955817cD5200a559c2faAC93d0B3a88f2d
+   Operator:       0x2372cB955817cD5200a559c2faAC93d0B3a88f2d
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   NFPM:           ✅ 0xFAA10aBB2F3C0eE3c6c51C67bA870D08A5e457C3
+   Quoter:         ✅ 0x0fcf84e13e4551a12b6bfF7e3504e45C1a1CC1eF
+   SwapRouter:     ✅ 0x78d99c9EED0C6B31Ef961F5372b6f2000E7a912a
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   XTokens:        ✅ 0x0000000000000000000000000000000000000804
+   Asset Hub ID:   ✅ 1000
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Status:         ✅ Active
+   Test Mode:      ✅ Enabled
+   Slippage:       100 bps (1.00%)
+   Positions:      12 created
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+   ✅ CONTRACT IS FULLY CONFIGURED AND READY
+
+      ✔ should display configuration summary (525ms)
+
+  XCMProxy Testnet - Receive Assets
+
+✅ Connected to XCMProxy at: 0xf935e063b2108cc064bB356107ac01Dc90f96652
+✅ Network: moonbase
+✅ Operator: 0x2372cB955817cD5200a559c2faAC93d0B3a88f2d
+✅ Supported Token: 0xdeb2336eA55d25B6286761CDdA17F5B5636cB84A
+✅ Pool ID: 0x85a000207D69042E8B075fCe43B6F28dfCE228b2
+
+    Asset Reception - Basic Flow
+      ✔ should receive assets and create pending position (2743ms)
+      ✔ should reject unsupported tokens (110ms)
+      ✔ should reject zero amount (106ms)
+      ✔ should reject zero user address (85ms)
+      ✔ should reject duplicate position IDs (78633ms)
+    Pending Position Management
+      ✔ should store all investment parameters correctly (47602ms)
+    XCM Caller Authorization (Test Mode)
+      ✔ should allow calls in test mode regardless of caller (29902ms)
+
+  XCMProxy Testnet - Position Execution
+
+✅ Connected to XCMProxy at: 0xf935e063b2108cc064bB356107ac01Dc90f96652
+✅ Network: moonbase
+✅ Operator: 0x2372cB955817cD5200a559c2faAC93d0B3a88f2d
+✅ NFPM: 0xFAA10aBB2F3C0eE3c6c51C67bA870D08A5e457C3
+✅ Pool: 0x85a000207D69042E8B075fCe43B6F28dfCE228b2
+✅ Base Token: 0xdeb2336eA55d25B6286761CDdA17F5B5636cB84A
+✅ Quote Token: 0xb724cfB7eCee5b320A115230E0903de4d47dba7B
+
+    Position Execution - Basic Flow
+   ✓ Pending position created
+   ✓ Position executed successfully
+   ✓ Local Position ID: 13
+   ✓ NFPM Token ID: 14
+   ✓ Liquidity: 1702119313100450221
+   ✓ Position counter incremented: 12 → 13
+      ✔ should execute pending position and mint NFPM position (41845ms)
+      ✔ should fail on non-existent pending position (151ms)
+      - should only allow operator to execute positions
+    Position Execution - With Swaps
+   ⚠️  Swap execution requires live DEX pools
+   ✓ Swap logic is verified in local tests
+      - should execute position with token swap if needed
+    Position Execution - Edge Cases
+   ✓ Custom slippage stored: 3%
+      ✔ should handle custom slippage parameters (6156ms)
+   ✓ Wide range stored: -500% to 500%
+      ✔ should handle wide tick ranges (5618ms)
+    Position Counter Management
+   ✓ Current position counter: 13
+      ✔ should report increased counter after executions (60ms)
+
+  XCMProxy Testnet - Liquidation
+
+✅ Connected to XCMProxy at: 0xf935e063b2108cc064bB356107ac01Dc90f96652
+✅ Network: moonbase
+✅ Operator: 0x2372cB955817cD5200a559c2faAC93d0B3a88f2d
+✅ Pool: 0x85a000207D69042E8B075fCe43B6F28dfCE228b2
+✅ Base Token: 0xdeb2336eA55d25B6286761CDdA17F5B5636cB84A
+✅ Quote Token: 0xb724cfB7eCee5b320A115230E0903de4d47dba7B
+✅ Supported Tokens: 0xdeb2336eA55d25B6286761CDdA17F5B5636cB84A, 0xb724cfB7eCee5b320A115230E0903de4d47dba7B
+✅ Test Mode: Enabled (XCM calls will be skipped)
+
+    Full Liquidation - Basic Flow
+   ✓ Test position created: 14
+   ✓ Position liquidated successfully
+   ✓ Position is now inactive
+      ✔ should execute full liquidation of position (6090ms)
+      ✔ should fail to liquidate non-existent position (150ms)
+      ✔ should fail to liquidate already inactive position (102ms)
+    Liquidate, Swap, and Return Flow
+   ✓ Full liquidation flow completed
+   ✓ Test mode: XCM transfer skipped
+   ✓ LiquidationCompleted event emitted
+      ✔ should liquidate, swap proceeds, and return to Asset Hub (6195ms)
+    Cancel Pending Position
+   ✓ Pending position cancelled
+   ✓ Assets returned to Asset Hub (test mode: skipped)
+      ✔ should cancel pending position and return assets (42388ms)
+      ✔ should fail to cancel non-existent pending position (84ms)
+    Position Range Check
+   ✓ Position 1 out of range: false
+   ✓ Current tick: 115792089237316195423570985008687907853269984665640564039457584007913129639879
+   ✓ Position range: -6960 to 4080
+      ✔ should check if position is out of range (140ms)
+    Asset Return (Owner Function)
+   ✓ Manual asset return executed (test mode)
+      ✔ should allow owner to manually return assets (35619ms)
+
+  XCMProxy Testnet - Emergency & Admin Functions
+
+✅ Connected to XCMProxy at: 0xf935e063b2108cc064bB356107ac01Dc90f96652
+✅ Network: moonbase
+✅ Owner Account: 0x2372cB955817cD5200a559c2faAC93d0B3a88f2d
+✅ Base Token: 0xdeb2336eA55d25B6286761CDdA17F5B5636cB84A
+✅ Quote Token: 0xb724cfB7eCee5b320A115230E0903de4d47dba7B
+✅ Pool ID: 0x85a000207D69042E8B075fCe43B6F28dfCE228b2
+✅ Supported Tokens (2): 0xdeb2336eA55d25B6286761CDdA17F5B5636cB84A, 0xb724cfB7eCee5b320A115230E0903de4d47dba7B
+   Contract owner: 0x2372cB955817cD5200a559c2faAC93d0B3a88f2d
+   ✅ Test account has owner privileges
+
+    Pause/Unpause Controls
+   ✓ Contract paused successfully
+   ✓ Contract unpaused for remaining tests
+      ✔ should allow owner to pause contract (14490ms)
+   ✓ Operations blocked when paused
+      ✔ should block operations when paused (42030ms)
+    Test Mode Controls
+   ✓ Test mode toggled: true → false
+   ✓ Test mode restored to: true
+      ✔ should allow owner to toggle test mode (12339ms)
+    Operator Management
+   ✓ Operator updated successfully
+   ✓ New operator: 0x2372cB955817cD5200a559c2faAC93d0B3a88f2d
+      ✔ should allow owner to update operator (12472ms)
+    Integration Configuration
+   Current NFPM: 0xFAA10aBB2F3C0eE3c6c51C67bA870D08A5e457C3
+   ✓ NFPM configuration is accessible
+      ✔ should allow owner to update NFPM address (111ms)
+   Current Quoter: 0x0fcf84e13e4551a12b6bfF7e3504e45C1a1CC1eF
+   Current Router: 0x78d99c9EED0C6B31Ef961F5372b6f2000E7a912a
+   ✓ DEX integration configuration is accessible
+      ✔ should allow owner to update DEX integrations (314ms)
+    Slippage Configuration
+   ✓ Slippage updated: 100 → 150 bps
+   ✓ Slippage restored to: 100 bps
+      ✔ should allow owner to update default slippage (10677ms)
+   ✓ Excessive slippage rejected
+      ✔ should reject slippage above 100% (169ms)
+    Token Support Management
+   ✓ Token added to supported list
+   ✓ Token removed from supported list
+      ✔ should allow owner to add supported token (11845ms)
+    XCM Configuration Management
+   XCM Config Frozen: false
+   ✓ XCM configuration can still be modified
+      ✔ should check XCM configuration freeze status (215ms)
+   ⚠️  NOT freezing XCM config in tests
+   This action is PERMANENT and cannot be reversed
+   Use freezeXcmConfig() manually when ready for production
+      ✔ should allow owner to freeze XCM config (PERMANENT) (344ms)
+    Fee Collection
+   ✓ Fee collection callable
+   Fees available: 0.000002398645125953 token0, 0.0 token1
+      ✔ should allow collecting fees from position (124ms)
+    Balance Queries
+   Contract base token balance: 1004.134625711371114838
+      ✔ should check contract token balances (48ms)
+    Position Queries
+   ✓ Active positions: 6
+   First position pool: 0x85a000207D69042E8B075fCe43B6F28dfCE228b2
+   First position owner: 0x2372cB955817cD5200a559c2faAC93d0B3a88f2d
+   First position liquidity: 1701323543829447872
+      ✔ should get active positions (103ms)
+   ✓ User positions: 15
+   First position ID: 1
+      ✔ should get user positions (70ms)
+    Contract Health Summary
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       XCMProxy Health Check Summary
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎛️  Contract Status:
+   Paused:          ✅ NO
+   Test Mode:       ✅ ENABLED
+   XCM Config:      🔓 Modifiable
+
+👥 Access Control:
+   Owner:           0x2372cB955817cD5200a559c2faAC93d0B3a88f2d
+   Operator:        0x2372cB955817cD5200a559c2faAC93d0B3a88f2d
+
+🔗 DEX Integrations:
+   NFPM:            ✅ 0xFAA10aBB2F3C0eE3c6c51C67bA870D08A5e457C3
+   Quoter:          ✅ 0x0fcf84e13e4551a12b6bfF7e3504e45C1a1CC1eF
+   Router:          ✅ 0x78d99c9EED0C6B31Ef961F5372b6f2000E7a912a
+
+🌉 XCM Configuration:
+   XTokens:         ✅ 0x0000000000000000000000000000000000000804
+   Asset Hub ID:    ✅ 1000
+
+⚙️  Operating Parameters:
+   Default Slippage: 100 bps (1.00%)
+
+📊 Position Statistics:
+   Total Created:    15
+   Currently Active: 6
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ CONTRACT READY FOR TESTNET OPERATIONS
+
+      ✔ should display comprehensive health check (1042ms)
+
+
+  54 passing (7m)
+  2 pending
+

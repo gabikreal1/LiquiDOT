@@ -132,7 +132,7 @@ contract IntegrationTest is TestBase {
 
         // Dispatch from vault
         vm.prank(vault.operator());
-        vault.dispatchInvestment(USER, MOONBEAM, address(pool), address(tokenA), 1 ether, -100, 100, hex"0102", hex"030405");
+        vault.dispatchInvestment(USER, MOONBEAM, address(pool), address(tokenA), 1 ether, -99, 99, hex"0102", hex"030405");
         assertEq(vault.userBalances(USER), 0, "balance deducted from vault");
 
         // Receive on proxy
@@ -140,7 +140,7 @@ contract IntegrationTest is TestBase {
         uint256[] memory amounts = new uint256[](2);
         amounts[0] = 1 ether;
         amounts[1] = 0;
-        bytes memory investmentParams = abi.encode(address(pool), address(tokenA), amounts, int24(-100), int24(100), USER, uint16(100));
+        bytes memory investmentParams = abi.encode(address(pool), address(tokenA), amounts, int24(-99), int24(99), USER, uint16(100));
 
         tokenA.mint(address(proxy), 1 ether);
         proxy.receiveAssets(posId, address(tokenA), USER, 1 ether, investmentParams);
@@ -164,7 +164,7 @@ contract IntegrationTest is TestBase {
         int24[] memory lowers = new int24[](3);
         int24[] memory uppers = new int24[](3);
         lowers[0] = -50;  uppers[0] = 50;
-        lowers[1] = -100; uppers[1] = 100;
+        lowers[1] = -99;  uppers[1] = 99;
         lowers[2] = -10;  uppers[2] = 10;
 
         for (uint i = 0; i < 3; i++) {

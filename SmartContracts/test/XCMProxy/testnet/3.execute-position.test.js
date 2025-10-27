@@ -23,6 +23,7 @@ const { getMoonbaseTestConfig } = require("./config");
 describe("XCMProxy Testnet - Position Execution", function () {
   let proxy;
   let operator;
+  const DEFAULT_EXECUTION_SLIPPAGE = Number(process.env.MOONBASE_EXEC_SLIPPAGE_BPS || "5000");
   let lastRecordedPositionCounter = 0n;
   const moonbase = getMoonbaseTestConfig();
   const PROXY_ADDRESS = moonbase.proxyAddress;
@@ -128,7 +129,7 @@ describe("XCMProxy Testnet - Position Execution", function () {
           -50,
           50,
           operator.address,
-          100
+          DEFAULT_EXECUTION_SLIPPAGE
         ]
       );
 

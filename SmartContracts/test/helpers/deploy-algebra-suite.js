@@ -1,19 +1,3 @@
-/**
- * Algebra Protocol Suite Deployment
- * 
- * This module deploys the complete Algebra DEX infrastructure including:
- * - AlgebraPoolDeployer: Factory for creating individual pool contracts
- * - AlgebraFactory: Main factory contract for pool creation and management
- * - SwapRouter: Handles token swaps across Algebra pools
- * - Quoter: Provides swap price quotes without executing transactions
- * - NonfungiblePositionManager (NFPM): Manages liquidity positions as NFTs
- * 
- * Uses the official Algebra Integral contracts from @cryptoalgebra npm packages
- * to ensure production-grade behavior in testing and deployment environments.
- * 
- * @module test/setup/deploy-algebra-suite
- */
-
 const { ethers } = require("hardhat");
 const fs = require("fs");
 const path = require("path");
@@ -28,20 +12,11 @@ const ALGEBRA_ARTIFACT_PATHS = {
   NFPM: path.join(__dirname, "../../node_modules/@cryptoalgebra/integral-periphery/artifacts/contracts/NonfungiblePositionManager.sol/NonfungiblePositionManager.json"),
 };
 
-/**
- * Load a contract factory from a pre-compiled artifact
- * @param {string} artifactPath - Path to the artifact JSON file
- * @param {Signer} signer - Signer to use for deployment
- * @returns {ContractFactory} Contract factory ready for deployment
- */
 function getContractFactoryFromArtifact(artifactPath, signer) {
   const artifact = JSON.parse(fs.readFileSync(artifactPath, "utf8"));
   return new ethers.ContractFactory(artifact.abi, artifact.bytecode, signer);
 }
 
-/**
- * Load existing deployment state or create new
- */
 function loadDeploymentState(outputDir) {
   const stateFile = path.join(outputDir, "algebra-deployment-state.json");
   if (fs.existsSync(stateFile)) {
@@ -51,9 +26,6 @@ function loadDeploymentState(outputDir) {
   return { deployed: {} };
 }
 
-/**
- * Save deployment checkpoint
- */
 function saveDeploymentState(state, outputDir) {
   const stateFile = path.join(outputDir, "algebra-deployment-state.json");
   if (!fs.existsSync(outputDir)) {
@@ -62,25 +34,6 @@ function saveDeploymentState(state, outputDir) {
   fs.writeFileSync(stateFile, JSON.stringify(state, null, 2));
 }
 
-/**
- * Deploys the complete Algebra protocol suite
- * 
- * Deployment order is critical:
- * 1. PoolDeployer first (with zero address for factory initially)
- * 2. Factory second (with PoolDeployer address)
- * 3. Set Factory address in PoolDeployer
- * 4. Periphery contracts (Router, Quoter, NFPM) - depend on Factory
- * 
- * Supports resuming from checkpoints if deployment fails partway through.
- * 
- * @param {object} options - Deployment configuration options
- * @param {string} options.deployer - Signer account for deployment
- * @param {string} [options.communityVault] - Address for community fees (defaults to deployer)
- * @param {string} [options.wNative] - Wrapped native token address (defaults to zero address)
- * @param {boolean} [options.saveDeployment=true] - Whether to save deployment addresses to file
- * @param {string} [options.outputDir] - Custom output directory for deployment data
- * @returns {Promise<object>} Deployed contract instances and addresses
- */
 async function deployAlgebraSuite(options = {}) {
   // Extract deployer or use default signer
   const [defaultSigner] = await ethers.getSigners();
@@ -269,10 +222,6 @@ async function deployAlgebraSuite(options = {}) {
   };
 }
 
-/**
- * Standalone script execution
- * Runs when this file is executed directly (not imported as a module)
- */
 async function main() {
   try {
     const result = await deployAlgebraSuite({

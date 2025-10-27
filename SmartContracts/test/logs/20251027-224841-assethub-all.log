@@ -1,0 +1,264 @@
+
+
+  AssetHubVault Testnet - Configuration Check
+
+🔗 Connecting to AssetHubVault at: 0x67E5293e374219C515bD9838B23C792C555e51D4
+✅ Successfully connected to contract
+
+    Contract Deployment
+      ✔ should be deployed at correct address
+      ✔ should respond to function calls
+    Role Configuration
+   Admin: 0xE25d0513a9e15f847862cf5497836E80BBe67B63
+      ✔ should have admin configured (40ms)
+   Operator: 0xE25d0513a9e15f847862cf5497836E80BBe67B63
+      ✔ should have operator configured (59ms)
+   Emergency: 0xE25d0513a9e15f847862cf5497836E80BBe67B63
+      ✔ should have emergency address configured
+    XCM Configuration
+   XCM Precompile: 0x00000000000000000000000000000000000a0000
+      ✔ should have XCM precompile set (124ms)
+   XCM Frozen: false
+      ✔ should check if XCM precompile is frozen (127ms)
+    Contract State
+   Paused: false
+      ✔ should check if contract is paused (51ms)
+   Test Mode: true
+   ✅ Test mode enabled - XCM calls will be skipped
+      ✔ should check test mode status (146ms)
+    Contract Balance
+   Contract Balance: 8.65 ETH
+      ✔ should report contract balance
+    Summary
+
+============================================================
+  AssetHubVault Configuration Summary
+============================================================
+Contract: 0x67E5293e374219C515bD9838B23C792C555e51D4
+Admin: 0xE25d0513a9e15f847862cf5497836E80BBe67B63
+Operator: 0xE25d0513a9e15f847862cf5497836E80BBe67B63
+Emergency: 0xE25d0513a9e15f847862cf5497836E80BBe67B63
+XCM Precompile: 0x00000000000000000000000000000000000a0000
+XCM Frozen: false
+Paused: false
+Test Mode: true
+Balance: 8.65 ETH
+============================================================
+
+      ✔ should display configuration summary (231ms)
+
+  AssetHubVault Testnet - Deposits & Withdrawals
+
+✅ Connected to vault at: 0x67E5293e374219C515bD9838B23C792C555e51D4
+✅ Network: passethub
+✅ User1 (tester): 0xE25d0513a9e15f847862cf5497836E80BBe67B63
+⚠️  Using single user for all tests
+
+    Deposit Functionality
+   ✓ Deposited 0.1 ETH
+   ✓ New balance: 5.9 ETH
+      ✔ should accept deposits (TEST-AHV-007) (5519ms)
+      ✔ should emit Deposit event (9478ms)
+      ✔ should revert on zero deposit (TEST-AHV-008) (75ms)
+      ✔ should handle multiple deposits from same user (11262ms)
+      - should allow multiple users to deposit independently (TEST-AHV-009)
+    Withdrawal Functionality
+   ✓ Withdrew 0.01 ETH
+   ✓ Remaining balance: 6.0 ETH
+      ✔ should allow withdrawal if balance exists (TEST-AHV-010/011) (5513ms)
+      ✔ should emit Withdraw event (29087ms)
+      ✔ should revert on insufficient balance (TEST-AHV-012) (104ms)
+      ✔ should revert on zero withdrawal (TEST-AHV-013) (79ms)
+   ✓ Withdrew full balance: 6.54 ETH
+      ✔ should handle full balance withdrawal (23117ms)
+    Balance Consistency
+   ✓ Balance consistency maintained
+      Initial: 0.0 ETH
+      Final: 0.5 ETH
+      ✔ should maintain consistent balances across operations (31116ms)
+      - should not affect other users' balances
+    Contract State
+   Contract balance: 3.45 ETH
+      ✔ should update contract balance on deposits (11521ms)
+   ✓ Contract is operational
+      ✔ should not be paused for deposits/withdrawals
+
+  AssetHubVault Testnet - Investment Dispatch
+
+✅ Connected to vault at: 0x67E5293e374219C515bD9838B23C792C555e51D4
+✅ Network: passethub
+✅ Operator: 0xE25d0513a9e15f847862cf5497836E80BBe67B63
+✅ Test Mode: Enabled (XCM calls will be skipped)
+
+    Investment Dispatch - Basic Flow
+   ✓ Dispatched 0.5 ETH investment
+   ✓ User balance reduced to 1.1 ETH
+   ✓ Position confirmed and activated
+      ✔ should allow operator to dispatch investment (TEST-AHV-016) (34483ms)
+   ✓ Amount: 0.5 ETH
+   ✓ Pool: 0x12345678...
+   ✓ Chain: 1287
+   ✓ Range: -50% to +50%
+   ✓ Status: Active (1)
+      ✔ should create position with correct data (TEST-AHV-019) (151ms)
+   ✓ User now has 15 positions
+      ✔ should update user positions array (TEST-AHV-020) (38544ms)
+   ✓ All 15 position IDs are unique
+      ✔ should generate unique position IDs (TEST-AHV-018) (121ms)
+    Investment Dispatch - Validation
+      ✔ should revert on zero amount (TEST-AHV-017) (68ms)
+      ✔ should revert on zero address user (TEST-AHV-017) (59ms)
+      ✔ should revert on invalid range (TEST-AHV-017) (60ms)
+      ✔ should revert on insufficient user balance (TEST-AHV-017) (93ms)
+    Investment Dispatch - Test Mode Behavior
+   XCM Precompile: 0x00000000000000000000000000000000000a0000
+   ✓ XCM Precompile: 0x00000000000000000000000000000000000a0000
+   ✓ Investment dispatched without XCM call (test mode)
+   ✓ Position confirmed and activated
+      ✔ should skip XCM calls in test mode (TEST-AHV-022) (34496ms)
+   ✓ Position created successfully in test mode
+   ✓ Position status: Active
+      ✔ should create position even without XCM (TEST-AHV-022) (34579ms)
+    Investment Dispatch - Access Control
+   ✓ Operator confirmed: 0xE25d0513a9e15f847862cf5497836E80BBe67B63
+      ✔ should only allow operator to dispatch (if not operator role, skip)
+      - should revert when paused (TEST-AHV-023)
+    Investment Summary
+
+   📊 Investment Summary
+   ==========================================
+   Total Positions: 17
+   Pending Positions: 1
+   Active Positions: 10
+   Liquidated Positions: 6
+   ==========================================
+
+   Active Positions (showing first 10):
+   1. 0.5 ETH on chain 1287
+   2. 0.2 ETH on chain 1287
+   3. 0.1 ETH on chain 1287
+   4. 0.1 ETH on chain 1287
+   5. 0.1 ETH on chain 1287
+   6. 0.1 ETH on chain 1287
+   7. 0.5 ETH on chain 1287
+   8. 0.2 ETH on chain 1287
+   9. 0.1 ETH on chain 1287
+   10. 0.1 ETH on chain 1287
+   Total Active: 2.0 ETH
+   ==========================================
+
+      ✔ should display all user positions (94ms)
+
+  AssetHubVault Testnet - Liquidation Settlement
+
+✅ Connected to vault at: 0x67E5293e374219C515bD9838B23C792C555e51D4
+✅ Network: passethub
+✅ Operator: 0xE25d0513a9e15f847862cf5497836E80BBe67B63
+
+    Liquidation Settlement - Basic Flow
+   ✓ Position settled successfully
+   ✓ Invested: 0.5 ETH
+   ✓ Proceeds: 0.6 ETH
+   ✓ Profit: 0.1 ETH (20.00%)
+   ✓ Position marked as liquidated
+   ✓ User balance increased
+      ✔ should allow operator to settle liquidation (TEST-AHV-024) (63611ms)
+   ✓ Successfully withdrew 0.1 ETH after settlement
+      ✔ should allow user to withdraw after settlement (TEST-AHV-027) (11451ms)
+    Liquidation Settlement - Validation
+      ✔ should revert on zero amount (TEST-AHV-025) (34614ms)
+   ✓ Cannot settle inactive position (TEST-AHV-026)
+      ✔ should revert on inactive position (TEST-AHV-025) (69692ms)
+      ✔ should revert on insufficient contract balance (TEST-AHV-025) (26049ms)
+    Liquidation Settlement - Position State
+
+   📊 Position State Summary
+   Total Positions: 21
+   Pending: 2
+   Active: 11
+   Liquidated: 8
+   Sample (1 positions): 0.5 ETH
+   ==========================================
+
+      ✔ should track settled positions correctly (79ms)
+   ✓ Position data preserved after settlement
+   ✓ Status changed from Active (1) to Liquidated (2)
+      ✔ should maintain position data after settlement (65488ms)
+    Liquidation Settlement - User Balance
+   ✓ Net balance change: 0.55 ETH
+   ✓ (Deposit + Proceeds - Investment)
+      ✔ should correctly credit proceeds to user balance (76586ms)
+    Liquidation Summary
+
+   📊 Liquidation Test Summary
+   ==========================================
+   Total Positions Created: 23
+   Pending Positions: 2
+   Active Positions: 11
+   Liquidated Positions: 10
+   User Withdrawable Balance: 4.85 ETH
+   Contract Total Balance: 10.2 ETH
+
+   Recent Liquidations (showing 5):
+   1. 0.5 ETH on chain 1287
+   2. 0.2 ETH on chain 1287
+   3. 0.2 ETH on chain 1287
+   4. 0.3 ETH on chain 1287
+   5. 0.3 ETH on chain 1287
+   ==========================================
+
+      ✔ should display complete liquidation history (233ms)
+
+  AssetHubVault Testnet - Emergency Functions
+
+✅ Connected to vault at: 0x67E5293e374219C515bD9838B23C792C555e51D4
+✅ Network: passethub
+✅ Admin/Emergency: 0xE25d0513a9e15f847862cf5497836E80BBe67B63
+   Contract admin: 0xE25d0513a9e15f847862cf5497836E80BBe67B63
+   Contract emergency: 0xE25d0513a9e15f847862cf5497836E80BBe67B63
+   ✅ Test account has admin/emergency privileges
+
+    Emergency Liquidation
+   ✓ Emergency liquidation successful
+   ✓ Funds credited: 0.2 ETH
+      ✔ should allow emergency to force liquidate position (TEST-AHV-029) (50244ms)
+   ✓ Rejects emergency liquidation with wrong chainId
+      ✔ should validate chainId on emergency liquidation (TEST-AHV-030) (34591ms)
+   ✓ Cannot emergency liquidate already-liquidated position (TEST-AHV-031)
+      ✔ should only work on non-liquidated positions (TEST-AHV-031) (49985ms)
+    Pause/Unpause Functions
+   ✓ Contract paused successfully
+   ✓ Contract unpaused successfully
+      ✔ should allow admin to pause contract (TEST-AHV-032) (27013ms)
+   ✓ dispatchInvestment blocked while paused
+   ✓ Contract unpaused - normal operations restored
+      ✔ should block operations when paused (TEST-AHV-033) (27111ms)
+   Initial paused state: false
+   ✓ Contract paused - paused state: true
+   ✓ Contract unpaused - paused state: false
+      ✔ should verify pause state changes (27111ms)
+    Emergency Summary
+
+   📊 Emergency Functions Summary
+   ==========================================
+   Admin Address: 0xE25d0513a9e15f847862cf5497836E80BBe67B63
+   Emergency Address: 0xE25d0513a9e15f847862cf5497836E80BBe67B63
+   Test Account: 0xE25d0513a9e15f847862cf5497836E80BBe67B63
+   Has Admin Rights: YES
+   Has Emergency Rights: YES
+   ==========================================
+   Contract State:
+   - Paused: NO ✅
+   - Test Mode: YES ✅
+   - Total Positions: 26
+   - Pending Positions: 2
+   - Active Positions: 12
+   - Liquidated Positions: 12
+   ==========================================
+
+      ✔ should display emergency capabilities and current state (277ms)
+
+
+  51 passing (14m)
+  3 pending
+

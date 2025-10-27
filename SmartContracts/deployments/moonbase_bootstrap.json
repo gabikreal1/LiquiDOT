@@ -1,56 +1,73 @@
 {
-  "generatedAt": "2025-10-17T13:47:44.353Z",
+  "generatedAt": "2025-10-26T22:36:12.853Z",
   "network": {
     "name": "moonbase",
     "chainId": 1287
   },
   "algebra": {
     "poolDeployer": "0x94dC61d1BC73f11CE5Ec69F982c93C12C3558479",
-    "factory": "0xeCDf1a5F17b94b72339078d71c012Fe4d45b1032",
-    "router": "0x6a43f1f8F11C03991F462a9db2E2876b11dC959e",
-    "quoter": "0x56495A38335B9319304fa0C97A8CF6Cef67251CB",
-    "nfpm": "0x1A2e52315646EC23340C3b64409D7D16e4F2D632",
+    "factory": "0xc93d14a9B3d2082542B8Ca59f8b0EEBe86967BF4",
+    "router": "0x78d99c9EED0C6B31Ef961F5372b6f2000E7a912a",
+    "quoter": "0x0fcf84e13e4551a12b6bfF7e3504e45C1a1CC1eF",
+    "nfpm": "0xFAA10aBB2F3C0eE3c6c51C67bA870D08A5e457C3",
     "wdev": "0x5bDdA8D0FDFB75c05cC9a64dc07B24EAC8058923"
   },
   "xcmProxy": {
-    "address": "0xf7749B6A5aD0EB4ed059620B89f14FA8e916ee41",
+    "address": "0xf935e063b2108cc064bB356107ac01Dc90f96652",
     "operator": "0x2372cB955817cD5200a559c2faAC93d0B3a88f2d",
     "testMode": true,
     "assetHubParaId": 420420422,
     "trustedXcmCaller": "0x3B0D87f3d0AE4CDC8C0102DAEfB7433aaED15CCF",
     "defaultSlippageBps": 100,
-    "defaultDestWeight": "6000000000"
+    "defaultDestWeight": "6000000000",
+    "seedTarget": "1000000000000000000000",
+    "seededBalances": [
+      {
+        "label": "TOKA",
+        "token": "0xdeb2336eA55d25B6286761CDdA17F5B5636cB84A",
+        "balance": "1000000000000000000000",
+        "decimals": 18,
+        "status": "seeded"
+      },
+      {
+        "label": "TOKB",
+        "token": "0xb724cfB7eCee5b320A115230E0903de4d47dba7B",
+        "balance": "1000000000000000000000",
+        "decimals": 18,
+        "status": "seeded"
+      }
+    ]
   },
   "tokens": [
     {
-      "symbol": "BT0",
-      "address": "0x07770a7ff77bff34E2F4514c2dbeE9Cbe22d6510",
+      "symbol": "TOKA",
+      "address": "0xdeb2336eA55d25B6286761CDdA17F5B5636cB84A",
       "decimals": "18"
     },
     {
-      "symbol": "BT1",
-      "address": "0x98166a53d39c778b3a98D3958135AB00D38148Ea",
+      "symbol": "TOKB",
+      "address": "0xb724cfB7eCee5b320A115230E0903de4d47dba7B",
       "decimals": "18"
     }
   ],
   "baseToken": {
-    "symbol": "BT0",
-    "address": "0x07770a7ff77bff34E2F4514c2dbeE9Cbe22d6510",
+    "symbol": "TOKA",
+    "address": "0xdeb2336eA55d25B6286761CDdA17F5B5636cB84A",
     "decimals": "18"
   },
   "quoteToken": {
-    "symbol": "BT1",
-    "address": "0x98166a53d39c778b3a98D3958135AB00D38148Ea",
+    "symbol": "TOKB",
+    "address": "0xb724cfB7eCee5b320A115230E0903de4d47dba7B",
     "decimals": "18"
   },
   "supportedTokens": [
-    "0x07770a7ff77bff34E2F4514c2dbeE9Cbe22d6510",
-    "0x98166a53d39c778b3a98D3958135AB00D38148Ea"
+    "0xdeb2336eA55d25B6286761CDdA17F5B5636cB84A",
+    "0xb724cfB7eCee5b320A115230E0903de4d47dba7B"
   ],
   "pool": {
-    "address": "0xD443A21F04e5139d058d0581b925206f701E8A02",
-    "token0": "0x07770a7ff77bff34E2F4514c2dbeE9Cbe22d6510",
-    "token1": "0x98166a53d39c778b3a98D3958135AB00D38148Ea",
-    "liquidity": "1000000000000000000054"
+    "address": "0x85a000207D69042E8B075fCe43B6F28dfCE228b2",
+    "token0": "0xb724cfB7eCee5b320A115230E0903de4d47dba7B",
+    "token1": "0xdeb2336eA55d25B6286761CDdA17F5B5636cB84A",
+    "liquidity": "0"
   }
 }

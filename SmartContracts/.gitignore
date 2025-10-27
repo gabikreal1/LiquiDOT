@@ -13,9 +13,6 @@ cache-evm/
 out/
 build/
 
-# Test results
-*.log
-test-results-*.log
 
 # IDE
 .vscode/

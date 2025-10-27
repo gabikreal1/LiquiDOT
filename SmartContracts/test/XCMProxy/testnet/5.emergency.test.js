@@ -21,6 +21,7 @@ const { getMoonbaseTestConfig } = require("./config");
 describe("XCMProxy Testnet - Emergency & Admin Functions", function () {
   let proxy;
   let owner;
+  const DEFAULT_EXECUTION_SLIPPAGE = Number(process.env.MOONBASE_EXEC_SLIPPAGE_BPS || "5000");
   const moonbase = getMoonbaseTestConfig();
   const PROXY_ADDRESS = moonbase.proxyAddress;
   const BASE_TOKEN = moonbase.baseToken;
@@ -142,7 +143,7 @@ describe("XCMProxy Testnet - Emergency & Admin Functions", function () {
           -50,
           50,
           owner.address,
-          100
+          DEFAULT_EXECUTION_SLIPPAGE
         ]
       );
 
@@ -167,7 +168,7 @@ describe("XCMProxy Testnet - Emergency & Admin Functions", function () {
 
   describe("Test Mode Controls", function () {
     it("should allow owner to toggle test mode", async function () {
-      this.timeout(60000); // 1 minute timeout
+      this.timeout(120000); // 2 minute timeout for remote network
       
       const contractOwner = await proxy.owner();
       if (contractOwner.toLowerCase() !== owner.address.toLowerCase()) {

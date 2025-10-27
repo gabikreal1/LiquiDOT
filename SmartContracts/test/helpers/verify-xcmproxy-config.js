@@ -63,21 +63,17 @@ async function main() {
   // ===== Algebra Integration =====
   console.log("\n🔷 ALGEBRA DEX INTEGRATION:");
   
-  const algebraFactory = await xcmProxy.algebraFactory();
-  console.log(`   Factory: ${algebraFactory}`);
-  
-  const algebraRouter = await xcmProxy.algebraRouter();
+  const algebraRouter = await xcmProxy.swapRouterContract();
   console.log(`   Router: ${algebraRouter}`);
   
-  const algebraNFPM = await xcmProxy.algebraNFPM();
+  const algebraNFPM = await xcmProxy.nfpmContract();
   console.log(`   NFPM: ${algebraNFPM}`);
   
-  const algebraQuoter = await xcmProxy.algebraQuoter();
+  const algebraQuoter = await xcmProxy.quoterContract();
   console.log(`   Quoter: ${algebraQuoter}`);
 
   // Check if Algebra is configured
   const algebraConfigured = 
-    algebraFactory !== hre.ethers.ZeroAddress &&
     algebraRouter !== hre.ethers.ZeroAddress &&
     algebraNFPM !== hre.ethers.ZeroAddress &&
     algebraQuoter !== hre.ethers.ZeroAddress;
@@ -92,24 +88,28 @@ async function main() {
   // ===== XCM Precompile Configuration =====
   console.log("\n🌉 XCM PRECOMPILE CONFIGURATION:");
   
-  const xcmPrecompile = await xcmProxy.XCM_PRECOMPILE();
-  console.log(`   XCM Precompile: ${xcmPrecompile}`);
+  const xcmPrecompile = await xcmProxy.xTokensPrecompile();
+  console.log(`   XTokens Precompile: ${xcmPrecompile}`);
   
   if (xcmPrecompile === hre.ethers.ZeroAddress) {
-    console.log("   ⚠️  WARNING: XCM precompile not set!");
+    console.log("   ⚠️  WARNING: XTokens precompile not set!");
     console.log("      Set this before sending XCM messages");
   }
 
-  const assetHub = await xcmProxy.assetHub();
-  console.log(`   AssetHub Destination: ${assetHub}`);
+  const assetHubParaId = await xcmProxy.assetHubParaId();
+  console.log(`   Asset Hub ParaID: ${assetHubParaId}`);
   
-  if (assetHub === "0x") {
-    console.log("   ⚠️  WARNING: AssetHub XCM destination not set!");
-    console.log("      Set this to AssetHub's XCM multilocation");
+  if (assetHubParaId === 0) {
+    console.log("   ⚠️  WARNING: Asset Hub ParaID not set!");
+    console.log("      Set this to 1000 for Asset Hub");
   }
 
-  const feeAmount = await xcmProxy.xcmFeeAmount();
-  console.log(`   XCM Fee Amount: ${hre.ethers.formatEther(feeAmount)} ETH`);
+  const xcmTransactor = await xcmProxy.xcmTransactorPrecompile();
+  console.log(`   XCM Transactor: ${xcmTransactor}`);
+  
+  if (xcmTransactor === hre.ethers.ZeroAddress) {
+    console.log("   ℹ️  XCM Transactor not set (optional for basic transfers)");
+  }
 
   // ===== Contract State =====
   console.log("\n⚙️  CONTRACT STATE:");
@@ -146,13 +146,13 @@ async function main() {
   // ===== Position Tracking =====
   console.log("\n📊 POSITION TRACKING:");
   
-  const nextNFTId = await xcmProxy.nextNFTId();
-  console.log(`   Next NFT ID: ${nextNFTId}`);
+  const positionCounter = await xcmProxy.positionCounter();
+  console.log(`   Position Counter: ${positionCounter}`);
   
-  if (nextNFTId === 0n) {
+  if (positionCounter === 0n) {
     console.log("   ℹ️  No positions created yet");
   } else {
-    console.log(`   ℹ️  ${nextNFTId} position(s) created`);
+    console.log(`   ℹ️  ${positionCounter} position(s) created`);
   }
 
   // ===== Summary & Warnings =====
@@ -176,10 +176,10 @@ async function main() {
 
   // Warnings
   if (xcmPrecompile === hre.ethers.ZeroAddress) {
-    warnings.push("XCM precompile not set (required for production)");
+    warnings.push("XTokens precompile not set (required for production)");
   }
-  if (assetHub === "0x") {
-    warnings.push("AssetHub destination not set (required for production)");
+  if (assetHubParaId === 0) {
+    warnings.push("Asset Hub ParaID not set (required for production)");
   }
   if (!testMode) {
     warnings.push("Test mode disabled - XCM will be attempted");

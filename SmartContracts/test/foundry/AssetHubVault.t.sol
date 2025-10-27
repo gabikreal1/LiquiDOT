@@ -199,6 +199,30 @@ contract AssetHubVaultTest is TestBase {
         vault.confirmExecution(positionId, bytes32(0), 0);
     }
 
+    function testConfirmExecutionByAuthorizedExecutor() public {
+        // Prepare a pending position
+        uint256 amount = 1 ether;
+        vm.deal(USER, amount);
+        vm.prank(USER);
+        vault.deposit{value: amount}();
+
+        vm.prank(OPERATOR);
+        vault.dispatchInvestment(USER, MOONBEAM, POOL, BASE_ASSET, amount, -50, 50, hex"01", hex"02");
+        bytes32 positionId = keccak256(abi.encodePacked(USER, MOONBEAM, POOL, BASE_ASSET, block.timestamp));
+
+        // Set an authorized executor for MOONBEAM
+        address executor = address(0xE0E0);
+        vault.updateChainExecutor(MOONBEAM, executor);
+
+        // Executor should be able to confirm
+        vm.prank(executor);
+        vault.confirmExecution(positionId, bytes32(uint256(12345)), 999);
+
+        (, , , , , , , AssetHubVault.PositionStatus status, , bytes32 remoteId) = vault.positions(positionId);
+        assertEq(uint256(status), uint256(AssetHubVault.PositionStatus.Active), "status active by executor");
+        assertEq(uint256(remoteId), uint256(12345), "remote id set by executor");
+    }
+
     function testSettleLiquidationOnlyOperator() public {
         uint256 amount = 1 ether;
         vm.deal(USER, amount);
