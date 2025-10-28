@@ -1,241 +1,112 @@
 # LiquiDOT Test Suite
 
-Complete test suite for the LiquiDOT protocol with **testnet-first design** - all tests work with existing deployed contracts.
+Testnet-first guide for running the LiquiDOT smart-contract suites on Paseo Asset Hub and Moonbase Alpha. This mirrors the GitBook “Testing Guide (Testnet)” so everything stays in sync.
+## Prerequisites
 
-## 📁 Test Structure
+- Testnet funds
+   - Moonbase DEV: https://faucet.moonbeam.network/
+   - Paseo Asset Hub DOT: https://faucet.paseo.network/
+- Environment variables (in shell or `.env` inside `SmartContracts/`)
+
+```powershell
+$env:MOON_PK="0x..."      # Moonbase deployer key
+$env:ASSET_PK="0x..."     # Asset Hub deployer key
+$env:MOONBASE_RPC="https://rpc.api.moonbase.moonbeam.network"  # optional override
+$env:ASSETHUB_RPC="https://testnet-passet-hub-eth-rpc.polkadot.io"  # optional override
+```
+
+Install dependencies once:
+```powershell
+cd SmartContracts
+npm install
+```
+
+## 1. Deploy Contracts
+
+1. **AssetHubVault (Paseo Asset Hub)** – Deploy via Remix:
+   - Open https://remix.polkadot.network/
+   - Load `contracts/V1(Current)/AssetHubVault.sol`
+   - Deploy with the Asset Hub key
+   - Record the address and export it for later steps:
+
+```powershell
+$env:ASSETHUB_CONTRACT="0xYourAssetHubVault"
+```
+
+2. **Moonbase infrastructure (Algebra + XCMProxy + test tokens/pool)**
+
+```powershell
+cd SmartContracts
+npx hardhat run scripts/deploy-moonbase.js --network moonbase
+```
+
+The script deploys Algebra, configures XCMProxy (test mode on), creates two test tokens, and initializes a pool. It writes `deployments/moonbase_bootstrap.json`, which downstream helpers/tests consume.
+
+## 2. Wire Contracts Across Chains
+
+Set the deployed Moonbase proxy address (from the deploy output or bootstrap file):
+
+```powershell
+$env:XCMPROXY_CONTRACT="0xYourXCMProxy"
+```
+
+Run the helper scripts (all live in `test/helpers/`):
+```powershell
+# Add Moonbase Alpha to AssetHubVault's chain registry
+npx hardhat run test/helpers/link-contracts.js --network passethub
+
+# Set AssetHubVault as trusted caller on XCMProxy
+npx hardhat run test/helpers/link-contracts.js --network moonbase
+
+# Enable safe test mode on AssetHubVault (bypasses XCM during tests)
+npx hardhat run test/helpers/enable-test-mode.js --network passethub
+
+Optional but recommended before Moonbase tests:
+```powershell
+# Seeds the Algebra pool using addresses from the bootstrap file
+npx hardhat run test/helpers/provide-liquidity.js --network moonbase
+
+# Sanity check configuration once wiring is complete
+npx hardhat run test/helpers/verify-xcmproxy-config.js --network moonbase
+
+The liquidity helper only mints positions against the existing pool; it does **not** deploy contracts. If the bootstrap file is missing entries, rerun the deployment script.
+
+## 3. Run Tests
+
+All suites are testnet-ready and read addresses from env vars + `deployments/moonbase_bootstrap.json`.
+```powershell
+# Paseo Asset Hub (AssetHubVault)
+npx hardhat test test/AssetHubVault/testnet/**/*.test.js --network passethub
+
+# Moonbase Alpha (XCMProxy)
+npx hardhat test test/XCMProxy/testnet/**/*.test.js --network moonbase
+
+# Cross-chain guided flow (initiates from Asset Hub)
+npx hardhat test test/Integration/testnet/**/*.test.js --network passethub
+
+Refer to `.test-commands.md` for additional permutations or single-spec invocations.
+## 4. Capture Logs
+
+Persist test output by wrapping commands with the log helper. This tees stdout/stderr to `test/logs/<timestamp>-<tag>.log` while keeping the original exit code.
+
+```bash
+```
+./test/save-test-log.sh moonbase-all npx hardhat test test/XCMProxy/testnet/**/*.test.js --network moonbase
+
+## Directory Reference
 
 ```
 test/
-├── AssetHubVault/testnet/          ✅ Asset Hub Tests (5 tests)
-│   ├── 1.config-check.test.js      # Verify deployment
-│   ├── 2.deposits.test.js          # Deposit/withdrawal
-│   ├── 3.investment.test.js        # Investment dispatch
-│   ├── 4.liquidation.test.js       # Liquidation settlement
-│   └── 5.emergency.test.js         # Emergency functions
-│
-├── Integration/testnet/            ✅ Cross-Chain Tests (1 test)
-│   └── 1.guided-investment-flow.test.js  # End-to-end flow
-│
-├── XCMProxy/testnet/               ✅ Moonbase Tests (5 tests)
-│   ├── 1.config-check.test.js      # Verify deployment
-│   ├── 2.receive-assets.test.js    # XCM reception
-│   ├── 3.execute-position.test.js  # Position trading
-│   ├── 4.liquidation.test.js       # Liquidation flow
-│   └── 5.emergency.test.js         # Emergency functions
-│
-├── helpers/                        # Test & Setup Utilities
-│   ├── debug-execute.js            # Manual receive/execute debug harness
-│   ├── deploy-algebra-suite.js     # Algebra deployment utilities
-│   ├── deploy-test-contracts.js    # Test token & pool helpers
-│   ├── deploy-xcm-proxy.js         # XCMProxy deployment utilities
-│   ├── enable-test-mode.js         # ⭐ Enable safe test mode
-│   ├── link-contracts.js           # ⭐ Link AssetHub ↔ Moonbase
-│   ├── provide-liquidity.js        # Seed pools with liquidity
-│   ├── verify-xcmproxy-config.js   # ⭐ Verify deployment
-│
-├── .test-commands.md               # Quick command reference
-└── README.md                       # This file
-```
-```
+├── AssetHubVault/testnet/   # 5 specs covering config → emergency
+├── XCMProxy/testnet/        # 5 specs covering config → emergency
+├── Integration/testnet/     # Guided end-to-end flow
+├── helpers/                 # Wiring + diagnostics scripts (see above)
+├── logs/                    # Captured outputs from save-test-log.sh
+└── .test-commands.md        # Quick command reference
 
-## 🚀 Quick Start
-
-### Step 1: Setup Contracts
-
-See `scripts/README.md` for deployment details. Then configure:
-
-```powershell
-# Set contract addresses
-$env:ASSETHUB_CONTRACT="0xYourDeployedAddress"
-$env:XCMPROXY_CONTRACT="0xYourProxyAddress"
-
-# Run setup scripts (in helpers/)
-npx hardhat run test/helpers/link-contracts.js --network passethub
-npx hardhat run test/helpers/link-contracts.js --network moonbase
-npx hardhat run test/helpers/enable-test-mode.js --network passethub
-npx hardhat run test/helpers/provide-liquidity.js --network moonbase   # Optional but recommended for NFPM tests
-npx hardhat run test/helpers/verify-xcmproxy-config.js --network moonbase
-```
-
-### Helper Workflow (Recommended Order)
-
-0. _Bootstrap liquidity inputs (one-time)._ Make sure `deployments/moonbase_bootstrap.json` or your `MOONBASE_*` env vars already include token and pool addresses. If they do not, run `npx hardhat run scripts/deploy-moonbase.js --network moonbase` before the steps below.
-1. `link-contracts.js --network passethub`
-   - Adds Moonbase Alpha to AssetHubVault's chain registry.
-2. `link-contracts.js --network moonbase`
-   - Sets AssetHubVault as the trusted XCM caller on XCMProxy.
-3. `enable-test-mode.js --network passethub`
-   - Turns on test mode so AssetHubVault uses mocked XCM flows.
-4. `provide-liquidity.js --network moonbase`
-   - Uses the existing token + pool addresses to seed Algebra liquidity (does **not** deploy new pools or tokens).
-5. `verify-xcmproxy-config.js --network moonbase`
-   - Read-only sanity check once everything is wired together.
-
-Use `debug-execute.js` only when you need a manual receive/execute reproduction, and lean on `deploy-*` helpers exclusively for local Hardhat development environments.
-```
-
-### Step 2: Run Tests
-
-```powershell
-# Asset Hub Tests
-npx hardhat test test/AssetHubVault/testnet/**/*.test.js --network passethub
-
-# Moonbase Tests
-npx hardhat test test/XCMProxy/testnet/**/*.test.js --network moonbase
-
-# Integration Tests
-npx hardhat test test/Integration/testnet/**/*.test.js --network passethub
-```
-
-### Step 3: Capture Test Logs
-
-Wrap any Hardhat command with `test/save-test-log.sh` to persist console output automatically:
-
-```bash
-./test/save-test-log.sh moonbase-all npx hardhat test test/XCMProxy/testnet/**/*.test.js --network moonbase
-```
-
-Logs are written to `test/logs/<timestamp>-<tag>.log` and the wrapper preserves the original exit code. The `test/logs/` folder (see attachment `#file:logs`) reflects the latest captured outputs.
-
-
-
-## 📊 Test Files
-
-| File | Purpose | Status |
-|------|---------|--------|
-| **AssetHubVault/testnet/** |
-| 1.config-check.test.js | Deployment verification | ✅ |
-| 2.deposits.test.js | Deposit/withdrawal tests | ✅ |
-| 3.investment.test.js | Investment dispatch (test mode) | ✅ |
-| 4.liquidation.test.js | Liquidation settlement | ✅ |
-| 5.emergency.test.js | Emergency pause/unpause | ✅ |
-| **Integration/testnet/** |
-| 1.guided-investment-flow.test.js | End-to-end flow guidance | ✅ |
-| **XCMProxy/testnet/** |
-| 1.config-check.test.js | XCMProxy verification | ✅ |
-| 2.receive-assets.test.js | XCM asset reception | ✅ |
-| 3.execute-position.test.js | Position trading | ✅ |
-| 4.liquidation.test.js | Liquidation execution | ✅ |
-| 5.emergency.test.js | Emergency pause/unpause | ✅ |
-
-## 🔧 Environment & Configuration
-
-### Environment Variables
-
-```powershell
-$env:ASSETHUB_CONTRACT      # AssetHubVault address (required)
-$env:XCMPROXY_CONTRACT      # XCMProxy address (for integration)
-$env:PRIVATE_KEY            # Private key for transactions
-$env:ASSETHUB_RPC           # Asset Hub RPC (optional)
-$env:MOONBASE_RPC           # Moonbase RPC (optional)
-```
-
-### Networks
-
-- **passethub** - Paseo Asset Hub testnet (1000)
-- **moonbase** - Moonbase Alpha testnet (1287)
-
-Configure in `hardhat.config.js`:
-```javascript
-networks: {
-  passethub: {
-    url: process.env.ASSETHUB_RPC || "https://rococo-asset-hub-rpc.polkadot.io",
-    accounts: [process.env.PRIVATE_KEY],
-    chainId: 1000
-  },
-  moonbase: {
-    url: "https://rpc.api.moonbase.moonbeam.network",
-    accounts: [process.env.PRIVATE_KEY],
-    chainId: 1287
-  }
-}
-```
-
-## ⭐ Setup Scripts in `helpers/`
-
-Located in `test/helpers/`, these are used for testnet configuration:
-
-| Script | Purpose | Run | Command |
-|--------|---------|-----|---------|
-| link-contracts.js | Connect contracts | 2x | `npx hardhat run test/helpers/link-contracts.js --network [passethub\|moonbase]` |
-| enable-test-mode.js | Safe test mode | 1x | `npx hardhat run test/helpers/enable-test-mode.js --network passethub` |
-| verify-xcmproxy-config.js | Verify deployment | Optional | `npx hardhat run test/helpers/verify-xcmproxy-config.js --network moonbase` |
-
-Other helpers are available for local or manual workflows:
-- `debug-execute.js` - Single-run harness for receiveAssets/executePendingInvestment
-- `deploy-algebra-suite.js` - Algebra deployment utilities
-- `deploy-test-contracts.js` - Test token and pool helpers
-- `deploy-xcm-proxy.js` - XCMProxy deployment utilities
-- `provide-liquidity.js` - Seeds Algebra pools with deterministic liquidity
-
-## Test Design
-
-### Testnet-First Approach
-- Tests work with **existing deployed contracts** (no fresh deployments)
-- **State-aware**: don't assume clean conditions
-- **Idempotent**: safe to run multiple times
-- **Auto-skip**: when prerequisites missing
-- **Small amounts**: minimize costs
-
-### Test Independence
-- Each file is independent
-- Can run in any order
-- No shared state
-- Clear prerequisites
-
-## Common Workflows
-
-### Just Deployed AssetHubVault?
-
-```powershell
-$env:ASSETHUB_CONTRACT="0xNewAddress"
-npx hardhat test test/AssetHubVault/testnet/1.config-check.test.js --network passethub
-```
-
-### Test Investment Flow?
-
-```powershell
-npx hardhat test test/AssetHubVault/testnet/3.investment.test.js --network passethub
-npx hardhat test test/Integration/testnet/1.guided-investment-flow.test.js --network passethub
-```
-
-### XCMProxy Deployed on Moonbase?
-
-```powershell
-$env:XCMPROXY_CONTRACT="0xYourProxyAddress"
-npx hardhat test test/XCMProxy/testnet/1.config-check.test.js --network moonbase
-```
-
-## ⚠️ Important Notes
-
-### Gas Costs
-- Config checks are read-only (no cost)
-- Deposit tests use small amounts (~0.1 ETH)
-- Actual costs depend on gas prices
-
-### State Management
-- Testnet state persists between test runs
-- Deposits accumulate over multiple runs
-- Consider periodic cleanup if needed
-
-### Prerequisites
-Tests auto-skip if missing requirements:
-- **AssetHub tests** need: deployed contract + testnet tokens
-- **Integration tests** need: both contracts + tokens + test mode enabled
-- **XCMProxy tests** need: deployed contract + testnet tokens
-
-## 📊 Current Status
-
-✅ **15 tests implemented and ready to run**
-- 5 AssetHubVault tests
-- 1 Integration test
-- 5 XCMProxy tests
-
-✅ **100% testnet-ready** - all tests work with deployed contracts
-
-## Additional Resources
-
-- **Quick commands**: [.test-commands.md](./.test-commands.md)
-- **Deployment**: [../scripts/README.md](../scripts/README.md)
-- **Main setup**: [../../README.md](../../README.md)
+## Expectations & Troubleshooting
+- Tests are idempotent and tolerate existing state (deposits/liquidity carry over between runs).
+- Suites skip automatically if required env vars or bootstrap data are missing.
+- Ensure the signer has enough DEV / DOT for any state-changing helper.
+- Re-run `provide-liquidity.js` whenever you need fresh positions for manual validation.
 

@@ -72,3 +72,6 @@ Thumbs.db
 # Misc
 .vercel
 .turbo 
+
+cache-evm/
+artifacts-evm/

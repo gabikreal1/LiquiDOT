@@ -33,3 +33,6 @@ typechain-types/
 
 # Foundry
 broadcast/
+
+cache-evm/
+artifacts-evm/
