@@ -75,3 +75,7 @@ Thumbs.db
 
 cache-evm/
 artifacts-evm/
+SmartContracts/cache-evm/
+SmartContracts/artifacts-evm/
+**/cache-evm/
+**/artifacts-evm/
