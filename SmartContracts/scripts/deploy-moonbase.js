@@ -21,7 +21,7 @@
 const { ethers } = require("hardhat");
 const { deployAlgebraSuite } = require("../test/helpers/deploy-algebra-suite");
 const { deployXCMProxy } = require("../test/helpers/deploy-xcm-proxy");
-const { deployTestTokens, createAndInitializePool, addLiquidityToPool } = require("../test/helpers/deploy-test-contracts");
+const { deployTestTokens, createAndInitializePool } = require("../test/helpers/deploy-test-contracts");
 const fs = require("fs");
 const path = require("path");
 
@@ -104,7 +104,7 @@ async function main(options = {}) {
   console.log("-".repeat(60));
   
   const operatorAddress = options.operator || deployer.address;
-  const assetHubVault = options.assetHubVault || ethers.ZeroAddress;
+  const assetHubVault = options.assetHubVault || process.env.ASSETHUB_CONTRACT || ethers.ZeroAddress;
   
   // Deploy and configure XCMProxy using shared helper (persists state)
   const xcmpResult = await deployXCMProxy({
@@ -179,17 +179,9 @@ async function main(options = {}) {
     const poolAddress = await testPool.getAddress();
     console.log(`   ✓ Pool ready at: ${poolAddress}`);
 
-    // 3d. Provide initial liquidity via NFPM (mints tokens to deployer if needed)
-    await addLiquidityToPool({
-      pool: testPool,
-      nfpm: nfpm,
-      token0: t0 === tokenAAddr ? tokenA : tokenB,
-      token1: t1 === tokenAAddr ? tokenA : tokenB,
-      provider: deployer,
-      amount: options.initialLiquidityAmount || 500, // 500 units of each token by default
-    });
-
-    console.log("\n✅ Test tokens deployed and pool bootstrapped with liquidity!");
+    console.log("\nℹ️  Skipping initial liquidity provision in deployment (use helper later):");
+    console.log("   npx hardhat run test/helpers/provide-liquidity.js --network moonbase");
+    console.log("   Configure LP_AMOUNT0/LP_AMOUNT1 and MOONBASE_NFPM if needed\n");
   }
   
   console.log("\n" + "=".repeat(60) + "\n");
@@ -277,9 +269,8 @@ async function main(options = {}) {
 // Execute main() when script is run directly
 if (require.main === module) {
   main({
-    deployTestTokens: true,      // Deploy test tokens for end-to-end testing
-    createTestPool: true,        // Create and initialize pool
-    initialLiquidityAmount: 500, // Provide initial liquidity per token
+    deployTestTokens: true,   // Deploy test tokens for end-to-end testing
+    createTestPool: true,     // Create and initialize pool
   })
     .then(() => process.exit(0))
     .catch((error) => {

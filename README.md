@@ -42,9 +42,16 @@ For detailed smart contract documentation, deployment guides, and testing instru
 
 ### Deployment & Testing Workflow
 
-1. Bootstrap Moonbase fixtures with `npx hardhat run SmartContracts/scripts/deploy-moonbase.js --network moonbase` so `SmartContracts/deployments/moonbase_bootstrap.json` contains Algebra token, pool, and NFPM addresses (or export the equivalent `MOONBASE_*` env vars).
-2. Run the helper scripts in `SmartContracts/test/helpers/` in order: link contracts on both networks, enable AssetHubVault test mode, seed liquidity via `provide-liquidity.js` (it reuses the bootstrap addresses, it does not deploy tokens or pools), then confirm setup with `verify-xcmproxy-config.js`.
-3. Execute Hardhat tests from `SmartContracts/test` using the commands in `.test-commands.md`; they cover AssetHubVault, XCMProxy, and the guided integration flow.
+1. Deploy AssetHubVault on Paseo via Remix and set `$env:ASSETHUB_CONTRACT`. Then bootstrap Moonbase with:
+	- `npx hardhat run SmartContracts/scripts/deploy-moonbase.js --network moonbase`
+	- This deploys Algebra, XCMProxy (test mode enabled), two test tokens, and creates/initializes a pool.
+	- It writes `SmartContracts/deployments/moonbase_bootstrap.json` that tests auto-read.
+2. Wire and verify using helpers in `SmartContracts/test/helpers/`:
+	- Link contracts: `link-contracts.js` on `passethub` then `moonbase`
+	- Enable test mode on Asset Hub: `enable-test-mode.js` on `passethub`
+	- Optional liquidity: `provide-liquidity.js` on `moonbase` (uses bootstrap addresses)
+	- Verify config: `verify-xcmproxy-config.js` on `moonbase`
+3. Run tests from `SmartContracts/test` (examples in `.test-commands.md`), including XCMProxy, AssetHubVault, and integration flows.
 
 
 All required deployment, wiring, and verification helpers ship with the repository—no additional scripts are needed beyond configuring the expected environment variables.
