@@ -10,8 +10,8 @@ Deploy LiquiDOT smart contracts on Paseo Asset Hub and Moonbase Alpha testnets.
 
 **Testnet Funds:**
 
-* Paseo Asset Hub  [faucet](https://faucet.paseo.network/)
-* Moonbase Alpha  [faucet](https://faucet.moonbeam.network/)
+* Paseo Asset Hub [faucet](https://faucet.paseo.network/)
+* Moonbase Alpha [faucet](https://faucet.moonbeam.network/)
 
 **Environment (.env in `SmartContracts/`):**
 
@@ -26,19 +26,16 @@ ASSETHUB_RPC=wss://paseo-asset-hub-rpc.polkadot.io
 
 ### 1. Deploy Asset Hub Vault
 
-**Using Remix:**
-3. Compile with Solidity 0.8.20, optimization: 200 runs
-4. Deploy via Talismanto Paseo Asset Hub:
-   * RPC: `https://paseo-asset-hub-eth-rpc.polkadot.io`
-   * Chain ID: 1000
+**Using Remix:** 3. Compile with Solidity 0.8.20, optimization: 200 runs 4. Deploy via Talismanto Paseo Asset Hub:
+
+* RPC: `https://paseo-asset-hub-eth-rpc.polkadot.io`
+* Chain ID: 1000
+
 5. Save deployed address
 
 ### 2. Deploy Moonbase Infrastructure
 
 ```bash
-# Deploy Algebra DEX (if needed)
-npm run deploy:algebra
-
 # Deploy XCM Proxy
 npx hardhat run scripts/deploy-xcmproxy.js --network moonbase
 ```
