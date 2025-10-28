@@ -5,7 +5,7 @@ Testnet-first guide for running the LiquiDOT smart-contract suites on Paseo Asse
 
 - Testnet funds
    - Moonbase DEV: https://faucet.moonbeam.network/
-   - Paseo Asset Hub DOT: https://faucet.paseo.network/
+   - Paseo Asset Hub DOT: https://faucet.polkadot.io/
 - Environment variables (in shell or `.env` inside `SmartContracts/`)
 
 ```powershell
