@@ -97,7 +97,6 @@ XCMPROXY_CONTRACT=0x...
 
 - **[Test Suite](./test/README.md)** - Complete testing guide
 - **[Deployment Scripts](./scripts/README.md)** - Setup & deployment
-- **[Test Commands](./test/.test-commands.md)** - Quick command reference
 
 ## 🔗 Networks
 
