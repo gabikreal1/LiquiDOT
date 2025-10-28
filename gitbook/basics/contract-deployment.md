@@ -31,17 +31,10 @@ ASSETHUB_RPC=wss://paseo-asset-hub-rpc.polkadot.io
 1. Go to [remix.ethereum.org](https://remix.ethereum.org)
 2. Load `contracts/V1(Current)/AssetHubVault.sol`
 3. Compile with Solidity 0.8.20, optimization: 200 runs
-4. Deploy via MetaMask to Paseo Asset Hub:
+4. Deploy via Talismanto Paseo Asset Hub:
    * RPC: `https://paseo-asset-hub-eth-rpc.polkadot.io`
    * Chain ID: 1000
 5. Save deployed address
-
-**Using Hardhat:**
-
-```bash
-cd SmartContracts
-npx hardhat run scripts/deploy-assethub-vault.js --network passethub
-```
 
 ### 2. Deploy Moonbase Infrastructure
 
