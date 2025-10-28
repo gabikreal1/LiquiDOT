@@ -24,7 +24,7 @@ npm install
 ## 1. Deploy Contracts
 
 1. **AssetHubVault (Paseo Asset Hub)** – Deploy via Remix:
-   - Open https://remix.polkadot.network/
+   - Open https://remix.polkadot.io/
    - Load `contracts/V1(Current)/AssetHubVault.sol`
    - Deploy with the Asset Hub key
    - Record the address and export it for later steps:
@@ -85,13 +85,6 @@ npx hardhat test test/XCMProxy/testnet/**/*.test.js --network moonbase
 npx hardhat test test/Integration/testnet/**/*.test.js --network passethub
 
 Refer to `.test-commands.md` for additional permutations or single-spec invocations.
-## 4. Capture Logs
-
-Persist test output by wrapping commands with the log helper. This tees stdout/stderr to `test/logs/<timestamp>-<tag>.log` while keeping the original exit code.
-
-```bash
-```
-./test/save-test-log.sh moonbase-all npx hardhat test test/XCMProxy/testnet/**/*.test.js --network moonbase
 
 ## Directory Reference
 
@@ -108,5 +101,3 @@ test/
 - Tests are idempotent and tolerate existing state (deposits/liquidity carry over between runs).
 - Suites skip automatically if required env vars or bootstrap data are missing.
 - Ensure the signer has enough DEV / DOT for any state-changing helper.
-- Re-run `provide-liquidity.js` whenever you need fresh positions for manual validation.
-
