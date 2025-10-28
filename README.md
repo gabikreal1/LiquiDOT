@@ -40,6 +40,15 @@ PolkadotHack2025/
 
 For detailed smart contract documentation, deployment guides, and testing instructions, see **[SmartContracts/README.md](./SmartContracts/README.md)**.
 
+### Deployment & Testing Workflow
+
+1. Bootstrap Moonbase fixtures with `npx hardhat run SmartContracts/scripts/deploy-moonbase.js --network moonbase` so `SmartContracts/deployments/moonbase_bootstrap.json` contains Algebra token, pool, and NFPM addresses (or export the equivalent `MOONBASE_*` env vars).
+2. Run the helper scripts in `SmartContracts/test/helpers/` in order: link contracts on both networks, enable AssetHubVault test mode, seed liquidity via `provide-liquidity.js` (it reuses the bootstrap addresses, it does not deploy tokens or pools), then confirm setup with `verify-xcmproxy-config.js`.
+3. Execute Hardhat tests from `SmartContracts/test` using the commands in `.test-commands.md`; they cover AssetHubVault, XCMProxy, and the guided integration flow.
+
+
+All required deployment, wiring, and verification helpers ship with the repository—no additional scripts are needed beyond configuring the expected environment variables.
+
 ### Architecture overview
 
 - Asset Hub Vault (custody, accounting, XCM orchestration)

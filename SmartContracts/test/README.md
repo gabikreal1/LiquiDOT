@@ -59,6 +59,7 @@ npx hardhat run test/helpers/verify-xcmproxy-config.js --network moonbase
 
 ### Helper Workflow (Recommended Order)
 
+0. _Bootstrap liquidity inputs (one-time)._ Make sure `deployments/moonbase_bootstrap.json` or your `MOONBASE_*` env vars already include token and pool addresses. If they do not, run `npx hardhat run scripts/deploy-moonbase.js --network moonbase` before the steps below.
 1. `link-contracts.js --network passethub`
    - Adds Moonbase Alpha to AssetHubVault's chain registry.
 2. `link-contracts.js --network moonbase`
@@ -66,7 +67,7 @@ npx hardhat run test/helpers/verify-xcmproxy-config.js --network moonbase
 3. `enable-test-mode.js --network passethub`
    - Turns on test mode so AssetHubVault uses mocked XCM flows.
 4. `provide-liquidity.js --network moonbase`
-   - Seeds Algebra pools with deterministic liquidity so position execution never reverts on slippage.
+   - Uses the existing token + pool addresses to seed Algebra liquidity (does **not** deploy new pools or tokens).
 5. `verify-xcmproxy-config.js --network moonbase`
    - Read-only sanity check once everything is wired together.
 
@@ -94,8 +95,7 @@ Wrap any Hardhat command with `test/save-test-log.sh` to persist console output 
 ./test/save-test-log.sh moonbase-all npx hardhat test test/XCMProxy/testnet/**/*.test.js --network moonbase
 ```
 
-Logs are stored under `test/logs/<timestamp>-<tag>.log` and the wrapper preserves the original exit code.
-```
+Logs are written to `test/logs/<timestamp>-<tag>.log` and the wrapper preserves the original exit code. The `test/logs/` folder (see attachment `#file:logs`) reflects the latest captured outputs.
 
 
 

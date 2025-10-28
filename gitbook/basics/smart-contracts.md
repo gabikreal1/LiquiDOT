@@ -12,8 +12,8 @@ LiquiDOT uses two production-focused contracts that coordinate via XCM to create
 
 | Contract          | Chain     | Network        | Address                                      |
 | ----------------- | --------- | -------------- | -------------------------------------------- |
-| **AssetHubVault** | Asset Hub | Paseo Testnet  | `0x3B0D87f3d0AE4CDC8C0102DAEfB7433aaED15CCF` |
-| **XCMProxy**      | Moonbeam  | Moonbase Alpha | `0xf7749B6A5aD0EB4ed059620B89f14FA8e916ee41` |
+| **AssetHubVault** | Asset Hub | Paseo Testnet  | `0x67E5293e374219C515bD9838B23C792C555e51D4` |
+| **XCMProxy**      | Moonbeam  | Moonbase Alpha | `0xf935e063b2108cc064bB356107ac01Dc90f96652` |
 
 ### Contract Roles
 
@@ -32,7 +32,7 @@ LiquiDOT uses two production-focused contracts that coordinate via XCM to create
 ## AssetHubVault
 
 **Location:** Asset Hub (Paseo Testnet)\
-**Address:** `0x3B0D87f3d0AE4CDC8C0102DAEfB7433aaED15CCF`
+**Address:** `0x67E5293e374219C515bD9838B23C792C555e51D4`
 
 ### Overview
 
@@ -92,7 +92,7 @@ ChainIdMismatch, ExecutorNotAuthorized
 ## XCMProxy
 
 **Location:** Moonbeam (Moonbase Alpha)\
-**Address:** `0xf7749B6A5aD0EB4ed059620B89f14FA8e916ee41`
+**Address:** `0xf935e063b2108cc064bB356107ac01Dc90f96652`
 
 ### Overview
 
