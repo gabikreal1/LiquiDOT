@@ -5,16 +5,16 @@
       "name": "moonbase",
       "contracts": {
         "XCMProxy": {
-          "address": "0x392cb5A2d241f1b63f361C3FA0949eB2D34ad92E",
+          "address": "0x264857ac02018f00D1BBC0B57e801bB09FF9Ee25",
           "deployer": "0x2372cB955817cD5200a559c2faAC93d0B3a88f2d",
-          "deploymentTx": "0xcfb10cf27a71181109693fc30e1a9547906c1b0fb27f8e990a11caca19db9e78",
-          "timestamp": "2025-10-05T18:30:06.200Z",
+          "deploymentTx": "0xd63b6445f688375eef7289e319774686e43a8265aae43c0c6cc8c8581ff2aac4",
+          "timestamp": "2025-10-28T11:32:49.578Z",
           "config": {
             "owner": "0x2372cB955817cD5200a559c2faAC93d0B3a88f2d",
             "operator": "0x2372cB955817cD5200a559c2faAC93d0B3a88f2d",
-            "quoter": "0xc78fbd3a90360108c03055051a56Ff55DbA5d3f4",
-            "router": "0x8832fC1759922F7b1Bd0b8d2AeE9e7d621db6421",
-            "nfpm": "0xdeEA33a4AA61deBF561C74b0356C2d04bd8924c9",
+            "quoter": "0x8936C864574F4C94f057b7b48F1bB598964f328C",
+            "router": "0x1f515419CC66b0AE4806Bbcf4718706E1A109356",
+            "nfpm": "0x5208193aCa142a4c5673FabefE5f1184836DF57C",
             "xtokensPrecompile": "0x0000000000000000000000000000000000000804",
             "defaultDestWeight": "6000000000",
             "assetHubParaId": 1000,
@@ -27,43 +27,43 @@
           "configurationTxs": [
             {
               "action": "setIntegrations",
-              "tx": "0x52dae85975af6355845497df86fb70f9e4b3e001160657209a6e29ef9fbdb3f9",
+              "tx": "0x466ae387980f4d8a335a46f8d5cdde20b8256b8563b53b5e2283120a54b19091",
               "params": {
-                "quoter": "0xc78fbd3a90360108c03055051a56Ff55DbA5d3f4",
-                "router": "0x8832fC1759922F7b1Bd0b8d2AeE9e7d621db6421"
+                "quoter": "0x8936C864574F4C94f057b7b48F1bB598964f328C",
+                "router": "0x1f515419CC66b0AE4806Bbcf4718706E1A109356"
               }
             },
             {
               "action": "setNFPM",
-              "tx": "0x0d460ba102c7217c9f047517c7aeb415f094a06a682c143b8cdfe2e125440d6d",
+              "tx": "0x549135f9c7aedbf04d4c7db8dd4a0d5fe10ce867222a6de5762815ebeec0a360",
               "params": {
-                "nfpm": "0xdeEA33a4AA61deBF561C74b0356C2d04bd8924c9"
+                "nfpm": "0x5208193aCa142a4c5673FabefE5f1184836DF57C"
               }
             },
             {
               "action": "setXTokensPrecompile",
-              "tx": "0x059e041999418f6469e4b382fd51e698907fe99a8f408bb59f26b1fce1f0c881",
+              "tx": "0xa55ea7143d52c6c37a0fb0d9dc42a693fe21e208cdaade0eb2891ff11e0e7d42",
               "params": {
                 "precompile": "0x0000000000000000000000000000000000000804"
               }
             },
             {
               "action": "setAssetHubParaId",
-              "tx": "0xd7feb29be983370fe951031e37881bbf161386646ec6f5a64ac2b9487d0c718a",
+              "tx": "0x4d92dd48f409f2a7e21a41e6881f06b924a9791538df5db665af7250dd3d8cf9",
               "params": {
                 "paraId": 1000
               }
             },
             {
               "action": "setXcmTransactorPrecompile",
-              "tx": "0x66edcd4d9ce0a7682a8afba5e8e05b0ee556071f0028ab876605630575cf66d6",
+              "tx": "0x51395aa12055c7620492744aed043f84704b1c1b34112d30db41cf39cab7647e",
               "params": {
                 "precompile": "0x0000000000000000000000000000000000000806"
               }
             },
             {
               "action": "setDefaultSlippageBps",
-              "tx": "0xba3060531f66b67e4685ef4562007ab2ecd07df5a503d29eb3caa0ec2c72eab2",
+              "tx": "0xb9418870839a9720ed59c6081980df67e0d98333c8cfd8533cddf9c3b368bee5",
               "params": {
                 "bps": 100
               }
@@ -71,7 +71,7 @@
           ]
         }
       },
-      "lastRun": "2025-10-05T18:30:06.200Z"
+      "lastRun": "2025-10-28T11:32:49.577Z"
     }
   }
 }

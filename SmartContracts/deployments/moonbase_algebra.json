@@ -2,13 +2,13 @@
   "chainId": 1287,
   "networkName": "moonbase",
   "deployer": "0x2372cB955817cD5200a559c2faAC93d0B3a88f2d",
-  "timestamp": "2025-10-26T17:27:36.756Z",
+  "timestamp": "2025-10-28T11:30:55.398Z",
   "contracts": {
-    "poolDeployer": "0x9eFdc4b2527EE8457B92118bE426E1e8322CD823",
-    "factory": "0xc93d14a9B3d2082542B8Ca59f8b0EEBe86967BF4",
-    "router": "0x78d99c9EED0C6B31Ef961F5372b6f2000E7a912a",
-    "quoter": "0x0fcf84e13e4551a12b6bfF7e3504e45C1a1CC1eF",
-    "nfpm": "0xFAA10aBB2F3C0eE3c6c51C67bA870D08A5e457C3"
+    "poolDeployer": "0xd48F9537B86f692330593A70D89b8EF922f6DFbD",
+    "factory": "0x15a6fddcc386A81030E03a096D257CE350610A44",
+    "router": "0x1f515419CC66b0AE4806Bbcf4718706E1A109356",
+    "quoter": "0x8936C864574F4C94f057b7b48F1bB598964f328C",
+    "nfpm": "0x5208193aCa142a4c5673FabefE5f1184836DF57C"
   },
   "config": {
     "wNative": "0x0000000000000000000000000000000000000000"

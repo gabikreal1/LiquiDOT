@@ -39,19 +39,25 @@ async function main() {
     return;
   }
 
-  // Check if signer is admin
-  const admin = await vault.admin();
-  console.log(`   Admin: ${admin}`);
+  // Check if signer is authorized (owner or admin depending on contract)
+  let adminOrOwner;
+  try {
+    adminOrOwner = await vault.admin();
+    console.log(`   Admin: ${adminOrOwner}`);
+  } catch (_) {
+    adminOrOwner = await vault.owner();
+    console.log(`   Owner: ${adminOrOwner}`);
+  }
 
-  if (admin.toLowerCase() !== signer.address.toLowerCase()) {
-    console.error(`\n❌ Error: Signer is not admin!`);
+  if (adminOrOwner.toLowerCase() !== signer.address.toLowerCase()) {
+    console.error(`\n❌ Error: Signer not authorized!`);
     console.error(`   Current signer: ${signer.address}`);
-    console.error(`   Required admin: ${admin}`);
-    console.error("\n   Switch to the admin account and try again.\n");
+    console.error(`   Required: ${adminOrOwner}`);
+    console.error("\n   Switch to the authorized account and try again.\n");
     process.exit(1);
   }
 
-  console.log(`   ✅ Signer is admin\n`);
+  console.log(`   ✅ Authorization check passed\n`);
 
   // Enable test mode
   console.log("🚀 Enabling test mode...");

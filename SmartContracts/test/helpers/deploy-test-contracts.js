@@ -265,13 +265,23 @@ async function addLiquidityToPool(options) {
   if (token1Address.toLowerCase() < token0Address.toLowerCase()) {
     throw new Error(`Token order mismatch: token0 must be < token1 (got ${token0Address} > ${token1Address})`);
   }
-  
+
+  // Compute ticks aligned to pool's tick spacing, using near full-range bounds
+  const MIN_TICK = -887272;
+  const MAX_TICK = 887272;
+  const spacing = Number(await pool.tickSpacing());
+  const floorToSpacing = (v, s) => Math.floor(v / s) * s;
+  const ceilToSpacing = (v, s) => Math.ceil(v / s) * s;
+  const lowerTick = floorToSpacing(MIN_TICK, spacing);
+  const upperTick = ceilToSpacing(MAX_TICK, spacing);
+  console.log(`    ✓ Using ticks [${lowerTick}, ${upperTick}] (spacing ${spacing})`);
+
   const mintParams = {
     token0: token0Address,
     token1: token1Address,
     deployer: ethers.ZeroAddress,
-    tickLower: -887220,  // Full range liquidity (min tick)
-    tickUpper: 887220,   // Full range liquidity (max tick)
+    tickLower: lowerTick,
+    tickUpper: upperTick,
     amount0Desired: desired0,
     amount1Desired: desired1,
     amount0Min: 0,
@@ -279,7 +289,15 @@ async function addLiquidityToPool(options) {
     recipient: providerAddress,
     deadline: Math.floor(Date.now() / 1000) + 3600,
   };
-  
+
+  // Preview with static call to catch configuration errors early
+  try {
+    const preview = await nfpm.connect(provider).mint.staticCall(mintParams);
+    console.log(`    ↺ Preview liquidity: ${preview[1].toString()} (amount0 ${ethers.formatUnits(preview[2], decimals0)}, amount1 ${ethers.formatUnits(preview[3], decimals1)})`);
+  } catch (e) {
+    console.warn("    ⚠️  mint.staticCall reverted (continuing to send tx):", e?.message || e);
+  }
+
   const tx = await nfpm.connect(provider).mint(mintParams);
   const receipt = await tx.wait();
   console.log(`    ✓ Liquidity added (tx: ${receipt.hash})`);

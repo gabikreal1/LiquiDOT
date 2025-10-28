@@ -5,7 +5,7 @@
  * 
  * Usage:
  *   $env:XCMPROXY_CONTRACT="0xYourXCMProxyAddress"
- *   npx hardhat run scripts/verify-xcmproxy-config.js --network moonbase
+ *   npx hardhat run test/helpers/verify-xcmproxy-config.js --network moonbase
  */
 
 const hre = require("hardhat");

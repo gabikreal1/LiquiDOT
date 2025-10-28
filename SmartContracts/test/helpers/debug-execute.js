@@ -55,14 +55,20 @@ async function main() {
     }
   };
 
-  const amount = hre.ethers.parseEther("1");
+  // Use token decimals-aware amounts instead of assuming 18 decimals
+  const baseDecimals = await base.decimals().catch(() => 18);
+  const quoteDecimals = quote ? await quote.decimals().catch(() => 18) : 18;
+  const amount = hre.ethers.parseUnits("1", baseDecimals);
   const id = hre.ethers.keccak256(hre.ethers.toUtf8Bytes(`debug-${Date.now()}`));
   const investmentParams = hre.ethers.AbiCoder.defaultAbiCoder().encode(
     ["address", "address", "uint256[]", "int24", "int24", "address", "uint16"],
     [
       poolAddress,
       baseToken,
-      [hre.ethers.parseEther("0.5"), hre.ethers.parseEther("0.5")],
+      [
+        hre.ethers.parseUnits("0.5", baseDecimals),
+        hre.ethers.parseUnits("0.5", quoteDecimals)
+      ],
       -50,
       50,
       signer.address,

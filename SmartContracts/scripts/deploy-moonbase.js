@@ -22,6 +22,8 @@ const { ethers } = require("hardhat");
 const { deployAlgebraSuite } = require("../test/helpers/deploy-algebra-suite");
 const { deployXCMProxy } = require("../test/helpers/deploy-xcm-proxy");
 const { deployTestTokens, createAndInitializePool, addLiquidityToPool } = require("../test/helpers/deploy-test-contracts");
+const fs = require("fs");
+const path = require("path");
 
 // Moonbase Alpha XCM precompile addresses
 // See: https://docs.moonbeam.network/builders/interoperability/xcm/core-concepts/multilocations/
@@ -104,51 +106,32 @@ async function main(options = {}) {
   const operatorAddress = options.operator || deployer.address;
   const assetHubVault = options.assetHubVault || ethers.ZeroAddress;
   
+  // Deploy and configure XCMProxy using shared helper (persists state)
+  const xcmpResult = await deployXCMProxy({
+    owner: deployer.address,
+    operator: operatorAddress,
+    quoter: algebraAddresses.quoter,
+    router: algebraAddresses.router,
+    nfpm: algebraAddresses.nfpm,
+    xtokensPrecompile: MOONBASE_PRECOMPILES.xTokens,
+    xcmTransactor: MOONBASE_PRECOMPILES.xcmTransactor,
+    assetHubParaId: ASSET_HUB_PARAID,
+    defaultSlippageBps: options.defaultSlippageBps || 100,
+    trustedCaller: assetHubVault, // can be ZeroAddress and set later via link script
+    supportedTokens: [], // will add after deploying test tokens
+    freezeConfig: false,
+    saveState: true,
+  });
 
-  console.log("   Deploying XCMProxy");
-  const XCMProxy = await ethers.getContractFactory("XCMProxy");
-  const xcmProxy = await XCMProxy.deploy(deployer.address);
-  await xcmProxy.waitForDeployment();
-  const xcmProxyAddress = await xcmProxy.getAddress();
-  
-  console.log(`   ✓ Deployed at: ${xcmProxyAddress}`);
-  console.log("   Configuring XCMProxy...");
-  
-  // Configure integrations
-  let tx = await xcmProxy.setIntegrations(algebraAddresses.quoter, algebraAddresses.router);
+  const xcmProxy = xcmpResult.proxy;
+  const xcmProxyAddress = xcmpResult.address;
+
+  // Ensure test mode is enabled for safe testnet flows
+  let tx = await xcmProxy.setTestMode(true);
   await tx.wait();
-  console.log(`   ✓ Integrations set`);
-  
-  tx = await xcmProxy.setNFPM(algebraAddresses.nfpm);
-  await tx.wait();
-  console.log(`   ✓ NFPM set`);
-  
-  tx = await xcmProxy.setXTokensPrecompile(MOONBASE_PRECOMPILES.xTokens);
-  await tx.wait();
-  console.log(`   ✓ XTokens precompile set`);
-  
-  tx = await xcmProxy.setAssetHubParaId(ASSET_HUB_PARAID);
-  await tx.wait();
-  console.log(`   ✓ Asset Hub ParaID set`);
-  
-  tx = await xcmProxy.setXcmTransactorPrecompile(MOONBASE_PRECOMPILES.xcmTransactor);
-  await tx.wait();
-  console.log(`   ✓ XCM Transactor precompile set`);
-  
-  tx = await xcmProxy.setDefaultSlippageBps(options.defaultSlippageBps || 100);
-  await tx.wait();
-  console.log(`   ✓ Default slippage set to ${options.defaultSlippageBps || 100} bps`);
-  
-  // Enable test mode for local/testnet testing
-  tx = await xcmProxy.setTestMode(true);
-  await tx.wait();
-  console.log(`   ✓ Test mode enabled`);
-  
-  console.log("\n✅ XCMProxy deployed and configured successfully!");
-  console.log(`   XCMProxy: ${xcmProxyAddress}`);
+  console.log(`   ✓ XCMProxy deployed at ${xcmProxyAddress} and configured (test mode enabled)`);
   console.log(`   Operator: ${operatorAddress}`);
-  console.log(`   Test Mode: Enabled (disable via setTestMode(false) for production)`);
-  console.log(`   Asset Hub Vault: ${assetHubVault === ethers.ZeroAddress ? "Not set (set later via updateChainExecutor)" : assetHubVault}`);
+  console.log(`   Asset Hub Vault: ${assetHubVault === ethers.ZeroAddress ? "Not set (set later via link script)" : assetHubVault}`);
   
   console.log("\n" + "=".repeat(60) + "\n");
 
@@ -157,27 +140,56 @@ async function main(options = {}) {
   let testPool = null;
   
   if (options.deployTestTokens !== false) {
-    console.log("STEP 3: Deploying Test Tokens (Optional)");
+    console.log("STEP 3: Deploying Test Tokens and Bootstrapping Liquidity");
     console.log("-".repeat(60));
     
+    // 3a. Deploy two mintable ERC20s for testing
     testTokens = await deployTestTokens({
       count: 2,
       names: ["TestUSDC", "TestUSDT"],
       symbols: ["USDC", "USDT"],
       deployer,
     });
-    
-    console.log("\n✅ Test tokens deployed!");
-    
-    // Note: Pool creation skipped due to Factory/PoolDeployer circular dependency
-    // To create pools, you would need to:
-    // 1. Use CREATE2 to predict PoolDeployer address before deployment, OR
-    // 2. Create pools directly through PoolDeployer.deploy() if you're the Factory
-    console.log("\n⚠️  Note: Test pool creation skipped (Factory/PoolDeployer architectural limitation)");
-    console.log("   For testing XCMProxy, you can:");
-    console.log("   - Use existing pools on Moonbase Alpha");
-    console.log("   - Create pools manually after deployment");
-    console.log("   - Or use XCMProxy in test mode");
+    const tokenA = testTokens[0];
+    const tokenB = testTokens[1];
+    const tokenAAddr = await tokenA.getAddress();
+    const tokenBAddr = await tokenB.getAddress();
+    console.log(`   ✓ Test tokens: ${tokenAAddr} (USDC), ${tokenBAddr} (USDT)`);
+
+    // 3b. Add supported tokens to XCMProxy
+    const supported = [tokenAAddr, tokenBAddr];
+    for (const t of supported) {
+      const isSupported = await xcmProxy.supportedTokens(t);
+      if (!isSupported) {
+        const addTx = await xcmProxy.addSupportedToken(t);
+        await addTx.wait();
+        console.log(`   ✓ Added supported token: ${t}`);
+      }
+    }
+
+    // 3c. Create and initialize an Algebra pool for the pair
+    const [t0, t1] = tokenAAddr.toLowerCase() < tokenBAddr.toLowerCase() ? [tokenAAddr, tokenBAddr] : [tokenBAddr, tokenAAddr];
+    testPool = await createAndInitializePool({
+      factory: factory,
+      token0: t0,
+      token1: t1,
+      initialize: true,
+      // defaults to 1:1 price if sqrtPriceX96 not provided
+    });
+    const poolAddress = await testPool.getAddress();
+    console.log(`   ✓ Pool ready at: ${poolAddress}`);
+
+    // 3d. Provide initial liquidity via NFPM (mints tokens to deployer if needed)
+    await addLiquidityToPool({
+      pool: testPool,
+      nfpm: nfpm,
+      token0: t0 === tokenAAddr ? tokenA : tokenB,
+      token1: t1 === tokenAAddr ? tokenA : tokenB,
+      provider: deployer,
+      amount: options.initialLiquidityAmount || 500, // 500 units of each token by default
+    });
+
+    console.log("\n✅ Test tokens deployed and pool bootstrapped with liquidity!");
   }
   
   console.log("\n" + "=".repeat(60) + "\n");
@@ -202,6 +214,28 @@ async function main(options = {}) {
     if (testPool) {
       console.log(`   Test Pool: ${await testPool.getAddress()}`);
     }
+  }
+  
+  // Save bootstrap file for test suite consumption
+  try {
+    const deploymentsDir = path.join(process.cwd(), "deployments");
+    if (!fs.existsSync(deploymentsDir)) {
+      fs.mkdirSync(deploymentsDir, { recursive: true });
+    }
+    const bootstrap = {
+      network: { name: network.name, chainId: Number(network.chainId) },
+      xcmProxy: { address: xcmProxyAddress },
+      algebra: algebraAddresses,
+      supportedTokens: testTokens.length > 0 ? await Promise.all(testTokens.map(t => t.getAddress())) : [],
+      baseToken: testTokens[0] ? { address: await testTokens[0].getAddress() } : undefined,
+      quoteToken: testTokens[1] ? { address: await testTokens[1].getAddress() } : undefined,
+      pool: testPool ? { address: await testPool.getAddress() } : undefined,
+    };
+    const filePath = path.join(deploymentsDir, "moonbase_bootstrap.json");
+    fs.writeFileSync(filePath, JSON.stringify(bootstrap, null, 2));
+    console.log(`\n💾 Test bootstrap saved to: ${filePath}`);
+  } catch (e) {
+    console.warn("\n⚠️  Failed to save test bootstrap:", e?.message || e);
   }
   
   console.log("\n⚙️  Configuration:");
@@ -243,8 +277,9 @@ async function main(options = {}) {
 // Execute main() when script is run directly
 if (require.main === module) {
   main({
-    deployTestTokens: false, // Skip test tokens (optional)
-    createTestPool: false,    // Skip test pool (has architectural limitations)
+    deployTestTokens: true,      // Deploy test tokens for end-to-end testing
+    createTestPool: true,        // Create and initialize pool
+    initialLiquidityAmount: 500, // Provide initial liquidity per token
   })
     .then(() => process.exit(0))
     .catch((error) => {

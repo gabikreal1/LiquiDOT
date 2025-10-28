@@ -46,7 +46,7 @@ async function main() {
     console.log("📋 Next Steps:");
     console.log("   1. Switch to Moonbase network");
     console.log("   2. Run this script again:");
-    console.log("      npx hardhat run scripts/link-contracts.js --network moonbase\n");
+    console.log("      npx hardhat run test/helpers/link-contracts.js --network moonbase\n");
   } else {
     console.log("🎉 Both contracts are now linked!");
     console.log("\n📋 Next Steps:");
@@ -66,15 +66,20 @@ async function configureAssetHub(assetHubAddress, xcmProxyAddress, signer) {
   );
   const vault = AssetHubVault.attach(assetHubAddress);
 
-  // Verify we're admin
-  const admin = await vault.admin();
+  // Verify we're authorized (admin or owner)
+  let admin;
+  try {
+    admin = await vault.admin();
+  } catch (_) {
+    admin = await vault.owner();
+  }
   if (admin.toLowerCase() !== signer.address.toLowerCase()) {
-    console.error(`❌ Error: Signer ${signer.address} is not admin (${admin})`);
-    console.error("   Only admin can add chains\n");
+    console.error(`❌ Error: Signer ${signer.address} is not authorized (${admin})`);
+    console.error("   Only admin/owner can add chains\n");
     process.exit(1);
   }
 
-  console.log(`✅ Verified admin role: ${admin}\n`);
+  console.log(`✅ Verified authorization: ${admin}\n`);
 
   // Check if Moonbase already added
   const existingChain = await vault.supportedChains(1287);
