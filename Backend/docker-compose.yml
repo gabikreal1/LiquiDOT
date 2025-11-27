@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: liquidot-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-liquidot}
+      POSTGRES_USER: ${DB_USER:-liquidot}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - liquidot-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-liquidot}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: liquidot-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Database
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: ${DB_NAME:-liquidot}
+      DATABASE_USER: ${DB_USER:-liquidot}
+      DATABASE_PASSWORD: ${DB_PASSWORD}
+      
+      # Blockchain Configuration
+      ASSET_HUB_RPC_URL: ${ASSET_HUB_RPC_URL}
+      MOONBEAM_RPC_URL: ${MOONBEAM_RPC_URL}
+      
+      # Contract Addresses
+      ASSET_HUB_VAULT_ADDRESS: ${ASSET_HUB_VAULT_ADDRESS}
+      XCM_PROXY_ADDRESS: ${XCM_PROXY_ADDRESS}
+      
+      # Operator Credentials
+      OPERATOR_PRIVATE_KEY: ${OPERATOR_PRIVATE_KEY}
+      
+      # API Configuration
+      PORT: 3001
+      NODE_ENV: ${NODE_ENV:-production}
+      
+      # CORS
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      
+      # Workers
+      ENABLE_INVESTMENT_WORKER: ${ENABLE_INVESTMENT_WORKER:-true}
+      ENABLE_STOP_LOSS_WORKER: ${ENABLE_STOP_LOSS_WORKER:-true}
+      ENABLE_POOL_AGGREGATOR: ${ENABLE_POOL_AGGREGATOR:-true}
+      
+    ports:
+      - "3001:3001"
+    networks:
+      - liquidot-network
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3001/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  liquidot-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
