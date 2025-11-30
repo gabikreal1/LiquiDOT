@@ -46,6 +46,13 @@ export class Pool {
   @Column({ type: 'decimal', precision: 10, scale: 4 })
   apr: string; // Annual Percentage Rate
 
+  // --- Internal Tracking Fields for Subgraph/Scanner ---
+  @Column({ type: 'varchar', nullable: true })
+  lastFeeGrowth0: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  lastFeeGrowth1: string;
+
   @Column({ type: 'int', default: 2004 })
   chainId: number; // Moonbeam
 

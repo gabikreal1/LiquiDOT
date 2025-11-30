@@ -1017,3 +1017,27 @@ Response: {
 **Document Status:** ✅ Approved for Development  
 **Last Updated:** November 11, 2025  
 **Next Review:** December 11, 2025
+
+## 🔄 Data Aggregation Strategy (The Graph)
+
+We utilize a dedicated Subgraph on The Graph (Hosted Service) to index Algebra Integral pool data on the Moonbase Alpha testnet. This replaces the direct RPC strategy to provide historical data and efficient querying.
+
+### 1. Pool Discovery & Indexing
+The Subgraph listens for `Pool` events emitted by the `AlgebraFactory` and indexes all created pools.
+
+**Entities Indexed:**
+- `Pool`: Address, token pair, fee, current tick, liquidity.
+- `Token`: Symbol, name, decimals.
+- `PoolDayData`: Daily volume, fees, and TVL snapshots for APR calculation.
+
+### 2. Data Querying
+The Backend `PoolScannerService` queries the Subgraph via GraphQL to fetch:
+- Top pools by TVL.
+- 24h Volume and Fees (derived from `PoolDayData`).
+- Current Tick and Liquidity.
+
+**Query Endpoint:**
+- Configured via `ALGEBRA_SUBGRAPH_URL` environment variable.
+
+**Update Frequency:**
+- The backend syncs data every 5 minutes using a scheduled task.

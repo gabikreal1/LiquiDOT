@@ -34,6 +34,7 @@ PolkadotHack2025/
 ├── DataAggregatorService/   # Pool analytics service
 ├── Frontend/                # Next.js app (Wagmi + Polkadot integrations)
 ├── SmartContracts/          # Solidity contracts and scripts (see SmartContracts/README.md)
+├── subgraphs/               # The Graph subgraphs for data indexing
 ├── local-dev/               # Local dev helper scripts and configs
 └── WhitePaper.md            # Project white paper
 ```
