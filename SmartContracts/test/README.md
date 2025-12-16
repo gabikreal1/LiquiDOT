@@ -8,15 +8,15 @@ Testnet-first guide for running the LiquiDOT smart-contract suites on Paseo Asse
    - Paseo Asset Hub DOT: https://faucet.polkadot.io/
 - Environment variables (in shell or `.env` inside `SmartContracts/`)
 
-```powershell
-$env:MOON_PK="0x..."      # Moonbase deployer key
-$env:ASSET_PK="0x..."     # Asset Hub deployer key
-$env:MOONBASE_RPC="https://rpc.api.moonbase.moonbeam.network"  # optional override
-$env:ASSETHUB_RPC="https://testnet-passet-hub-eth-rpc.polkadot.io"  # optional override
+```bash
+export MOON_PK="0x..."      # Moonbase deployer key
+export ASSET_PK="0x..."     # Asset Hub deployer key
+export MOONBASE_RPC="https://rpc.api.moonbase.moonbeam.network"  # optional override
+export ASSETHUB_RPC="https://testnet-passet-hub-eth-rpc.polkadot.io"  # optional override
 ```
 
 Install dependencies once:
-```powershell
+```bash
 cd SmartContracts
 npm install
 ```
@@ -51,7 +51,7 @@ $env:XCMPROXY_CONTRACT="0xYourXCMProxy"
 ```
 
 Run the helper scripts (all live in `test/helpers/`):
-```powershell
+```bash
 # Add Moonbase Alpha to AssetHubVault's chain registry
 npx hardhat run test/helpers/link-contracts.js --network passethub
 
@@ -62,19 +62,21 @@ npx hardhat run test/helpers/link-contracts.js --network moonbase
 npx hardhat run test/helpers/enable-test-mode.js --network passethub
 
 Optional but recommended before Moonbase tests:
-```powershell
+```bash
 # Seeds the Algebra pool using addresses from the bootstrap file
 npx hardhat run test/helpers/provide-liquidity.js --network moonbase
 
 # Sanity check configuration once wiring is complete
 npx hardhat run test/helpers/verify-xcmproxy-config.js --network moonbase
 
+```
+
 The liquidity helper only mints positions against the existing pool; it does **not** deploy contracts. If the bootstrap file is missing entries, rerun the deployment script.
 
 ## 3. Run Tests
 
 All suites are testnet-ready and read addresses from env vars + `deployments/moonbase_bootstrap.json`.
-```powershell
+```bash
 # Paseo Asset Hub (AssetHubVault)
 npx hardhat test test/AssetHubVault/testnet/**/*.test.js --network passethub
 

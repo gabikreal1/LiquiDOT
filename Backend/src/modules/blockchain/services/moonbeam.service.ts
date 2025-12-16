@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ethers } from 'ethers';
 import { XCMProxyABI } from '../abis/XCMProxy.abi';
+import { ERC20_ABI } from '../../pools/abis/algebra.abi';
 
 /**
  * Parameters for liquidating a position and returning assets to AssetHub
@@ -190,6 +191,12 @@ export class MoonbeamService implements OnModuleInit {
   private wallet: ethers.Wallet;
   private provider: ethers.Provider;
 
+  // Cached allowlist snapshot (because enumeration requires an input list)
+  private supportedTokenDiscoveryCache?: {
+    atMs: number;
+    result: Array<{ address: string; symbol: string; name?: string; decimals?: number }>;
+  };
+
   constructor(private configService: ConfigService) {}
 
   /**
@@ -241,6 +248,93 @@ export class MoonbeamService implements OnModuleInit {
    */
   isInitialized(): boolean {
     return !!this.contract;
+  }
+
+  /**
+   * Resolve token metadata (name/symbol/decimals) for a given ERC20 address.
+   * Best-effort: some tokens may not implement all optional views.
+   */
+  private async getErc20Metadata(tokenAddress: string): Promise<{ address: string; symbol: string; name?: string; decimals?: number }> {
+    const token = new ethers.Contract(tokenAddress, ERC20_ABI, this.provider);
+
+    const [nameRes, symbolRes, decimalsRes] = await Promise.allSettled([
+      token.name(),
+      token.symbol(),
+      token.decimals(),
+    ]);
+
+    const name = nameRes.status === 'fulfilled' ? (nameRes.value as string) : undefined;
+    const symbol = symbolRes.status === 'fulfilled' ? (symbolRes.value as string) : tokenAddress;
+    const decimals = decimalsRes.status === 'fulfilled' ? Number(decimalsRes.value) : undefined;
+
+    return {
+      address: tokenAddress,
+      symbol,
+      name,
+      decimals,
+    };
+  }
+
+  /**
+   * Contract-derived supported token list.
+   *
+   * IMPORTANT: the on-chain contract only exposes `supportedTokens(address)->bool`.
+   * That mapping is **not enumerable**, so the backend needs a candidate address list
+   * (e.g. from env/config, subgraph, or a static seed list) and will filter it by
+   * calling `supportedTokens(candidate)`. For candidates that are supported, we then
+   * resolve their name/symbol from the ERC20 contract.
+   */
+  async getSupportedTokensWithNames(params: {
+    candidateTokenAddresses: string[];
+    cacheTtlMs?: number;
+  }): Promise<Array<{ address: string; symbol: string; name?: string; decimals?: number }>> {
+    if (!this.readOnlyContract || !this.provider) {
+      throw new Error('MoonbeamService not initialized');
+    }
+
+    const ttl = params.cacheTtlMs ?? 60_000;
+    const now = Date.now();
+    if (this.supportedTokenDiscoveryCache && now - this.supportedTokenDiscoveryCache.atMs < ttl) {
+      return this.supportedTokenDiscoveryCache.result;
+    }
+
+    const candidates = (params.candidateTokenAddresses ?? [])
+      .map(a => a.trim())
+      .filter(Boolean);
+
+    // Deduplicate (case-insensitive)
+    const dedup = new Map<string, string>();
+    for (const a of candidates) {
+      try {
+        const normalized = ethers.getAddress(a);
+        dedup.set(normalized.toLowerCase(), normalized);
+      } catch {
+        // ignore invalid
+      }
+    }
+
+    const normalizedCandidates = [...dedup.values()];
+
+    const supportedChecks = await Promise.allSettled(
+      normalizedCandidates.map(addr => this.readOnlyContract.supportedTokens(addr) as Promise<boolean>),
+    );
+
+    const supportedAddresses: string[] = [];
+    for (let i = 0; i < supportedChecks.length; i++) {
+      const r = supportedChecks[i];
+      if (r.status === 'fulfilled' && r.value === true) {
+        supportedAddresses.push(normalizedCandidates[i]);
+      }
+    }
+
+    const meta = await Promise.all(supportedAddresses.map(a => this.getErc20Metadata(a)));
+
+    this.supportedTokenDiscoveryCache = {
+      atMs: now,
+      result: meta,
+    };
+
+    return meta;
   }
 
   /**

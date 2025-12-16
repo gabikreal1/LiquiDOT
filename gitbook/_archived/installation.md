@@ -64,7 +64,6 @@ LiquiDOT/
 ├── Frontend/           # Next.js web interface
 ├── Backend/           # NestJS backend services
 ├── SmartContracts/    # Solidity contracts
-├── DataAggregatorService/  # Pool analytics
 ├── docs/              # Documentation
 └── gitbook/           # GitBook documentation
 ```
@@ -234,7 +233,7 @@ Visit [http://localhost:3000](http://localhost:3000)
 ### Install Service Dependencies
 
 ```bash
-cd DataAggregatorService
+npx -c "echo 'Data aggregation is handled by the Backend pool scanner (subgraph-based). DataAggregatorService has been removed.'"
 npm install
 ```
 

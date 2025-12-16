@@ -1,254 +1,134 @@
-# CrossLiquidity Provider Backend
+# LiquiDOT Backend (NestJS)
 
-This directory contains the JavaScript utilities for interacting with the CrossLiquidity smart contracts on Polkadot's EVM parachains (Moonbeam/Moonbase Alpha).
+This folder contains the **LiquiDOT backend API** implemented with **NestJS**.
 
-## Files
+It exposes HTTP endpoints for:
 
-- `interact-with-contract.js` - Main interaction examples for basic contract functions
-- `liquidity-swapper.js` - Advanced examples for token swapping functionality
-- `example.js` - Example usage showing how to interact with the contracts
-- `.env.example` - Example environment variable configuration
+- **Pools** (ingested from an Algebra subgraph)
+- **User preferences** (strategy inputs)
+- **Positions** (portfolio state)
+- **Investment decision runs** (deterministic decision output)
+
+It also integrates with the on-chain contracts via `ethers`:
+
+- **Asset Hub custody/orchestration**: `AssetHubVault`
+- **Moonbeam execution engine**: `XCMProxy`
+
+## Quick map of the folder
+
+- `src/` — NestJS source
+  - `modules/investment-decision/` — decision logic + orchestration
+  - `modules/pools/` — pool ingestion + querying
+  - `modules/blockchain/` — on-chain services (Asset Hub + Moonbeam)
+- `test/` — Jest E2E tests (HTTP-level, deterministic mocks)
+- `local-dev/` — local dev helpers (e.g. Graph Node stack)
+- `legacy/` — old one-off scripts/data (not required for running the backend)
 
 ## Setup
 
-1. Install dependencies:
+Install deps:
 
 ```bash
 npm install
 ```
 
-2. Create an environment file for your secrets:
+Create your env file:
 
 ```bash
-# Copy the example file
 cp .env.example .env
-
-# Edit the .env file with your actual values
-nano .env  # or use any text editor
 ```
 
-3. Configure your environment variables in the `.env` file:
+### Environment variables
 
-```
-# RPC endpoint (defaults to Moonbase Alpha if not specified)
-RPC_URL=https://rpc.api.moonbase.moonbeam.network
+```env
+# Asset Hub RPC (typically WebSocket)
+ASSETHUB_RPC_URL=wss://westend-asset-hub-rpc.polkadot.io
+
+# Moonbeam / Moonbase Alpha EVM RPC (HTTP)
+MOONBEAM_RPC_URL=https://rpc.api.moonbase.moonbeam.network
 
 # Contract addresses
-PROVIDER_CONTRACT_ADDRESS=0x123...  # Your LiquidityProvider address
-ROUTER_CONTRACT_ADDRESS=0x456...    # Your LiquidityRouter address
+ASSETHUB_VAULT_ADDRESS=0x...
+MOONBEAM_XCM_PROXY_ADDRESS=0x...
 
-# Your private key (keep this secret!)
-PRIVATE_KEY=0x789...
+# Used by the XCM builder (often same as MOONBEAM_XCM_PROXY_ADDRESS)
+XCM_PROXY_ADDRESS=0x...
 
-# Example token addresses for testing
-TOKEN0_ADDRESS=0xAcc15dC74880C9944775448304B263D191c6077F  # WGLMR on Moonbase Alpha
-TOKEN1_ADDRESS=0xFfFFfFff1FcaCBd218EDc0EbA20Fc2308C778080  # xcDOT on Moonbase Alpha
-POOL_ADDRESS=0xabc...
+# Relayer wallet (signs txs)
+RELAYER_PRIVATE_KEY=0x...
+
+# Pool data source
+ALGEBRA_SUBGRAPH_URL=http://localhost:8000/subgraphs/name/<you>/<subgraph-name>
+
+# Optional: supported token discovery seed (comma-separated addresses)
+TOKEN_CANDIDATES=0x...,0x...
 ```
 
-⚠️ **Security Warning**: 
-- Never commit your `.env` file to version control
-- Add `.env` to your `.gitignore` file
-- Consider using a vault service for production deployments
+Notes:
 
-## Running the Code
+- The backend expects **two distinct RPC URLs** (Asset Hub + Moonbeam).
+- `TOKEN_CANDIDATES` is used to resolve **supported token names** from the `XCMProxy` allowlist.
+  - The contract exposes `supportedTokens(address) -> bool` and is not enumerable, so the backend filters a candidate list.
 
-### Running the Example Script
+## How the backend works (high level)
 
-The easiest way to test that everything is set up correctly is to run the example script:
+### Pool ingestion
+
+Pools are fetched from `ALGEBRA_SUBGRAPH_URL`.
+
+You can manually refresh pools:
+
+- `GET /api/pools/sync/status`
+- `POST /api/pools/sync`
+
+### Decision flow
+
+The decision stack is split into:
+
+- **Pure logic** functions (deterministic, testable)
+- A NestJS service that gathers inputs (pools + preferences + positions) and produces a decision object
+
+HTTP:
+
+- `POST /api/users/:userId/decision/run`
+- `POST /api/users/:userId/decision/execute` (env-gated)
+
+### Contract-backed token names
+
+To inspect on-chain supported tokens:
+
+- `GET /api/blockchain/supported-tokens`
+  - pass candidates: `?candidates=0x...,0x...`
+  - or set `TOKEN_CANDIDATES` in env
+
+## Tests
+
+Run unit tests:
 
 ```bash
-# Make sure you're in the Backend directory
-node example.js
+npm test
 ```
 
-This script will:
-1. Connect to the contracts using your environment variables
-2. Get basic contract information
-3. Check token balances if TOKEN0_ADDRESS is set
-4. Show an example of how to deposit tokens (commented out by default)
-
-### Creating Your Own Scripts
-
-You can create your own scripts by importing the functions from the utility files:
-
-```javascript
-// myScript.js
-import { ethers } from 'ethers';
-import { 
-  getContractInfo, 
-  addLiquidity,
-  depositTokens 
-} from './interact-with-contract.js';
-
-async function main() {
-  try {
-    // Your custom logic here
-    const info = await getContractInfo();
-    console.log('Contract info:', info);
-    
-    // Example: Add liquidity (uncomment and modify as needed)
-    /*
-    const poolAddress = process.env.POOL_ADDRESS;
-    const token0 = process.env.TOKEN0_ADDRESS;
-    const token1 = process.env.TOKEN1_ADDRESS;
-    const rangeSize = 2; // WIDE range
-    const liquidityAmount = ethers.parseUnits('1', 18);
-    
-    await addLiquidity(poolAddress, token0, token1, rangeSize, liquidityAmount);
-    */
-  } catch (error) {
-    console.error('Error:', error);
-  }
-}
-
-main();
-```
-
-Then run your script:
+Run E2E tests:
 
 ```bash
-node myScript.js
+npm run test:e2e
 ```
 
-## Available Functions
+## Ops notes (pool indexing)
 
-### Basic Contract Interaction (`interact-with-contract.js`)
+Pool updates depend on an Algebra subgraph running separately.
 
-- `getContractInfo()` - Get basic information about the contract
-- `getTokenBalance(tokenAddress)` - Get token balance in the contract
-- `depositTokens(tokenAddress, amount)` - Deposit tokens to the liquidity provider
-- `withdrawTokens(tokenAddress, amount)` - Withdraw tokens from the liquidity provider
-- `transferAssetsToMoonbeam(tokenAddress, amount)` - Transfer assets to Moonbeam via XCM
-- `addLiquidity(poolAddress, token0Address, token1Address, rangeSize, liquidityDesired)` - Add liquidity to a pool
-- `removeLiquidity(poolAddress, bottomTick, topTick, liquidity)` - Remove liquidity from a pool
-- `batchDeposit(tokenAddresses, amounts)` - Batch deposit tokens via the router
-- `batchWithdraw(tokenAddresses, amounts)` - Batch withdraw tokens via the router
+See:
 
-### Advanced Swapping (`liquidity-swapper.js`)
+- `local-dev/graph-node/README.md` (local Graph Node scaffold)
+- `M2_OPS_PRD.md` (ops notes)
 
-- `swapExactInputSingle(tokenIn, tokenOut, amountIn, slippage)` - Swap exact input amount of tokens
-- `swapExactOutputSingle(tokenIn, tokenOut, amountOut, slippage)` - Swap for exact output amount of tokens
-- `swapExactInputMultihop(tokensPath, fees, amountIn, slippage)` - Multi-hop swap with exact input
-- `swapExactOutputMultihop(tokensPath, fees, amountOut, slippage)` - Multi-hop swap for exact output
+## Legacy scripts (optional)
 
-## Usage Examples
+Legacy one-off scripts are in `legacy/scripts/`.
 
-### Basic Contract Information
-
-```javascript
-// Import functions
-import { getContractInfo } from './interact-with-contract.js';
-import dotenv from 'dotenv';
-
-// Load environment variables
-dotenv.config();
-
-async function main() {
-  try {
-    // Get basic contract info
-    const info = await getContractInfo();
-    console.log('Contract info:', info);
-  } catch (error) {
-    console.error('Error:', error);
-  }
-}
-
-main();
-```
-
-### Token Operations
-
-```javascript
-import { depositTokens, withdrawTokens, getTokenBalance } from './interact-with-contract.js';
-import { ethers } from 'ethers';
-import dotenv from 'dotenv';
-
-// Load environment variables
-dotenv.config();
-
-async function main() {
-  try {
-    const tokenAddress = process.env.TOKEN0_ADDRESS;
-    if (!tokenAddress) {
-      console.error('Error: TOKEN0_ADDRESS not set in environment variables');
-      return;
-    }
-    
-    const amount = ethers.parseUnits('10', 18); // 10 tokens with 18 decimals
-    console.log(`Working with token address: ${tokenAddress}`);
-    
-    // Check balance before operations
-    const initialBalance = await getTokenBalance(tokenAddress);
-    console.log(`Initial balance: ${ethers.formatUnits(initialBalance, 18)} tokens`);
-    
-    // Deposit tokens
-    console.log(`Depositing ${ethers.formatUnits(amount, 18)} tokens...`);
-    await depositTokens(tokenAddress, amount);
-    
-    // Check balance after deposit
-    const balanceAfterDeposit = await getTokenBalance(tokenAddress);
-    console.log(`Balance after deposit: ${ethers.formatUnits(balanceAfterDeposit, 18)} tokens`);
-    
-    // Withdraw tokens
-    console.log(`Withdrawing ${ethers.formatUnits(amount, 18)} tokens...`);
-    await withdrawTokens(tokenAddress, amount);
-    
-    // Check final balance
-    const finalBalance = await getTokenBalance(tokenAddress);
-    console.log(`Final balance: ${ethers.formatUnits(finalBalance, 18)} tokens`);
-  } catch (error) {
-    console.error('Error in token operations:', error);
-  }
-}
-
-main();
-```
-
-### Adding Liquidity
-
-```javascript
-import { addLiquidity } from './interact-with-contract.js';
-import { ethers } from 'ethers';
-import dotenv from 'dotenv';
-
-// Load environment variables
-dotenv.config();
-
-async function main() {
-  try {
-    // Get values from environment variables
-    const poolAddress = process.env.POOL_ADDRESS;
-    const token0 = process.env.TOKEN0_ADDRESS;
-    const token1 = process.env.TOKEN1_ADDRESS;
-    
-    // Validate environment variables
-    if (!poolAddress || !token0 || !token1) {
-      console.error('Error: Required environment variables not set');
-      console.error('Please ensure POOL_ADDRESS, TOKEN0_ADDRESS, and TOKEN1_ADDRESS are set in your .env file');
-      return;
-    }
-    
-    const rangeSize = 2;               // 0=NARROW, 1=MEDIUM, 2=WIDE, 3=MAXIMUM
-    const liquidity = ethers.parseUnits('5', 18); // Amount of liquidity to add
-    
-    console.log(`Adding liquidity to pool: ${poolAddress}`);
-    console.log(`Token0: ${token0}`);
-    console.log(`Token1: ${token1}`);
-    console.log(`Range size: ${rangeSize} (WIDE)`);
-    console.log(`Liquidity amount: ${ethers.formatUnits(liquidity, 18)}`);
-    
-    await addLiquidity(poolAddress, token0, token1, rangeSize, liquidity);
-    console.log('Liquidity added successfully!');
-  } catch (error) {
-    console.error('Error adding liquidity:', error);
-  }
-}
-
-main();
-```
-
-### Token Swaps
+They are **not required** for running the NestJS backend and are kept only for reference.
 
 ```javascript
 import { swapExactInputSingle, swapExactInputMultihop } from './liquidity-swapper.js';

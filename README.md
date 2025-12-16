@@ -7,7 +7,7 @@ Cross-chain liquidity automation for the Polkadot ecosystem. Built on Asset Hub 
 ### Current status
 
 - Ongoing development; MVP targeting Moonbeam Algebra pools with Asset Hub custody and an XCM Proxy on Moonbeam.
-- Contracts are deployed on testnet, currently bringing the backend to production grade.
+- Contracts are deployed on testnet, backend is getting ready by 20/12/25.
 - Have been approved a grant application to support development: see Polkadot Fast Grants PR [#86](https://github.com/Polkadot-Fast-Grants/apply/pull/86).
 
 ### Documentation
@@ -29,17 +29,30 @@ Cross-chain liquidity automation for the Polkadot ecosystem. Built on Asset Hub 
 ### Repository structure
 
 ```
-PolkadotHack2025/
-├── Backend/                 # Node.js workers and services
-├── DataAggregatorService/   # Pool analytics service
-├── Frontend/                # Next.js app (Wagmi + Polkadot integrations)
-├── SmartContracts/          # Solidity contracts and scripts (see SmartContracts/README.md)
-├── subgraphs/               # The Graph subgraphs for data indexing
-├── local-dev/               # Local dev helper scripts and configs
+LiquiDOT/
+├── Backend/                 # NestJS API + decision engine + chain services
+├── Frontend/                # Next.js app
+├── SmartContracts/          # Solidity contracts + deployment/test scripts
+├── gitbook/                 # Published documentation source
+├── images/                  # Docs/media assets
 └── WhitePaper.md            # Project white paper
 ```
 
 For detailed smart contract documentation, deployment guides, and testing instructions, see **[SmartContracts/README.md](./SmartContracts/README.md)**.
+
+### Backend
+
+The backend is the “brains” of LiquiDOT:
+
+- **REST API** for pools, user preferences, positions, and running investment decisions
+- **Deterministic decision engine** (pure logic + orchestration service) designed to be testable and auditable
+- **On-chain integration** via `ethers`:
+	- Asset Hub custody contract: `AssetHubVault`
+	- Moonbeam execution contract: `XCMProxy`
+- **Operationally reproducible pool indexing** via an externally-run Algebra subgraph (Graph Node)
+- **Automated test coverage**: unit + E2E (HTTP) tests
+
+Start here: **[Backend/README.md](./Backend/README.md)**.
 
 ### Deployment & Testing Workflow
 
