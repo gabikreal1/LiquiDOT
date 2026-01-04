@@ -12,8 +12,8 @@ LiquiDOT uses two production-focused contracts that coordinate via XCM to create
 
 | Contract          | Chain     | Network        | Address                                      |
 | ----------------- | --------- | -------------- | -------------------------------------------- |
-| **AssetHubVault** | Asset Hub | Paseo Testnet  | `0x67E5293e374219C515bD9838B23C792C555e51D4` |
-| **XCMProxy**      | Moonbeam  | Moonbase Alpha | `0xf935e063b2108cc064bB356107ac01Dc90f96652` |
+| **AssetHubVault** | Asset Hub | Paseo Testnet  | `0x68e86F267C5C37dd4947ef8e5823eBAeAf93Fde6` |
+| **XCMProxy**      | Moonbeam  | Moonbase Alpha | `0xe07d18eC747707f29cd3272d48CF84A383647dA1` |
 
 ### Contract Roles
 
@@ -32,11 +32,27 @@ LiquiDOT uses two production-focused contracts that coordinate via XCM to create
 ## AssetHubVault
 
 **Location:** Asset Hub (Paseo Testnet)\
-**Address:** `0x67E5293e374219C515bD9838B23C792C555e51D4`
+**Address:** `0x68e86F267C5C37dd4947ef8e5823eBAeAf93Fde6`
 
 ### Overview
 
-Primary custody layer and orchestrator on Asset Hub. Holds user balances, starts cross-chain investments, confirms execution, and settles liquidations. Uses only the IXcm precompile available on Asset Hub.
+Primary custody layer and orchestrator on Asset Hub. Holds user balances, starts cross-chain investments, confirms execution, and settles liquidations. Uses the IXcm precompile at `0x00000000000000000000000000000000000a0000`.
+
+### XCM Interface
+
+The contract uses the official Polkadot XCM precompile:
+
+```solidity
+interface IXcm {
+    struct Weight {
+        uint64 refTime;
+        uint64 proofSize;
+    }
+    function execute(bytes calldata message, Weight calldata maxWeight) external;
+    function send(bytes calldata dest, bytes calldata message) external;
+    function weighMessage(bytes calldata message) external view returns (Weight memory);
+}
+```
 
 ### Access Roles
 
@@ -80,11 +96,16 @@ Primary custody layer and orchestrator on Asset Hub. Holds user balances, starts
 ### Custom Errors
 
 ```solidity
-NotAdmin, NotOperator, NotEmergency
-Paused, ZeroAddress, AmountZero
-InsufficientBalance, InvalidRange
-XcmPrecompileNotSet, ChainNotSupported
-ChainIdMismatch, ExecutorNotAuthorized
+// Access Control
+NotAdmin(), NotOperator(), NotEmergency()
+
+// State Validation
+Paused(), ZeroAddress(), AmountZero()
+InsufficientBalance(), InvalidRange()
+
+// XCM & Chain
+XcmPrecompileNotSet(), ChainNotSupported()
+ChainIdMismatch(), ExecutorNotAuthorized()
 ```
 
 ***
@@ -92,11 +113,42 @@ ChainIdMismatch, ExecutorNotAuthorized
 ## XCMProxy
 
 **Location:** Moonbeam (Moonbase Alpha)\
-**Address:** `0xf935e063b2108cc064bB356107ac01Dc90f96652`
+**Address:** `0xe07d18eC747707f29cd3272d48CF84A383647dA1`
 
 ### Overview
 
-Execution engine on Moonbeam. Receives assets and instructions via XCM, performs swaps and LP mint/burn with Algebra's NFPM, tracks positions, and returns proceeds to Asset Hub. Includes optional Moonbeam XCM-Transactor integration for remote runtime calls.
+Execution engine on Moonbeam. Receives assets and instructions via XCM, performs swaps and LP mint/burn with Algebra's NFPM, tracks positions, and returns proceeds to Asset Hub. Uses the IXTokens precompile at `0x0000000000000000000000000000000000000804` for cross-chain transfers.
+
+### XCM Interface (Moonbeam)
+
+```solidity
+// IXTokens precompile for cross-chain transfers
+interface IXTokens {
+    function transfer(
+        address currencyAddress,
+        uint256 amount,
+        Multilocation memory destination,
+        uint64 weight
+    ) external;
+}
+```
+
+### Custom Errors
+
+```solidity
+// Access Control
+NotOwner(), NotOperator()
+
+// Token & Balance
+TokenNotSupported(), InsufficientBalance()
+
+// Position State
+PositionNotFound(), PositionNotActive()
+
+// Configuration
+InvalidSlippage(), XcmConfigFrozen()
+DEXNotConfigured(), NFPMNotSet()
+```
 
 ### Access Roles
 
@@ -338,6 +390,42 @@ sequenceDiagram
 
 ***
 
+## Important Design Notes
+
+### DEX Target: StellaSwap Pulsar (Algebra Integral)
+
+The XCMProxy contract uses `@cryptoalgebra/integral-*` interfaces which include the `deployer` field in mint/swap parameters.
+
+**✅ StellaSwap Compatibility:** StellaSwap on Moonbeam mainnet uses Algebra Integral v1.2 ([stellaswap/Integral-contracts](https://github.com/stellaswap/Integral-contracts), forked from cryptoalgebra/Algebra). The interfaces are **fully compatible** - StellaSwap includes the `deployer` field.
+
+**Deployment Strategy:**
+- **Testnet (Moonbase Alpha):** Our own Algebra Integral deployment (see `SmartContracts/deployments/moonbase_bootstrap.json`)
+- **Mainnet (Moonbeam):** StellaSwap Pulsar contracts - no interface changes needed
+
+### Single-Sided vs Dual-Sided Liquidity
+
+When minting LP positions, the `amounts` array must be populated based on the current pool price relative to the tick range:
+
+| Pool Price vs Range | Token0 Required | Token1 Required |
+|---------------------|-----------------|-----------------|
+| Price **below** range | ✅ Yes | ❌ No |
+| Price **above** range | ❌ No | ✅ Yes |
+| Price **within** range | ✅ Yes | ✅ Yes |
+
+This is standard Uniswap V3/Algebra concentrated liquidity math.
+
+### Operator-Triggered Liquidations
+
+LiquiDOT uses an **operator-triggered liquidation model**, not automated on-chain triggers:
+
+- `isPositionOutOfRange(positionId)` - View function to check status
+- `liquidateIfOutOfRange(positionId)` - Atomic check + liquidate (recommended)
+- `executeFullLiquidation(positionId)` - Unconditional liquidation
+
+The backend Stop-Loss Worker monitors positions and triggers liquidations based on configurable thresholds.
+
+***
+
 ## Additional Resources
 
 ### Deployment Information
@@ -371,5 +459,5 @@ Comprehensive test suites available:
 
 This documentation mirrors the current codebase. As features evolve (additional chains, new DEX integrations), this page will be updated to track function signatures and events from the Solidity sources referenced above.
 
-**Last Updated:** October 2025\
+**Last Updated:** January 2026\
 **Contract Version:** V1 (Current)

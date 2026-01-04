@@ -53,7 +53,7 @@ async function deployXCMProxy(options = {}) {
   const XCMProxy = await ethers.getContractFactory("contracts/V1(Current)/XCMProxy.sol:XCMProxy", deployer);
   
   // Deploy with initial owner (owner can later transfer ownership)
-  const proxy = await XCMProxy.deploy(config.owner);
+  const proxy = await XCMProxy.deploy(config.owner, { gasLimit: 15000000 });
   const deploymentTx = proxy.deploymentTransaction();
   await proxy.waitForDeployment();
   const proxyAddress = await proxy.getAddress();

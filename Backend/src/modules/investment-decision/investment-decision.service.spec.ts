@@ -8,6 +8,8 @@ import { Position } from '../positions/entities/position.entity';
 import { User } from '../users/entities/user.entity';
 import { InvestmentDecisionService } from './investment-decision.service';
 import { AssetHubService } from '../blockchain/services/asset-hub.service';
+import { MoonbeamService } from '../blockchain/services/moonbeam.service';
+import { XcmBuilderService } from '../blockchain/services/xcm-builder.service';
 
 describe('InvestmentDecisionService', () => {
   let service: InvestmentDecisionService;
@@ -35,6 +37,15 @@ describe('InvestmentDecisionService', () => {
     getUserPositionsByStatus: jest.fn(async () => []),
   } as unknown as AssetHubService;
 
+  const moonbeamService = {
+    isInitialized: jest.fn(() => true),
+    liquidateSwapAndReturn: jest.fn(async () => undefined),
+  } as unknown as MoonbeamService;
+
+  const xcmBuilderService = {
+    buildReturnDestination: jest.fn(async () => new Uint8Array([1, 2, 3])),
+  } as unknown as XcmBuilderService;
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -46,6 +57,8 @@ describe('InvestmentDecisionService', () => {
         { provide: getRepositoryToken(Position), useValue: positionRepo },
         { provide: getRepositoryToken(User), useValue: userRepo },
         { provide: AssetHubService, useValue: assetHubService },
+        { provide: MoonbeamService, useValue: moonbeamService },
+        { provide: XcmBuilderService, useValue: xcmBuilderService },
       ],
     }).compile();
 
@@ -352,4 +365,58 @@ describe('InvestmentDecisionService', () => {
     expect(Number(a0) / Number(totalWei)).toBeGreaterThan(0.59);
     expect(Number(a0) / Number(totalWei)).toBeLessThan(0.61);
   });
+ 
+  it('previews an initial allocation with percent weights', async () => {
+    // Arrange: pools
+    (poolRepo.find as unknown as jest.Mock).mockResolvedValue([
+      {
+        id: 'p1',
+        poolAddress: '0xpool1',
+        dex: { name: 'Algebra' },
+        token0Symbol: 'USDC',
+        token1Symbol: 'USDT',
+        token0Address: '0x0000000000000000000000000000000000000001',
+        token1Address: '0x0000000000000000000000000000000000000002',
+        apr: 12,
+        tvl: 5_000_000,
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 40),
+      },
+      {
+        id: 'p2',
+        poolAddress: '0xpool2',
+        dex: { name: 'Algebra' },
+        token0Symbol: 'WETH',
+        token1Symbol: 'USDC',
+        token0Address: '0x0000000000000000000000000000000000000003',
+        token1Address: '0x0000000000000000000000000000000000000001',
+        apr: 10,
+        tvl: 10_000_000,
+        createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 80),
+      },
+    ]);
+
+    (prefRepo.findOne as unknown as jest.Mock).mockResolvedValue({
+      userId: 'u1',
+      minApr: 600, // 6%
+      preferredTokens: ['USDC', 'USDT', 'WETH'],
+      preferredDexes: ['Algebra'],
+    });
+
+    // Act
+    const res = await service.previewInitialAllocation({
+      userId: 'u1',
+      totalCapitalUsd: 10_000,
+      maxPositions: 2,
+    });
+
+    // Assert
+    expect(res.totalCapitalUsd).toBe(10_000);
+    expect(res.eligibleCandidatesCount).toBeGreaterThan(0);
+    expect(Array.isArray(res.idealPositions)).toBe(true);
+
+    const sumPct = res.idealPositions.reduce((acc, p) => acc + p.allocationPct, 0);
+    expect(sumPct).toBeGreaterThan(99);
+    expect(sumPct).toBeLessThan(101);
+  });
+
 });

@@ -1,6 +1,11 @@
 const hre = require("hardhat");
 
 async function main() {
+  if (hre.network.name === "hardhat") {
+    console.log("\nℹ️  link-contracts: skipping on local hardhat network (testnet helper).\n");
+    return;
+  }
+
   const ASSETHUB_ADDRESS = process.env.ASSETHUB_CONTRACT;
   const XCMPROXY_ADDRESS = process.env.XCMPROXY_CONTRACT;
 

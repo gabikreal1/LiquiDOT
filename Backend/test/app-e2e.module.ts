@@ -21,6 +21,8 @@ import { InvestmentDecisionService } from '../src/modules/investment-decision/in
 import { User } from '../src/modules/users/entities/user.entity';
 
 import { AssetHubService } from '../src/modules/blockchain/services/asset-hub.service';
+import { MoonbeamService } from '../src/modules/blockchain/services/moonbeam.service';
+import { XcmBuilderService } from '../src/modules/blockchain/services/xcm-builder.service';
 
 type RepoStub<T> = {
   find?: jest.Mock;
@@ -222,6 +224,21 @@ const positionFixtures = [
         getUserBalance: jest.fn(async () => 123n),
         getUserPositionsByStatus: jest.fn(async () => []),
         dispatchInvestmentWithXcm: jest.fn(async () => '0xposition'),
+      },
+    },
+
+    // --- Mock Moonbeam + XCM builder (required by InvestmentDecisionService DI) ---
+    {
+      provide: MoonbeamService,
+      useValue: {
+        isInitialized: jest.fn(() => false),
+        liquidateSwapAndReturn: jest.fn(async () => undefined),
+      },
+    },
+    {
+      provide: XcmBuilderService,
+      useValue: {
+        buildReturnDestination: jest.fn(async () => new Uint8Array([1, 2, 3])),
       },
     },
   ],

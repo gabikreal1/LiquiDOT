@@ -124,6 +124,20 @@ describe("XCMProxy Testnet - Liquidation", function () {
       );
       await receiveTx.wait();
 
+      // Fund the proxy with tokens to simulate XCM transfer
+      const baseTokenContract = await ethers.getContractAt("IERC20", BASE_TOKEN);
+      const fundBaseTx = await baseTokenContract.transfer(proxy.target, ethers.parseEther("1.0"));
+      await fundBaseTx.wait();
+      console.log(`   ✓ Proxy funded with BASE_TOKEN`);
+
+      // Fund the proxy with QUOTE_TOKEN to satisfy the 50/50 requirement
+      if (QUOTE_TOKEN) {
+        const quoteTokenContract = await ethers.getContractAt("IERC20", QUOTE_TOKEN);
+        const fundTx = await quoteTokenContract.transfer(proxy.target, ethers.parseEther("0.5"));
+        await fundTx.wait();
+        console.log(`   ✓ Proxy funded with QUOTE_TOKEN`);
+      }
+
       // Verify pending was created
       const pending = await proxy.pendingPositions(testAssetHubPositionId);
       if (!pending.exists) {
@@ -163,17 +177,17 @@ describe("XCMProxy Testnet - Liquidation", function () {
         this.skip();
       }
 
-      // Verify position is active
+      // Verify position is active (status = 0 means Active)
       const positionBefore = await proxy.positions(testPositionId);
-      expect(positionBefore.active).to.be.true;
+      expect(positionBefore.status).to.equal(0); // PositionStatus.Active
 
       // Execute full liquidation
       const tx = await proxy.executeFullLiquidation(testPositionId);
       const receipt = await tx.wait();
 
-      // Verify position is now inactive
+      // Verify position is now Liquidated (status = 1)
       const positionAfter = await proxy.positions(testPositionId);
-      expect(positionAfter.active).to.be.false;
+      expect(positionAfter.status).to.equal(1); // PositionStatus.Liquidated
 
       // Verify liquidation event
       const liquidatedEvent = receipt.logs.find(log => {
@@ -196,7 +210,7 @@ describe("XCMProxy Testnet - Liquidation", function () {
 
       await expect(
         proxy.executeFullLiquidation(fakePositionId)
-      ).to.be.revertedWith("Position not active");
+      ).to.be.revertedWithCustomError(proxy, "PositionNotActive");
     });
 
     it("should fail to liquidate already inactive position", async function () {
@@ -207,7 +221,7 @@ describe("XCMProxy Testnet - Liquidation", function () {
       // Try to liquidate the already-liquidated position
       await expect(
         proxy.executeFullLiquidation(testPositionId)
-      ).to.be.revertedWith("Position not active");
+      ).to.be.revertedWithCustomError(proxy, "PositionNotActive");
     });
   });
 
@@ -238,12 +252,24 @@ describe("XCMProxy Testnet - Liquidation", function () {
 
       const receiveTx = await proxy.receiveAssets(
         fullFlowAssetHubId,
-  BASE_TOKEN,
+        BASE_TOKEN,
         operator.address,
         ethers.parseEther("1.0"),
         investmentParams
       );
       await receiveTx.wait();
+
+      // Fund the proxy with tokens to simulate XCM transfer
+      const baseTokenContract2 = await ethers.getContractAt("IERC20", BASE_TOKEN);
+      const fundBaseTx2 = await baseTokenContract2.transfer(proxy.target, ethers.parseEther("1.0"));
+      await fundBaseTx2.wait();
+
+      // Fund the proxy with QUOTE_TOKEN to satisfy the 50/50 requirement
+      if (QUOTE_TOKEN) {
+        const quoteTokenContract = await ethers.getContractAt("IERC20", QUOTE_TOKEN);
+        const fundTx = await quoteTokenContract.transfer(proxy.target, ethers.parseEther("0.5"));
+        await fundTx.wait();
+      }
 
       // Verify pending was created
       const pending = await proxy.pendingPositions(fullFlowAssetHubId);
@@ -304,9 +330,9 @@ describe("XCMProxy Testnet - Liquidation", function () {
         }
       });
 
-      // Verify position is inactive
+      // Verify position is inactive (status != 0)
       const positionAfter = await proxy.positions(fullFlowPositionId);
-      expect(positionAfter.active).to.be.false;
+      expect(positionAfter.status).to.not.equal(0); // Not Active
 
       console.log(`   ✓ Full liquidation flow completed`);
       console.log(`   ✓ Test mode: XCM transfer skipped`);
@@ -387,7 +413,7 @@ describe("XCMProxy Testnet - Liquidation", function () {
 
       await expect(
         proxy.cancelPendingPosition(fakePositionId, MOCK_ASSET_HUB_DEST)
-      ).to.be.revertedWith("Pending position not found");
+      ).to.be.revertedWithCustomError(proxy, "PendingPositionNotFound");
     });
   });
 
@@ -430,6 +456,16 @@ describe("XCMProxy Testnet - Liquidation", function () {
       if (owner.toLowerCase() !== operator.address.toLowerCase()) {
         console.log(`   ⚠️  Test account is not owner - skipping`);
         this.skip();
+      }
+
+      // First, we need to make sure the proxy has funds to return
+      const proxyBalance = await (await ethers.getContractAt("IERC20", BASE_TOKEN)).balanceOf(proxy.target);
+      if (proxyBalance < ethers.parseEther("0.1")) {
+        // Fund the proxy with BASE_TOKEN
+        const baseTokenContract = await ethers.getContractAt("IERC20", BASE_TOKEN);
+        const fundTx = await baseTokenContract.transfer(proxy.target, ethers.parseEther("0.2"));
+        await fundTx.wait();
+        console.log(`   ✓ Proxy funded with BASE_TOKEN`);
       }
 
       // returnAssets signature: (address token, address user, uint256 amount, bytes destination)

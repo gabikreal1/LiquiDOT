@@ -16,6 +16,7 @@
 
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
+const { safeDeposit, safeWithdraw, wait } = require("./helpers");
 
 describe("AssetHubVault Testnet - Deposits & Withdrawals", function () {
   let vault;
@@ -52,7 +53,7 @@ describe("AssetHubVault Testnet - Deposits & Withdrawals", function () {
       const balanceBefore = await vault.getUserBalance(user1.address);
       const depositAmount = ethers.parseEther("0.1"); // Small test amount
 
-      await vault.connect(user1).deposit({ value: depositAmount });
+      await safeDeposit(vault, user1, depositAmount);
 
       const balanceAfter = await vault.getUserBalance(user1.address);
       expect(balanceAfter).to.equal(balanceBefore + depositAmount);
@@ -63,12 +64,15 @@ describe("AssetHubVault Testnet - Deposits & Withdrawals", function () {
 
     it("should emit Deposit event", async function () {
       const depositAmount = ethers.parseEther("0.01");
+      const gasEst = await vault.connect(user1).deposit.estimateGas({ value: depositAmount });
 
       await expect(
-        vault.connect(user1).deposit({ value: depositAmount })
+        vault.connect(user1).deposit({ value: depositAmount, gasLimit: gasEst * 2n })
       )
         .to.emit(vault, "Deposit")
         .withArgs(user1.address, depositAmount);
+      
+      await wait(1000);
     });
 
     it("should revert on zero deposit (TEST-AHV-008)", async function () {
@@ -80,8 +84,8 @@ describe("AssetHubVault Testnet - Deposits & Withdrawals", function () {
     it("should handle multiple deposits from same user", async function () {
       const balanceBefore = await vault.getUserBalance(user1.address);
       
-      await vault.connect(user1).deposit({ value: ethers.parseEther("0.05") });
-      await vault.connect(user1).deposit({ value: ethers.parseEther("0.05") });
+      await safeDeposit(vault, user1, ethers.parseEther("0.05"));
+      await safeDeposit(vault, user1, ethers.parseEther("0.05"));
       
       const balanceAfter = await vault.getUserBalance(user1.address);
       expect(balanceAfter).to.equal(balanceBefore + ethers.parseEther("0.1"));
@@ -95,8 +99,8 @@ describe("AssetHubVault Testnet - Deposits & Withdrawals", function () {
       const user1BalanceBefore = await vault.getUserBalance(user1.address);
       const user2BalanceBefore = await vault.getUserBalance(user2.address);
 
-      await vault.connect(user1).deposit({ value: ethers.parseEther("0.1") });
-      await vault.connect(user2).deposit({ value: ethers.parseEther("0.2") });
+      await safeDeposit(vault, user1, ethers.parseEther("0.1"));
+      await safeDeposit(vault, user2, ethers.parseEther("0.2"));
 
       const user1BalanceAfter = await vault.getUserBalance(user1.address);
       const user2BalanceAfter = await vault.getUserBalance(user2.address);
@@ -115,7 +119,7 @@ describe("AssetHubVault Testnet - Deposits & Withdrawals", function () {
 
       if (balance === 0n) {
         console.log("   ⚠️  User has no balance - depositing first");
-        await vault.connect(user1).deposit({ value: ethers.parseEther("0.5") });
+        await safeDeposit(vault, user1, ethers.parseEther("0.5"));
       }
 
       const balanceBefore = await vault.getUserBalance(user1.address);
@@ -126,7 +130,7 @@ describe("AssetHubVault Testnet - Deposits & Withdrawals", function () {
         this.skip();
       }
 
-      await vault.connect(user1).withdraw(withdrawAmount);
+      await safeWithdraw(vault, user1, withdrawAmount);
 
       const balanceAfter = await vault.getUserBalance(user1.address);
       expect(balanceAfter).to.equal(balanceBefore - withdrawAmount);
@@ -137,16 +141,18 @@ describe("AssetHubVault Testnet - Deposits & Withdrawals", function () {
 
     it("should emit Withdraw event", async function () {
       // Need existing balance first
-      await vault.connect(user1).deposit({ value: ethers.parseEther("0.05") });
-      await new Promise(resolve => setTimeout(resolve, 6000)); // Wait for block
+      await safeDeposit(vault, user1, ethers.parseEther("0.05"));
       
       const withdrawAmount = ethers.parseEther("0.01");
+      const gasEst = await vault.connect(user1).withdraw.estimateGas(withdrawAmount);
 
       await expect(
-        vault.connect(user1).withdraw(withdrawAmount)
+        vault.connect(user1).withdraw(withdrawAmount, { gasLimit: gasEst * 2n })
       )
         .to.emit(vault, "Withdrawal") // Correct event name
         .withArgs(user1.address, withdrawAmount);
+      
+      await wait(1000);
     });
 
     it("should revert on insufficient balance (TEST-AHV-012)", async function () {
@@ -168,13 +174,11 @@ describe("AssetHubVault Testnet - Deposits & Withdrawals", function () {
       // Deposit a specific amount and withdraw it all
       const depositAmount = ethers.parseEther("0.5");
       
-      await vault.connect(user1).deposit({ value: depositAmount });
-      await new Promise(resolve => setTimeout(resolve, 6000)); // Wait for block
+      await safeDeposit(vault, user1, depositAmount);
       
       const balance = await vault.getUserBalance(user1.address);
 
-      await vault.connect(user1).withdraw(balance);
-      await new Promise(resolve => setTimeout(resolve, 6000)); // Wait for block
+      await safeWithdraw(vault, user1, balance);
 
       const finalBalance = await vault.getUserBalance(user1.address);
       expect(finalBalance).to.equal(0);
@@ -188,15 +192,13 @@ describe("AssetHubVault Testnet - Deposits & Withdrawals", function () {
       const initialBalance = await vault.getUserBalance(user1.address);
 
       // Deposit
-      await vault.connect(user1).deposit({ value: ethers.parseEther("1") });
-      await new Promise(resolve => setTimeout(resolve, 6000)); // Wait for block
+      await safeDeposit(vault, user1, ethers.parseEther("1"));
       
       const afterDeposit = await vault.getUserBalance(user1.address);
       expect(afterDeposit).to.equal(initialBalance + ethers.parseEther("1"));
 
       // Withdraw
-      await vault.connect(user1).withdraw(ethers.parseEther("0.5"));
-      await new Promise(resolve => setTimeout(resolve, 6000)); // Wait for block
+      await safeWithdraw(vault, user1, ethers.parseEther("0.5"));
       
       const afterWithdraw = await vault.getUserBalance(user1.address);
       expect(afterWithdraw).to.equal(afterDeposit - ethers.parseEther("0.5"));
@@ -217,7 +219,7 @@ describe("AssetHubVault Testnet - Deposits & Withdrawals", function () {
       const user2BalanceBefore = await vault.getUserBalance(user2.address);
 
       // User1 deposits
-      await vault.connect(user1).deposit({ value: ethers.parseEther("0.1") });
+      await safeDeposit(vault, user1, ethers.parseEther("0.1"));
 
       // User2 balance should not change
       const user2BalanceAfter = await vault.getUserBalance(user2.address);
@@ -230,8 +232,7 @@ describe("AssetHubVault Testnet - Deposits & Withdrawals", function () {
       const contractBalanceBefore = await ethers.provider.getBalance(VAULT_ADDRESS);
       const depositAmount = ethers.parseEther("0.1");
 
-      await vault.connect(user1).deposit({ value: depositAmount });
-      await new Promise(resolve => setTimeout(resolve, 6000)); // Wait for block
+      await safeDeposit(vault, user1, depositAmount);
 
       const contractBalanceAfter = await ethers.provider.getBalance(VAULT_ADDRESS);
       expect(contractBalanceAfter).to.be.gte(contractBalanceBefore);
@@ -251,4 +252,3 @@ describe("AssetHubVault Testnet - Deposits & Withdrawals", function () {
     });
   });
 });
-

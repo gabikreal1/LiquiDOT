@@ -10,6 +10,40 @@ How LiquiDOT uses Polkadot's XCM (Cross-Consensus Messaging) for seamless cross-
 
 XCM is Polkadot's universal messaging format enabling parachains, smart contracts, and pallets to communicate across consensus systems. LiquiDOT uses XCM to transfer assets and instructions between Asset Hub and Moonbeam.
 
+### XCM Precompile Addresses
+
+| Precompile | Network | Address | Purpose |
+|------------|---------|---------|---------|
+| **IXcm** | Asset Hub | `0x00000000000000000000000000000000000a0000` | Send/execute XCM messages |
+| **IXTokens** | Moonbeam | `0x0000000000000000000000000000000000000804` | Cross-chain token transfers |
+
+### IXcm Interface (Asset Hub)
+
+```solidity
+interface IXcm {
+    struct Weight {
+        uint64 refTime;
+        uint64 proofSize;
+    }
+    function execute(bytes calldata message, Weight calldata maxWeight) external;
+    function send(bytes calldata dest, bytes calldata message) external;
+    function weighMessage(bytes calldata message) external view returns (Weight memory);
+}
+```
+
+### IXTokens Interface (Moonbeam)
+
+```solidity
+interface IXTokens {
+    function transfer(
+        address currencyAddress,
+        uint256 amount,
+        Multilocation memory destination,
+        uint64 weight
+    ) external;
+}
+```
+
 ## Investment Flow
 
 ### 1. User Initiates Investment

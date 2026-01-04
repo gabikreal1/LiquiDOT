@@ -30,6 +30,13 @@ With support for multiple DEXes and leveraging Polkadot's cross-chain capabiliti
 * **Customizable Strategies** - Tailor your LP positions to your risk tolerance
 * **User-Friendly Interface** - No constant manual oversight required
 
+## 📍 Current Deployment (Testnets)
+
+| Contract | Network | Address |
+|----------|---------|---------|
+| AssetHubVault | Paseo Asset Hub | `0x68e86F267C5C37dd4947ef8e5823eBAeAf93Fde6` |
+| XCMProxy | Moonbase Alpha | `0xe07d18eC747707f29cd3272d48CF84A383647dA1` |
+
 ### Jump right in
 
 <table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>🚀 Quickstart</strong></td><td>Get started with LiquiDOT</td><td></td><td><a href="getting-started/quickstart.md">quickstart.md</a></td></tr><tr><td><strong>🏗️ Architecture</strong></td><td>Understand the system design</td><td></td><td><a href="basics/architecture.md">architecture.md</a></td></tr><tr><td><strong>📜 Smart Contracts</strong></td><td>Deep dive into our contracts</td><td></td><td><a href="basics/smart-contracts.md">smart-contracts.md</a></td></tr></tbody></table>

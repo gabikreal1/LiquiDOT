@@ -149,6 +149,8 @@ describe("AssetHubVault Testnet - Investment Dispatch", function () {
     });
 
     it("should update user positions array (TEST-AHV-020)", async function () {
+      this.timeout(180000); // 3 minutes for multiple txs
+      
       const countBefore = await vault.getUserPositionCount(operator.address);
 
       // Deposit more funds
@@ -323,6 +325,8 @@ describe("AssetHubVault Testnet - Investment Dispatch", function () {
     });
 
     it("should create position even without XCM (TEST-AHV-022)", async function () {
+      this.timeout(180000); // 3 minutes
+      
       const countBefore = await vault.getUserPositionCount(operator.address);
       
       await vault.connect(operator).deposit({ value: ethers.parseEther("0.3") });

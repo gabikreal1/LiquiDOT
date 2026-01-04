@@ -6,6 +6,13 @@ export interface DecisionPreferences {
   /** Minimum APY/APR percentage (e.g. 8 for 8%). */
   minApyPct: number;
 
+  /**
+   * Token addresses that are allowed to appear in pool pairs (both tokens must be allowed).
+   *
+   * Preferred over symbols because symbols are not unique across chains/bridges.
+   */
+  allowedTokenAddresses?: string[];
+
   /** Token symbols that are allowed to appear in pool pairs (both tokens must be allowed). */
   allowedTokenSymbols: TokenSymbol[];
 
@@ -46,6 +53,8 @@ export interface CurrentPositionSnapshot {
   dexName: string;
   token0Symbol: string;
   token1Symbol: string;
+  token0Address?: string;
+  token1Address?: string;
   allocationUsd: number;
   currentApyPct: number;
   /** Optional impermanent loss percentage (0..100). If absent, IL-based safeguard can be skipped. */
@@ -58,6 +67,8 @@ export interface CandidatePoolSnapshot {
   dexName: string;
   token0Symbol: string;
   token1Symbol: string;
+  token0Address?: string;
+  token1Address?: string;
 
   apy30dAvgPct: number;
   tvlUsd: number;

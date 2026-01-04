@@ -11,6 +11,11 @@
 const hre = require("hardhat");
 
 async function main() {
+  if (hre.network.name === "hardhat") {
+    console.log("\nℹ️  verify-xcmproxy-config: skipping on local hardhat network (testnet helper).\n");
+    return;
+  }
+
   const XCMPROXY_ADDRESS = process.env.XCMPROXY_CONTRACT;
 
   if (!XCMPROXY_ADDRESS || XCMPROXY_ADDRESS === "0x" || XCMPROXY_ADDRESS.length !== 42) {

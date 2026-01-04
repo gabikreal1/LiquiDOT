@@ -12,6 +12,7 @@
 * [Architecture](basics/architecture.md)
 * [Smart Contracts](basics/smart-contracts.md)
 * [Cross-Chain Flow](basics/cross-chain-flow.md)
+* [Paseo Asset Hub + PolkaVM + XCM](basics/paseo-assethub-polkavm-xcm.md)
 
 ## Technical Reference
 

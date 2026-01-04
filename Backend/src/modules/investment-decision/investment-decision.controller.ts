@@ -2,6 +2,7 @@ import { Body, Controller, Param, Post } from '@nestjs/common';
 import { InvestmentDecisionService } from './investment-decision.service';
 import { RunDecisionDto } from './dto/run-decision.dto';
 import { ExecuteDecisionDto } from './dto/execute-decision.dto';
+import { PreviewAllocationDto } from './dto/preview-allocation.dto';
 
 @Controller('users/:userId/decision')
 export class InvestmentDecisionController {
@@ -21,6 +22,19 @@ export class InvestmentDecisionController {
       baseAssetAddress: body.baseAssetAddress,
       userWalletAddress: body.userWalletAddress,
     });
+  }
+
+  /**
+   * Preview an initial allocation plan before the user deposits into the vault.
+   *
+   * This endpoint:
+   * - uses user preferences + current pool universe
+   * - does NOT read vault balances
+   * - returns ideal positions + percent weights sized from totalCapitalUsd
+   */
+  @Post('preview-allocation')
+  async previewAllocation(@Param('userId') userId: string, @Body() dto: PreviewAllocationDto) {
+    return this.decisionService.previewInitialAllocation({ userId, ...dto });
   }
 
   @Post('execute')

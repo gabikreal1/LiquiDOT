@@ -1,0 +1,39 @@
+{
+  "generatedAt": "2025-12-22T00:00:00.000Z",
+  "network": {
+    "name": "paseo",
+    "notes": "Fill this with real runtime/tx evidence after deployment verification."
+  },
+  "chains": {
+    "assetHub": {
+      "rpc": "https://testnet-passet-hub-eth-rpc.polkadot.io",
+      "chainId": 420420422
+    },
+    "moonbeam": {
+      "rpc": "https://rpc.api.moonbase.moonbeam.network",
+      "chainId": 1287
+    }
+  },
+  "contracts": {
+    "assetHubVault": {
+      "address": "0x0000000000000000000000000000000000000000",
+      "notes": "Set after deploying AssetHubVault",
+      "config": {
+        "xcmPrecompile": "0x0000000000000000000000000000000000000000",
+        "xcmSender": "0x0000000000000000000000000000000000000000"
+      }
+    },
+    "xcmProxy": {
+      "address": "0x0000000000000000000000000000000000000000",
+      "notes": "Set after deploying XCMProxy",
+      "config": {
+        "xTokensPrecompile": "0x0000000000000000000000000000000000000804",
+        "xcmTransactorPrecompile": "0x0000000000000000000000000000000000000000"
+      }
+    }
+  },
+  "evidence": {
+    "links": [],
+    "txHashes": []
+  }
+}

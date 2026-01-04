@@ -56,7 +56,7 @@ describe("AssetHubVault Testnet - Liquidation Settlement", function () {
 
   describe("Liquidation Settlement - Basic Flow", function () {
     it("should allow operator to settle liquidation (TEST-AHV-024)", async function () {
-      this.timeout(180000); // 3 minutes for this test
+      this.timeout(240000); // 4 minutes for this test
       
       // Create a fresh position for this test
       await vault.connect(operator).deposit({ value: ethers.parseEther("1.0") });
@@ -222,6 +222,8 @@ describe("AssetHubVault Testnet - Liquidation Settlement", function () {
     });
 
     it("should revert on inactive position (TEST-AHV-025)", async function () {
+      this.timeout(240000); // 4 minutes for multiple transactions
+      
       // Create and immediately settle a position
       await vault.connect(operator).deposit({ value: ethers.parseEther("0.5") });
       await new Promise(resolve => setTimeout(resolve, 6000));
@@ -365,6 +367,8 @@ describe("AssetHubVault Testnet - Liquidation Settlement", function () {
     });
 
     it("should maintain position data after settlement", async function () {
+      this.timeout(240000); // 4 minutes for this test
+      
       // Create and settle a position
       await vault.connect(operator).deposit({ value: ethers.parseEther("0.5") });
       await new Promise(resolve => setTimeout(resolve, 6000));
@@ -435,6 +439,8 @@ describe("AssetHubVault Testnet - Liquidation Settlement", function () {
 
   describe("Liquidation Settlement - User Balance", function () {
     it("should correctly credit proceeds to user balance", async function () {
+      this.timeout(180000); // 3 minutes for multiple transactions
+      
       const userBalanceBefore = await vault.getUserBalance(operator.address);
 
       // Create position

@@ -6,77 +6,101 @@ icon: rocket
 
 Deploy LiquiDOT smart contracts on Paseo Asset Hub and Moonbase Alpha testnets.
 
+## Current Deployments
+
+| Contract | Network | Address |
+|----------|---------|---------|
+| AssetHubVault | Paseo Asset Hub | `0x68e86F267C5C37dd4947ef8e5823eBAeAf93Fde6` |
+| XCMProxy | Moonbase Alpha | `0xe07d18eC747707f29cd3272d48CF84A383647dA1` |
+
 ## Prerequisites
 
 **Testnet Funds:**
 
-* Paseo Asset Hub [faucet](https://faucet.paseo.network/)
-* Moonbase Alpha [faucet](https://faucet.moonbeam.network/)
+* Paseo PAS: https://faucet.paseo.network/
+* Moonbase DEV: https://faucet.moonbeam.network/
 
 **Environment (.env in `SmartContracts/`):**
 
 ```bash
-MOON=your_moonbase_private_key
-ASSET=your_asset_hub_private_key
-MOONBASE_RPC=https://rpc.api.moonbase.moonbeam.network
-ASSETHUB_RPC=wss://paseo-asset-hub-rpc.polkadot.io
+MOON_PK=0xyour_moonbase_private_key
+ASSET_PK=0xyour_asset_hub_private_key
+ASSETHUB_CONTRACT=0x68e86F267C5C37dd4947ef8e5823eBAeAf93Fde6
+XCMPROXY_CONTRACT=0xe07d18eC747707f29cd3272d48CF84A383647dA1
 ```
 
 ## Deployment Steps
 
 ### 1. Deploy Asset Hub Vault
 
-**Using Remix:** 3. Compile with Solidity 0.8.20, optimization: 200 runs 4. Deploy via Talismanto Paseo Asset Hub:
+**Using Remix Polkadot IDE:**
 
-* RPC: `https://paseo-asset-hub-eth-rpc.polkadot.io`
-* Chain ID: 1000
-
+1. Open https://remix.polkadot.io/
+2. Load `contracts/V1(Current)/AssetHubVault.sol`
+3. Compile with Solidity 0.8.20, optimization: 200 runs
+4. Deploy to Paseo Asset Hub:
+   * RPC: `https://testnet-passet-hub-eth-rpc.polkadot.io`
+   * Chain ID: 420420422
 5. Save deployed address
 
 ### 2. Deploy Moonbase Infrastructure
 
 ```bash
-# Deploy XCM Proxy
-npx hardhat run scripts/deploy-xcmproxy.js --network moonbase
+cd SmartContracts
+
+# Deploy Algebra DEX + XCMProxy
+npx hardhat run scripts/deploy-moonbase.js --network moonbase
 ```
 
-Save addresses to `deployments/deployment-state.json`
+This deploys:
+- Algebra Factory, Router, Quoter, NFPM
+- XCMProxy (with test mode enabled)
+- Test tokens and pool
 
-### 3. Link Contracts
+Addresses are saved to `deployments/moonbase_bootstrap.json`
+
+### 3. Configure Contracts
 
 ```bash
-# Configure Asset Hub Vault
-npx hardhat run scripts/configure-assethub.js --network passethub
+# Configure AssetHubVault
+npx hardhat run scripts/configure-assethub-vault.js --network passethub
 
-# Enable test mode
-npx hardhat run scripts/enable-testmode.js --network passethub
-npx hardhat run scripts/enable-testmode.js --network moonbase
+# This sets:
+# - XCM Precompile address
+# - Test mode enabled
+# - Trusted settlement caller
+# - Supported chains (1000, 1287)
 ```
 
-### 4. Verify Deployment
+### 4. Verify Configuration
 
 ```bash
-# Run tests
-npm test
-
-# Verify on explorers
-npx hardhat verify --network passethub <VAULT_ADDRESS>
-npx hardhat verify --network moonbase <PROXY_ADDRESS>
+# Run config checks
+npx hardhat test test/AssetHubVault/testnet/1.config-check.test.js --network passethub
+npx hardhat test test/XCMProxy/testnet/1.config-check.test.js --network moonbase
 ```
 
-## Deployed Addresses
+## Network Configuration
 
-| Contract      | Network         | Address                                      |
-| ------------- | --------------- | -------------------------------------------- |
-| AssetHubVault | Paseo Asset Hub | `0x3B0D87f3d0AE4CDC8C0102DAEfB7433aaED15CCF` |
-| XCMProxy      | Moonbase Alpha  | `0xf7749B6A5aD0EB4ed059620B89f14FA8e916ee41` |
+| Network | Chain ID | RPC |
+|---------|----------|-----|
+| Paseo Asset Hub | 420420422 | `https://testnet-passet-hub-eth-rpc.polkadot.io` |
+| Moonbase Alpha | 1287 | `https://rpc.api.moonbase.moonbeam.network` |
+
+## XCM Precompile Addresses
+
+| Precompile | Network | Address |
+|------------|---------|---------|
+| IXcm | Asset Hub | `0x00000000000000000000000000000000000a0000` |
+| IXTokens | Moonbeam | `0x0000000000000000000000000000000000000804` |
 
 ## Troubleshooting
 
-| Issue              | Solution                                  |
-| ------------------ | ----------------------------------------- |
-| Insufficient gas   | Increase gas limit in `hardhat.config.js` |
-| XCM message failed | Enable test mode or check XCM fees        |
-| Connection timeout | Switch RPC endpoint                       |
+| Issue | Solution |
+|-------|----------|
+| "Transaction is temporarily banned" | Remove explicit `gasPrice` from hardhat config - let it auto-detect |
+| Insufficient gas | Increase gas limit in `hardhat.config.js` |
+| XCM message failed | Enable test mode (`setTestMode(true)`) |
+| Connection timeout | Switch RPC endpoint or retry |
 
 **Next:** [Testing Guide](testing-guide.md) • [Smart Contracts](smart-contracts.md)

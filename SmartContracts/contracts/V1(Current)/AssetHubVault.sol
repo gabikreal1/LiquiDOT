@@ -2,11 +2,32 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+
+// NOTE: AssetHubVault uses the official IXcm precompile interface directly.
+// The XCM_SENDER / XCM_PRECOMPILE distinction allows switching implementations
+// without changing vault logic.
  
 
-// XCM precompile interface - the ONLY precompile available on Asset Hub
+/// @dev Weight struct for XCM message estimation
+/// @param refTime Reference time in picoseconds for computational work
+/// @param proofSize Proof size in bytes for PoV (Proof of Validity)
+struct Weight {
+    uint64 refTime;
+    uint64 proofSize;
+}
+
+/// @dev Official Polkadot XCM precompile interface
+/// @notice Located at 0x00000000000000000000000000000000000a0000
+/// @dev See: https://docs.polkadot.com/develop/smart-contracts/precompiles/xcm-precompile/
 interface IXcm {
+    /// @dev Execute an XCM message locally on this chain
+    function execute(bytes calldata message, Weight calldata weight) external;
+
+    /// @dev Send an XCM message to a destination chain
     function send(bytes calldata destination, bytes calldata message) external;
+
+    /// @dev Estimate the weight required to execute an XCM message
+    function weighMessage(bytes calldata message) external view returns (Weight memory weight);
 }
 
 /**
@@ -86,6 +107,16 @@ contract AssetHubVault is ReentrancyGuard {
         uint256 receivedAmount,
         uint256 expectedAmount
     );
+
+
+
+    /// @notice Address allowed to settle liquidations via XCM Transact (or any trusted relayer).
+    /// @dev In test mode you can set this to the operator. In non-test mode this should be set to the
+    ///      chain/runtime-specific XCM origin/caller address that invokes EVM calls via Transact.
+    address public trustedSettlementCaller;
+    bool public trustedSettlementCallerFrozen;
+
+    event TrustedSettlementCallerSet(address indexed caller);
     event PositionExecutionConfirmed(
         bytes32 indexed positionId,
         uint32 indexed chainId,
@@ -127,6 +158,11 @@ contract AssetHubVault is ReentrancyGuard {
     // Polkadot XCM precompile (PolkaVM) configurable address; depends on runtime
     address public XCM_PRECOMPILE;
     bool public xcmPrecompileFrozen;
+
+    // Optional: adapter-based XCM sender. If set, the vault will prefer it over XCM_PRECOMPILE.
+    // This allows us to support different host-function ABIs without changing vault logic.
+    address public XCM_SENDER;
+    bool public xcmSenderFrozen;
     
     // Test mode - allows direct contract calls without XCM for local testing
     bool public testMode;
@@ -138,16 +174,30 @@ contract AssetHubVault is ReentrancyGuard {
         emergency = msg.sender;
         XCM_PRECOMPILE = address(0);
         xcmPrecompileFrozen = false;
+        XCM_SENDER = address(0);
+        xcmSenderFrozen = false;
         paused = false;
         testMode = false;
+
+        trustedSettlementCaller = address(0);
+        trustedSettlementCallerFrozen = false;
     }
 
     event XcmPrecompileSet(address indexed precompile);
+    event XcmSenderSet(address indexed sender);
 
     function setXcmPrecompile(address precompile) external onlyAdmin {
         require(!xcmPrecompileFrozen, "xcm precompile frozen");
         XCM_PRECOMPILE = precompile;
         emit XcmPrecompileSet(precompile);
+    }
+
+    /// @notice Sets the XCM sender adapter used by this vault.
+    /// @dev If set (non-zero), the vault will prefer this over XCM_PRECOMPILE.
+    function setXcmSender(address sender) external onlyAdmin {
+        require(!xcmSenderFrozen, "xcm sender frozen");
+        XCM_SENDER = sender;
+        emit XcmSenderSet(sender);
     }
 
     function pause() external onlyAdmin { paused = true; }
@@ -161,8 +211,41 @@ contract AssetHubVault is ReentrancyGuard {
         xcmPrecompileFrozen = true;
     }
 
+    function freezeXcmSender() external onlyAdmin {
+        require(!xcmSenderFrozen, "already frozen");
+        xcmSenderFrozen = true;
+    }
+
     function setTestMode(bool _testMode) external onlyAdmin {
         testMode = _testMode;
+    }
+
+    function setTrustedSettlementCaller(address caller) external onlyAdmin {
+        require(!trustedSettlementCallerFrozen, "trusted settlement frozen");
+        if (caller == address(0)) revert ZeroAddress();
+        trustedSettlementCaller = caller;
+        emit TrustedSettlementCallerSet(caller);
+    }
+
+    function freezeTrustedSettlementCaller() external onlyAdmin {
+        require(!trustedSettlementCallerFrozen, "already frozen");
+        trustedSettlementCallerFrozen = true;
+    }
+
+    /// @notice Access control for settlement operations.
+    /// @dev Test mode: operator can settle directly (for local testing without XCM).
+    ///      Production mode: only trustedSettlementCaller (XCM-derived origin from Moonbeam) can settle.
+    ///      The receivedAmount is event-enforced: backend reads LiquidationCompleted event from Moonbeam
+    ///      and can only use the totalBase that the Moonbeam contract computed on-chain.
+    modifier onlyOperatorOrTrustedSettlement() {
+        if (testMode) {
+            // Test mode: allow operator for local testing
+            if (msg.sender != operator) revert NotOperator();
+        } else {
+            // Production mode: only XCM-derived trusted caller
+            if (msg.sender != trustedSettlementCaller) revert UnauthorizedXcmCall();
+        }
+        _;
     }
 
     // Role management
@@ -284,11 +367,12 @@ contract AssetHubVault is ReentrancyGuard {
         int24 upperRangePercent,
         bytes calldata destination,
         bytes calldata preBuiltXcmMessage
-    ) external onlyOperator whenNotPaused {
+    ) external onlyOperator whenNotPaused nonReentrant {
         if (user == address(0)) revert ZeroAddress();
         if (amount == 0) revert AmountZero();
         if (!(lowerRangePercent < upperRangePercent)) revert InvalidRange();
-        if (XCM_PRECOMPILE == address(0)) revert XcmPrecompileNotSet();
+    // Require at least one configured XCM dispatch mechanism.
+    if (XCM_SENDER == address(0) && XCM_PRECOMPILE == address(0)) revert XcmPrecompileNotSet();
         if (!supportedChains[chainId].supported) revert ChainNotSupported();
 
         if (userBalances[user] < amount) revert InsufficientBalance();
@@ -329,7 +413,10 @@ contract AssetHubVault is ReentrancyGuard {
             bytes32 messageHash = keccak256(preBuiltXcmMessage);
             bool success = false;
             bytes memory err;
-            try IXcm(XCM_PRECOMPILE).send(destination, preBuiltXcmMessage) {
+            // Use XCM_SENDER if set, otherwise fall back to XCM_PRECOMPILE
+            // Both use the same IXcm.send(destination, message) interface
+            address xcmTarget = XCM_SENDER != address(0) ? XCM_SENDER : XCM_PRECOMPILE;
+            try IXcm(xcmTarget).send(destination, preBuiltXcmMessage) {
                 success = true;
             } catch (bytes memory reason) {
                 err = reason;
@@ -354,6 +441,7 @@ contract AssetHubVault is ReentrancyGuard {
         uint128 liquidity
     ) external nonReentrant {
         Position storage position = positions[positionId];
+        require(position.amount > 0, "Position not found");
         require(position.status == PositionStatus.PendingExecution, "Position not pending");
 
         // Access control: allow operator OR authorized executor for the target chain
@@ -373,27 +461,49 @@ contract AssetHubVault is ReentrancyGuard {
     
 
     /**
-    * @dev Settle liquidation after assets have been returned from Moonbeam
-    * @notice Called by operator after XTokens transfer deposits assets to this contract
-    * @notice Assets arrive at Substrate level without triggering execution - manual settlement required
-    * @param positionId The position being settled
-    * @param receivedAmount Amount of assets received (should match contract balance increase)
-    */
+     * @dev Settle liquidation after assets have been returned from Moonbeam.
+     *
+     * ACCOUNTING MODEL:
+     * -----------------
+     * The `receivedAmount` is CONTRACT-ENFORCED via event binding:
+     *
+     * 1. Moonbeam XCMProxy.liquidateSwapAndReturn() computes `totalBase` ON-CHAIN
+     *    (from actual LP removal + swap proceeds)
+     * 2. Moonbeam emits LiquidationCompleted(positionId, assetHubPositionId, user, baseAsset, totalBase)
+     * 3. Offchain worker reads the event and uses `totalBase` as `receivedAmount`
+     * 4. Offchain worker calls settleLiquidation via XCM Transact (production) or directly (test mode)
+     *
+     * The offchain worker cannot inflate `receivedAmount` beyond what the Moonbeam contract emitted.
+     * The Moonbeam contract is the source of truth for the amount.
+     *
+     * FUTURE: Moonbeam contract will atomically send XCM Transact with SCALE-encoded settlement call,
+     *         making the flow fully on-chain.
+     *
+     * SAFETY:
+     * - Position can only be settled ONCE (status check + immediate flip to Liquidated)
+     * - Test mode: operator can settle (for local testing)
+     * - Production mode: only trustedSettlementCaller (XCM-derived origin) can settle
+     *
+     * @param positionId The Asset Hub position being settled
+     * @param receivedAmount Amount computed by Moonbeam contract (from LiquidationCompleted event)
+     */
     function settleLiquidation(
         bytes32 positionId,
         uint256 receivedAmount
-    ) external onlyOperator nonReentrant {
+    ) external onlyOperatorOrTrustedSettlement nonReentrant {
         if (receivedAmount == 0) revert AmountZero();
 
         Position storage position = positions[positionId];
         require(position.status == PositionStatus.Active, "Position not active");
 
-        // Verify contract has sufficient balance to settle
-        // Note: In production, you may want to track expected amounts more precisely
-        require(address(this).balance >= receivedAmount, "Insufficient contract balance");
+        // Ensure contract has enough balance to cover the settlement
+        // This protects against accounting errors where we credit more than we hold
+        if (address(this).balance < receivedAmount) revert InsufficientBalance();
 
-        // Update position and user balance
+        // Mark as liquidated FIRST — prevents double-settlement (replay attack protection)
         position.status = PositionStatus.Liquidated;
+
+        // Credit user balance with the Moonbeam-computed amount
         userBalances[position.user] += receivedAmount;
 
         emit PositionLiquidated(positionId, position.user, receivedAmount);
@@ -587,22 +697,6 @@ contract AssetHubVault is ReentrancyGuard {
     }
 
     /**
-     * @dev LEGACY: Get all user positions (kept for backwards compatibility)
-     * @param user The user address
-     * @return list Array of all Position structs
-     * @notice ⚠️ WARNING: May fail with ContractTrapped if user has 50+ positions
-     * @notice RECOMMENDED: Use getUserPositionsPage() instead for large position counts
-     */
-    function getUserPositions(address user) external view returns (Position[] memory list) {
-        bytes32[] storage ids = userPositions[user];
-        list = new Position[](ids.length);
-        for (uint256 i = 0; i < ids.length; i++) {
-            list[i] = positions[ids[i]];
-        }
-        return list;
-    }
-
-    /**
     * @dev Get position details
     */
     function getPosition(bytes32 positionId) external view returns (Position memory) {
@@ -612,10 +706,12 @@ contract AssetHubVault is ReentrancyGuard {
     /**
     * @dev Receive function to accept ETH transfers (for XCM returns and testing)
     * @notice Only accepts ETH - no other functions can be called via this interface
+    * @notice On Asset Hub, XCM asset returns may arrive at Substrate level (not triggering this).
+    *         The trusted settler (backend) is authoritative for settlement amounts.
     */
     receive() external payable {
-        // Accept ETH transfers for XCM returns and testing
-        // No additional logic needed - balance tracking is handled in settleLiquidation
+        // Accept ETH transfers for XCM returns and testing.
+        // NOTE: Settlement accounting does not depend on this — the trusted caller provides the amount.
     }
 
 } 

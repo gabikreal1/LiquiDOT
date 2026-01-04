@@ -4,351 +4,211 @@ icon: download
 
 # Installation
 
-Set up LiquiDOT for local development or deployment. This guide covers both user and developer installation.
+Set up LiquiDOT for local development.
 
-## For Users
+> Note: this page lives under `gitbook/_archived/` for history, but the instructions below are updated for the current repository.
 
-### Web Interface (Recommended)
+## Prerequisites
 
-The easiest way to use LiquiDOT is through our web interface:
-
-1. Visit [liquidot.xyz](https://liquidot.xyz) (coming soon)
-2. Connect your Polkadot-compatible wallet
-3. Start providing liquidity
-
-**No installation required!**
-
-### Wallet Setup
-
-You'll need a compatible wallet:
-
-**Recommended Wallets:**
-* [Talisman](https://talisman.xyz/) - Multi-chain wallet with excellent UX
-* [SubWallet](https://subwallet.app/) - Full-featured Polkadot wallet
-* [Polkadot.js Extension](https://polkadot.js.org/extension/) - Official extension
-
-**Mobile Support:**
-* [Nova Wallet](https://novawallet.io/) - iOS & Android
-* [SubWallet Mobile](https://subwallet.app/) - iOS & Android
-
-## For Developers
-
-### Prerequisites
-
-Ensure you have the following installed:
+- Node.js 18+
+- npm (or pnpm)
+- Git
+- Docker (recommended for Postgres + Graph Node)
 
 ```bash
-# Node.js (v18+ required)
 node --version
-
-# npm or pnpm
 npm --version
-# or
-pnpm --version
-
-# Git
 git --version
+docker --version
 ```
 
-### Clone the Repository
+## Clone the repository
 
 ```bash
 git clone https://github.com/gabikreal1/LiquiDOT.git
 cd LiquiDOT
 ```
 
-### Project Structure
+## Project structure
 
 ```
 LiquiDOT/
 ├── Frontend/           # Next.js web interface
-├── Backend/           # NestJS backend services
-├── SmartContracts/    # Solidity contracts
-├── docs/              # Documentation
-└── gitbook/           # GitBook documentation
+├── Backend/            # NestJS API + pool sync + decision engine
+├── SmartContracts/     # Solidity contracts + tests
+└── gitbook/            # Documentation sources
 ```
 
-## Smart Contracts Setup
+## Smart contracts
 
-### Install Dependencies
+### Install
 
 ```bash
 cd SmartContracts
 npm install
 ```
 
-### Environment Configuration
-
-Create a `.env` file:
+### Configure
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` with your credentials:
+Configure the chain RPCs and private keys in `SmartContracts/.env`.
+
+> Never commit `.env` files or private keys.
+
+### Test
 
 ```bash
-# Private keys (without 0x prefix)
-MOON=your_moonbase_private_key
-ASSET=your_asset_hub_private_key
-
-# Contract addresses (set after deployment)
-ASSETHUB_CONTRACT=0x...
-XCMPROXY_CONTRACT=0x...
-
-# RPC endpoints
-MOONBASE_RPC=https://rpc.api.moonbase.moonbeam.network
-ASSETHUB_RPC=wss://paseo-asset-hub-rpc.polkadot.io
-```
-
-{% hint style="warning" %}
-Never commit your `.env` file or private keys to version control!
-{% endhint %}
-
-### Get Testnet Tokens
-
-**Moonbase DEV:**
-```bash
-# Visit https://faucet.moonbeam.network/
-# Enter your Moonbase address
-```
-
-**Paseo DOT:**
-```bash
-# Visit https://faucet.paseo.network/
-# Enter your Asset Hub address
-```
-
-### Deploy Contracts
-
-Follow the [Contract Deployment Guide](../basics/contract-deployment.md) for detailed instructions.
-
-Quick deployment:
-
-```bash
-# Deploy Asset Hub Vault (via Remix)
-# See scripts/README.md for details
-
-# Deploy Moonbase infrastructure
-npm run deploy:moonbase
-
-# Run tests
 npm test
 ```
 
-## Backend Setup
+### Deploy
 
-### Install Backend Dependencies
+See:
+- `SmartContracts/README.md`
+- `SmartContracts/scripts/README.md`
+
+## Subgraph (pool data)
+
+Pool discovery/analytics are ingested from an Algebra analytics subgraph.
+
+### Option A: run your own Graph Node (recommended for reviewers)
+
+See:
+- `Backend/local-dev/graph-node/README.md`
+
+Start the local Graph Node stack:
+
+```bash
+cd Backend/local-dev/graph-node
+docker compose up -d
+```
+
+Deploy the Algebra subgraph to your local Graph Node (per upstream Algebra_Subgraph docs). Once deployed, you should have a GraphQL endpoint like:
+
+```
+http://localhost:8000/subgraphs/name/<you>/<subgraph-name>
+```
+
+### Option B: use an existing hosted Graph endpoint
+
+If you already have a deployed subgraph endpoint, you can use that URL instead.
+
+## Backend
+
+### Install
 
 ```bash
 cd Backend
 npm install
 ```
 
-### Configure Backend
+### Configure
 
-Create `config.json`:
-
-```json
-{
-  "database": {
-    "host": "localhost",
-    "port": 5432,
-    "database": "liquidot",
-    "username": "liquidot_user",
-    "password": "your_password"
-  },
-  "contracts": {
-    "assetHub": "0x...",
-    "xcmProxy": "0x..."
-  },
-  "monitoring": {
-    "interval": 12000,
-    "chains": ["moonbase"]
-  }
-}
-```
-
-### Database Setup
+The backend is configured via environment variables.
 
 ```bash
-# Install PostgreSQL
-brew install postgresql@15  # macOS
-# or
-apt-get install postgresql  # Linux
-
-# Create database
-createdb liquidot
-
-# Run migrations
-npm run migrate
+cp .env.example .env
 ```
 
-### Start Backend Services
+At minimum, configure these in `Backend/.env`:
 
 ```bash
-# Start all services
-npm run start
+# RPCs (two chains)
+ASSETHUB_RPC_URL=wss://paseo-asset-hub-rpc.polkadot.io
+MOONBEAM_RPC_URL=https://rpc.api.moonbase.moonbeam.network
 
-# Or start individually
-npm run start:server          # API server
-npm run start:decision-worker # Investment worker
-npm run start:monitor         # Stop-loss monitor
+# Deployed contracts
+ASSETHUB_VAULT_ADDRESS=0x...
+MOONBEAM_XCM_PROXY_ADDRESS=0x...
+
+# Relayer key (never commit)
+RELAYER_PRIVATE_KEY=...
+
+# Pools ingestion
+ALGEBRA_SUBGRAPH_URL=http://localhost:8000/subgraphs/name/<you>/<subgraph-name>
+
+# Optional: candidate tokens to resolve supported token names (comma-separated)
+TOKEN_CANDIDATES=0x...,0x...
 ```
 
-## Frontend Setup
+### Database
 
-### Install Frontend Dependencies
+For local development, the easiest path is to use the Docker Compose stack in the `Backend/` folder (see `Backend/QUICK_START.md`).
+
+### Run
+
+```bash
+npm run start:dev
+```
+
+### Verify
+
+```bash
+curl http://localhost:3001/api/health
+```
+
+### Pool sync (manual trigger)
+
+```bash
+# Check sync configuration
+curl http://localhost:3001/api/pools/sync/status
+
+# Trigger a manual sync
+curl -X POST http://localhost:3001/api/pools/sync
+
+# List pools
+curl http://localhost:3001/api/pools
+```
+
+## Frontend
+
+### Install
 
 ```bash
 cd Frontend
 npm install
-# or
-pnpm install
 ```
 
-### Configure Frontend
+### Configure
 
-Create `.env.local`:
+Set your API base URL to the backend:
 
 ```bash
-NEXT_PUBLIC_API_URL=http://localhost:3000
-NEXT_PUBLIC_ASSETHUB_CONTRACT=0x...
-NEXT_PUBLIC_XCMPROXY_CONTRACT=0x...
-NEXT_PUBLIC_MOONBASE_RPC=https://rpc.api.moonbase.moonbeam.network
+# example
+NEXT_PUBLIC_API_URL=http://localhost:3001
 ```
 
-### Start Development Server
+### Run
 
 ```bash
 npm run dev
-# or
-pnpm dev
 ```
 
-Visit [http://localhost:3000](http://localhost:3000)
+## Testing
 
-## Data Aggregator Service
-
-### Install Service Dependencies
-
-```bash
-npx -c "echo 'Data aggregation is handled by the Backend pool scanner (subgraph-based). DataAggregatorService has been removed.'"
-npm install
-```
-
-### Configure Service
-
-```bash
-cp env.example .env
-```
-
-Edit `.env`:
-
-```bash
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-POSTGRES_DB=liquidot
-POSTGRES_USER=liquidot_user
-POSTGRES_PASSWORD=your_password
-
-# API Keys (if needed)
-COINGECKO_API_KEY=your_key
-DEXSCREENER_API_KEY=your_key
-```
-
-### Start Aggregator
-
-```bash
-npm start
-
-# Or run manual sync
-npm run sync
-```
-
-## Verification
-
-### Test Smart Contracts
+### Smart contracts
 
 ```bash
 cd SmartContracts
-
-# Run full test suite
 npm test
-
-# Run specific tests
-npm test -- test/AssetHubVault/
-npm test -- test/XCMProxy/
-npm test -- test/Integration/
 ```
 
-### Test Backend
+### Backend
 
 ```bash
 cd Backend
-
-# Run tests
 npm test
-
-# Check services
-curl http://localhost:3000/health
+npm run test:e2e
 ```
 
-### Test Frontend
+## Getting help
 
-```bash
-cd Frontend
-
-# Run tests
-npm test
-
-# Build for production
-npm run build
-```
-
-## Docker Deployment (Optional)
-
-### Build Images
-
-```bash
-# Build all services
-docker-compose build
-
-# Or build individually
-docker build -t liquidot-frontend ./Frontend
-docker build -t liquidot-backend ./Backend
-```
-
-### Run with Docker Compose
-
-```bash
-# Start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
-```
-
-## Troubleshooting
-
-### Common Issues
-
-**Node.js Version Error:**
-```bash
-# Use Node 18+
-nvm install 18
-nvm use 18
-```
-
-**Contract Deployment Fails:**
-```bash
-# Check gas limits
-# Verify RPC connection
-# Ensure sufficient testnet tokens
-```
+- Docs: https://liquidot.gitbook.io/liquidot-docs
+- Issues: https://github.com/gabikreal1/LiquiDOT/issues
+- Email: gabrielsoftware04@gmail.com
 
 **Database Connection Error:**
 ```bash

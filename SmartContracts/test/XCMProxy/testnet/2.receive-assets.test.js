@@ -139,7 +139,7 @@ describe("XCMProxy Testnet - Receive Assets", function () {
 					ethers.parseEther("1.0"),
 					investmentParams
 				)
-			).to.be.revertedWith("Token not supported");
+			).to.be.revertedWithCustomError(proxy, "TokenNotSupported");
 		});
 
 		it("should reject zero amount", async function () {
@@ -160,7 +160,7 @@ describe("XCMProxy Testnet - Receive Assets", function () {
 					0,
 					investmentParams
 				)
-			).to.be.revertedWith("Amount must be greater than 0");
+			).to.be.revertedWithCustomError(proxy, "AmountZero");
 		});
 
 		it("should reject zero user address", async function () {
@@ -181,7 +181,7 @@ describe("XCMProxy Testnet - Receive Assets", function () {
 					ethers.parseEther("1.0"),
 					investmentParams
 				)
-			).to.be.revertedWith("Invalid user address");
+			).to.be.revertedWithCustomError(proxy, "InvalidUser");
 		});
 
 		it("should reject duplicate position IDs", async function () {
@@ -211,7 +211,7 @@ describe("XCMProxy Testnet - Receive Assets", function () {
 					ethers.parseEther("1.0"),
 					investmentParams
 				)
-			).to.be.revertedWith("Position already pending");
+			).to.be.revertedWithCustomError(proxy, "PositionAlreadyPending");
 		});
 	});
 

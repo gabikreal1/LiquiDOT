@@ -63,6 +63,17 @@ export interface ContractPosition {
 }
 
 /**
+ * Contract position with its AssetHubVault storage key (bytes32).
+ *
+ * Note: existing methods return positions without ids (since the contract view methods
+ * return Position structs only). For DB syncing we need the ids, so we fetch ids and then
+ * hydrate each Position via getPosition().
+ */
+export interface ContractPositionWithId extends ContractPosition {
+  positionId: string;
+}
+
+/**
  * Chain configuration
  */
 export interface ChainConfig {
@@ -542,6 +553,44 @@ export class AssetHubService implements OnModuleInit {
       this.logger.error(`Failed to get user position IDs: ${error.message}`);
       throw error;
     }
+  }
+
+  /**
+   * Fetch all user position IDs by paging getUserPositionIds().
+   */
+  async getAllUserPositionIds(userAddress: string, pageSize = 100): Promise<string[]> {
+    const ids: string[] = [];
+    let start = 0;
+    while (true) {
+      const page = await this.getUserPositionIds(userAddress, start, pageSize);
+      if (page.length === 0) break;
+      ids.push(...page);
+      start += page.length;
+      if (page.length < pageSize) break;
+    }
+    return ids;
+  }
+
+  /**
+   * Fetch user positions along with their AssetHub position IDs.
+   *
+   * Implementation note: the contract returns Position structs without IDs, so we fetch IDs
+   * then hydrate each position via getPosition(id).
+   */
+  async getUserPositionsWithIds(userAddress: string, maxResults = 200): Promise<ContractPositionWithId[]> {
+    const ids = await this.getAllUserPositionIds(userAddress, Math.min(100, maxResults));
+    const limited = ids.slice(0, maxResults);
+
+    const out: ContractPositionWithId[] = [];
+    for (const id of limited) {
+      const p = await this.getPosition(id);
+      if (!p) continue;
+      out.push({ positionId: id, ...p });
+    }
+
+    // deterministic sort
+    out.sort((a, b) => a.positionId.localeCompare(b.positionId));
+    return out;
   }
 
   /**

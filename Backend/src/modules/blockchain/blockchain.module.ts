@@ -6,6 +6,8 @@ import { XcmBuilderService } from './services/xcm-builder.service';
 import { BlockchainEventListenerService } from './services/event-listener.service';
 import { PapiModule } from './papi/papi.module';
 import { BlockchainController } from './blockchain.controller';
+import { BlockchainDiagnosticsController } from './blockchain-diagnostics.controller';
+import { BlockchainDiagnosticsService } from './blockchain-diagnostics.service';
 
 /**
  * BlockchainModule
@@ -38,12 +40,15 @@ import { BlockchainController } from './blockchain.controller';
  */
 @Module({
   imports: [ConfigModule, PapiModule],
-  controllers: [BlockchainController],
+  controllers: [BlockchainController, BlockchainDiagnosticsController],
   providers: [
     // Core contract services
     XcmBuilderService,      // Must be first - AssetHubService depends on it
     AssetHubService,
     MoonbeamService,
+
+    // Diagnostics
+    BlockchainDiagnosticsService,
     
     // Event handling
     BlockchainEventListenerService,
@@ -53,6 +58,7 @@ import { BlockchainController } from './blockchain.controller';
     MoonbeamService,
     XcmBuilderService,
     BlockchainEventListenerService,
+    BlockchainDiagnosticsService,
     PapiModule,
   ],
 })

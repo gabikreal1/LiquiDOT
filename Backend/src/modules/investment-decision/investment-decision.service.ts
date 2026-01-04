@@ -7,11 +7,15 @@ import { UserPreference } from '../preferences/entities/user-preference.entity';
 import { Position } from '../positions/entities/position.entity';
 import { User } from '../users/entities/user.entity';
 import { AssetHubService } from '../blockchain/services/asset-hub.service';
+import { MoonbeamService } from '../blockchain/services/moonbeam.service';
+import { XcmBuilderService } from '../blockchain/services/xcm-builder.service';
+import { createHash } from 'crypto';
 
 import {
   CandidatePoolSnapshot,
   CurrentPositionSnapshot,
   DecisionPreferences,
+  IdealPosition,
   InvestmentDecisionResult,
 } from './decision.types';
 import { makeInvestmentDecision } from './decision.logic';
@@ -74,6 +78,17 @@ export interface ExecuteDecisionParams {
   chainId?: number;
 }
 
+export interface PreviewInitialAllocationParams {
+  /** User id whose preferences should be applied. */
+  userId: string;
+
+  /** Hypothetical total capital to allocate (USD-like). */
+  totalCapitalUsd: number;
+
+  /** Optional override of max positions for this preview only. */
+  maxPositions?: number;
+}
+
 @Injectable()
 export class InvestmentDecisionService {
   private readonly logger = new Logger(InvestmentDecisionService.name);
@@ -84,7 +99,21 @@ export class InvestmentDecisionService {
     @InjectRepository(Position) private readonly positionRepo: Repository<Position>,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     private readonly assetHubService: AssetHubService,
+    private readonly moonbeamService: MoonbeamService,
+    private readonly xcmBuilderService: XcmBuilderService,
   ) {}
+
+  private buildWithdrawalPlanningKey(params: {
+    userWalletAddress: string;
+    positionId: string;
+    moonbeamPositionId: number;
+    assetHubPositionId: string;
+  }): string {
+    // Stable key to avoid repeatedly initiating liquidation for the same position
+    // if decision execution is retried.
+    const payload = `${params.userWalletAddress}:${params.positionId}:${params.moonbeamPositionId}:${params.assetHubPositionId}`;
+    return createHash('sha256').update(payload).digest('hex').slice(0, 24);
+  }
 
   /**
   * Compute a decision result using the deterministic decision logic.
@@ -126,6 +155,8 @@ export class InvestmentDecisionService {
       dexName: p.dex?.name ?? 'unknown',
       token0Symbol: p.token0Symbol,
       token1Symbol: p.token1Symbol,
+      token0Address: p.token0Address,
+      token1Address: p.token1Address,
       apy30dAvgPct: parseNumberSafe(p.apr),
       tvlUsd: parseNumberSafe(p.tvl),
       ageDays: daysSince(p.createdAt),
@@ -157,6 +188,65 @@ export class InvestmentDecisionService {
   }
 
   /**
+   * Preview an initial allocation plan before the user deposits.
+   *
+   * This is intentionally read-only (no chain reads required).
+   */
+  async previewInitialAllocation(params: PreviewInitialAllocationParams): Promise<{
+    totalCapitalUsd: number;
+    idealPositions: Array<IdealPosition & { allocationPct: number }>;
+    eligibleCandidatesCount: number;
+  }> {
+    const pref = await this.prefRepo.findOne({ where: { userId: params.userId } });
+    if (!pref) {
+      throw new Error(`No preferences found for userId=${params.userId}`);
+    }
+
+    const pools = await this.poolRepo.find({
+      where: { isActive: true },
+      relations: ['dex'],
+    });
+
+    const decisionPrefs = this.mapToDecisionPreferences(pref);
+    if (typeof params.maxPositions === 'number' && Number.isFinite(params.maxPositions) && params.maxPositions > 0) {
+      decisionPrefs.maxPositions = Math.floor(params.maxPositions);
+    }
+
+    const candidates: CandidatePoolSnapshot[] = pools.map(p => ({
+      poolId: p.id,
+      poolAddress: p.poolAddress,
+      dexName: p.dex?.name ?? 'unknown',
+      token0Symbol: p.token0Symbol,
+      token1Symbol: p.token1Symbol,
+      token0Address: p.token0Address,
+      token1Address: p.token1Address,
+      apy30dAvgPct: parseNumberSafe(p.apr),
+      tvlUsd: parseNumberSafe(p.tvl),
+      ageDays: daysSince(p.createdAt),
+    }));
+
+    const decision = makeInvestmentDecision({
+      prefs: decisionPrefs,
+      totalCapitalUsd: params.totalCapitalUsd,
+      candidates,
+      currentPositions: [],
+      rebalancesToday: 0,
+    });
+
+    const total = decision.idealPositions.reduce((acc, p) => acc + p.allocationUsd, 0);
+    const idealPositions = decision.idealPositions.map(p => ({
+      ...p,
+      allocationPct: total > 0 ? round2((p.allocationUsd / total) * 100) : 0,
+    }));
+
+    return {
+      totalCapitalUsd: params.totalCapitalUsd,
+      idealPositions,
+      eligibleCandidatesCount: decision.eligibleCandidates.length,
+    };
+  }
+
+  /**
    * Execute the decision by dispatching investments for each ideal position.
    *
    * For M2 we implement a minimal execution loop:
@@ -172,9 +262,89 @@ export class InvestmentDecisionService {
       throw new Error('AssetHubService is not initialized (missing env vars)');
     }
 
+    if (!this.moonbeamService.isInitialized()) {
+      throw new Error('MoonbeamService is not initialized (missing env vars)');
+    }
+
+    if (!this.xcmBuilderService) {
+      throw new Error('XcmBuilderService is not initialized');
+    }
+
     const chainId = params.chainId ?? 2004;
 
     const dispatchedPositionIds: string[] = [];
+
+    // ------------------------------------------------------------
+    // Liquidation-first: if we need to exit positions, we can only do
+    // full liquidations (no partial reductions).
+    //
+    // Note: This initiates Moonbeam-side liquidation and return; settlement on AssetHub
+    // happens asynchronously once assets arrive back and settleLiquidation is invoked.
+    // ------------------------------------------------------------
+    for (const w of params.decision.actions.toWithdraw) {
+      // We can only liquidate Moonbeam positions we can identify.
+      // Prefer Position.assetHubPositionId (bytes32) and local Moonbeam id if present.
+      // Our decision snapshot's positionId can be DB uuid or onchain:<pool>.
+      // For now, we handle the common case where DB Position has moonbeamPositionId and assetHubPositionId.
+      //
+      // Best-effort: if liquidation can't be initiated, log and continue so adds can still proceed.
+      try {
+        // If caller provided a db-backed positionId, try to resolve it.
+        const dbPos = await this.positionRepo.findOne({
+          where: { id: w.positionId },
+          relations: ['pool'],
+        });
+
+        if (!dbPos?.moonbeamPositionId || !dbPos.assetHubPositionId) {
+          this.logger.warn(`Skip liquidation; missing moonbeamPositionId/assetHubPositionId for snapshot positionId=${w.positionId}`);
+          continue;
+        }
+
+        const moonbeamLocalId = Number(dbPos.moonbeamPositionId);
+        if (!Number.isFinite(moonbeamLocalId) || moonbeamLocalId <= 0) {
+          this.logger.warn(`Skip liquidation; invalid moonbeamPositionId=${dbPos.moonbeamPositionId} for positionId=${dbPos.id}`);
+          continue;
+        }
+
+        const planningKey = this.buildWithdrawalPlanningKey({
+          userWalletAddress: params.userWalletAddress,
+          positionId: dbPos.id,
+          moonbeamPositionId: moonbeamLocalId,
+          assetHubPositionId: dbPos.assetHubPositionId,
+        });
+
+        if (dbPos.lastWithdrawalPlanningKey === planningKey) {
+          this.logger.log(`Skip liquidation; already initiated for dbPositionId=${dbPos.id} key=${planningKey}`);
+          continue;
+        }
+
+        // Best-effort DB marker: don't block execution if entity doesn't yet have these columns.
+  dbPos.lastWithdrawalPlanningKey = planningKey;
+  dbPos.status = 'LIQUIDATION_PENDING' as any;
+        await this.positionRepo.save(dbPos);
+
+        const destination = await this.xcmBuilderService.buildReturnDestination({
+          userAddress: params.userWalletAddress,
+          amount: 1n,
+        });
+
+        // Initiate liquidation on Moonbeam.
+        // We don't have pricing/min-out protections wired here yet; those should be configured later.
+        await this.moonbeamService.liquidateSwapAndReturn({
+          positionId: moonbeamLocalId,
+          baseAsset: dbPos.baseAsset,
+          destination,
+          minAmountOut0: 0n,
+          minAmountOut1: 0n,
+          limitSqrtPrice: 0n,
+          assetHubPositionId: dbPos.assetHubPositionId,
+        } as any);
+
+        this.logger.log(`Liquidation initiated for dbPositionId=${dbPos.id} (moonbeam=${moonbeamLocalId})`);
+      } catch (e) {
+        this.logger.warn(`Liquidation initiation failed for positionId=${w.positionId}: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
 
     const allocations = allocateWeiByUsd({
       items: params.decision.actions.toAdd.map(p => ({ poolAddress: p.poolAddress, allocationUsd: p.allocationUsd })),
@@ -254,13 +424,18 @@ export class InvestmentDecisionService {
     // UserPreference.minApr is basis points; convert to %
     const minApyPct = pref.minApr / 100;
 
-    const allowedTokenSymbols = (pref.preferredTokens ?? []).length > 0
-      ? pref.preferredTokens
-      : ['USDC', 'USDT', 'DOT', 'WETH'];
+    const preferredTokensRaw = (pref.preferredTokens ?? []).filter(Boolean);
+    const maybeAddresses = preferredTokensRaw.filter(t => /^0x[a-fA-F0-9]{40}$/.test(t.trim()));
+    const allowedTokenAddresses = maybeAddresses.length > 0 ? maybeAddresses : undefined;
+    // Back-compat: if preferredTokens aren't addresses, treat them as symbols.
+    const allowedTokenSymbols = (preferredTokensRaw.length > 0 && !allowedTokenAddresses)
+      ? preferredTokensRaw
+      : undefined;
 
     return {
       minApyPct,
       allowedTokenSymbols,
+      allowedTokenAddresses,
       allowedDexNames: pref.preferredDexes ?? undefined,
       maxPositions: 6,
       maxAllocPerPosUsd: 25_000,
@@ -294,6 +469,8 @@ export class InvestmentDecisionService {
         dexName: p.pool.dex?.name ?? 'unknown',
         token0Symbol: p.pool.token0Symbol,
         token1Symbol: p.pool.token1Symbol,
+        token0Address: p.pool.token0Address,
+        token1Address: p.pool.token1Address,
         allocationUsd: totalWei > 0n
           ? round2(totalAsNumber * (Number(safeBigInt(p.amount)) / Number(totalWei)))
           : 0,
@@ -351,6 +528,8 @@ export class InvestmentDecisionService {
         dexName: pool.dex?.name ?? 'unknown',
         token0Symbol: pool.token0Symbol,
         token1Symbol: pool.token1Symbol,
+        token0Address: pool.token0Address,
+        token1Address: pool.token1Address,
         allocationUsd: round2(params.totalCapital * weightPct),
         currentApyPct: parseNumberSafe(pool.apr),
       });

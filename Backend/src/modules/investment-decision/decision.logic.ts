@@ -53,10 +53,20 @@ export function isPoolAllowedByPreferences(pool: CandidatePoolSnapshot, prefs: D
   const minAgeDays = prefs.minAgeDays ?? DEFAULTS.minAgeDays;
   const minApyTolerance = 0.95;
 
-  const allowedTokens = new Set(prefs.allowedTokenSymbols.map(s => s.toUpperCase()));
-  const token0Ok = allowedTokens.has(pool.token0Symbol.toUpperCase());
-  const token1Ok = allowedTokens.has(pool.token1Symbol.toUpperCase());
-  if (!token0Ok || !token1Ok) return false;
+  // Prefer address-based allowlists when available.
+  if (prefs.allowedTokenAddresses && prefs.allowedTokenAddresses.length > 0) {
+    const allowed = new Set(prefs.allowedTokenAddresses.map(a => a.toLowerCase()));
+    const a0 = pool.token0Address?.toLowerCase();
+    const a1 = pool.token1Address?.toLowerCase();
+    // If caller requested address gating but pool snapshots didn't include token addresses, fail closed.
+    if (!a0 || !a1) return false;
+    if (!allowed.has(a0) || !allowed.has(a1)) return false;
+  } else {
+    const allowedTokens = new Set(prefs.allowedTokenSymbols.map(s => s.toUpperCase()));
+    const token0Ok = allowedTokens.has(pool.token0Symbol.toUpperCase());
+    const token1Ok = allowedTokens.has(pool.token1Symbol.toUpperCase());
+    if (!token0Ok || !token1Ok) return false;
+  }
 
   if (prefs.allowedDexNames && prefs.allowedDexNames.length > 0) {
     const allowedDex = new Set(prefs.allowedDexNames.map(d => d.toLowerCase()));

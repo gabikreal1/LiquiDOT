@@ -45,7 +45,9 @@ function parseAddressList(raw) {
 
 function getMoonbaseTestConfig() {
   const bootstrapPath = process.env.MOONBASE_BOOTSTRAP_FILE || DEFAULT_BOOTSTRAP_PATH;
+  console.log("Reading bootstrap from:", bootstrapPath);
   const fileConfig = readJson(bootstrapPath);
+  console.log("File config address:", fileConfig.xcmProxy ? fileConfig.xcmProxy.address : "undefined");
 
   const proxyAddress =
     normalizeAddress(process.env.XCMPROXY_CONTRACT) ||

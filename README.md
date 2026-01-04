@@ -4,10 +4,18 @@
 
 Cross-chain liquidity automation for the Polkadot ecosystem. Built on Asset Hub for custody and using XCM for execution across parachains, LiquiDOT lets users deposit into a vault, define LP strategy, and earn fees without manual rebalancing.
 
+### Current Testnet Deployments
+
+| Contract | Network | Address |
+|----------|---------|---------|
+| AssetHubVault | Paseo Asset Hub | `0x68e86F267C5C37dd4947ef8e5823eBAeAf93Fde6` |
+| XCMProxy | Moonbase Alpha | `0xe07d18eC747707f29cd3272d48CF84A383647dA1` |
+
 ### Current status
 
-- Ongoing development; MVP targeting Moonbeam Algebra pools with Asset Hub custody and an XCM Proxy on Moonbeam.
-- Contracts are deployed on testnet, backend is getting ready by 20/12/25.
+- MVP deployed on testnets (Paseo Asset Hub + Moonbase Alpha)
+- Smart contracts tested with 61+ passing tests
+- XCM integration verified with IXcm and IXTokens precompiles
 - Have been approved a grant application to support development: see Polkadot Fast Grants PR [#86](https://github.com/Polkadot-Fast-Grants/apply/pull/86).
 
 ### Documentation
@@ -39,6 +47,25 @@ LiquiDOT/
 ```
 
 For detailed smart contract documentation, deployment guides, and testing instructions, see **[SmartContracts/README.md](./SmartContracts/README.md)**.
+
+### Review evidence (assumptions manifest)
+
+Some integration details (especially XCM/precompile availability and configured addresses) are runtime- and deployment-dependent. To keep review discussions grounded in reproducible facts, the repo includes an “assumptions manifest” workflow that snapshots the on-chain configuration the code is actually pointing at.
+
+- Schema: `deployments/assumptions.schema.json`
+- Template (Paseo): `deployments/paseo/assumptions.json`
+- Generator: `scripts/generate-assumptions.mjs`
+
+The generator reads chain IDs and key contract configuration via JSON-RPC and writes a generated manifest (defaults to `deployments/paseo/assumptions.generated.json`).
+
+It expects these environment variables:
+
+- `ASSET_HUB_RPC`
+- `MOONBEAM_RPC`
+- `ASSETHUB_VAULT`
+- `MOONBEAM_XCMPROXY`
+
+This is intentionally a “build it / verify it” step: a reviewer can point the generator at any deployment and compare the resulting manifest to what the backend and docs claim.
 
 ### Backend
 
@@ -72,8 +99,14 @@ All required deployment, wiring, and verification helpers ship with the reposito
 
 ### Architecture overview
 
-- Asset Hub Vault (custody, accounting, XCM orchestration)
-- Moonbeam XCM Proxy (swaps, range LP mint/burn, liquidation)
+- **Asset Hub Vault** (custody, accounting, XCM orchestration)
+  - Uses IXcm precompile at `0x00000000000000000000000000000000000a0000`
+  - Custom errors for gas-efficient reverts
+  - Test mode for development
+- **Moonbeam XCM Proxy** (swaps, range LP mint/burn, liquidation)
+  - Uses IXTokens precompile at `0x0000000000000000000000000000000000000804`
+  - Integrates with Algebra DEX NFPM
+  - Operator-triggered liquidation model
 - Backend workers (pool analytics, investment decisions, monitoring)
 - Frontend dashboard (strategy config, positions, status)
 
