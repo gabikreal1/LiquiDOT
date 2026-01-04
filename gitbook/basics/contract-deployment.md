@@ -17,8 +17,8 @@ Deploy LiquiDOT smart contracts on Paseo Asset Hub and Moonbase Alpha testnets.
 
 **Testnet Funds:**
 
-* Paseo PAS: https://faucet.paseo.network/
-* Moonbase DEV: https://faucet.moonbeam.network/
+* Paseo PAS: https://faucet.polkadot.io/
+* Moonbase DEV: https://faucet.polkadot.io/
 
 **Environment (.env in `SmartContracts/`):**
 
@@ -93,6 +93,7 @@ npx hardhat test test/XCMProxy/testnet/1.config-check.test.js --network moonbase
 |------------|---------|---------|
 | IXcm | Asset Hub | `0x00000000000000000000000000000000000a0000` |
 | IXTokens | Moonbeam | `0x0000000000000000000000000000000000000804` |
+| IXCMTransactor | Moonbeam | `0x0000000000000000000000000000000000000806` |
 
 ## Troubleshooting
 

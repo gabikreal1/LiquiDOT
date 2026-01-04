@@ -62,13 +62,15 @@ interface IXcm {
 | **Operator**  | Dispatch operations & confirmations | Execute investment flows and settle liquidations |
 | **Emergency** | Emergency liquidation               | Force liquidate positions in critical situations |
 
-| Variable          | Type                           | Description                                                                                                     |
-| ----------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| `userBalances`    | `mapping(address => uint256)`  | ETH/native balance per user                                                                                     |
-| `positions`       | `mapping(bytes32 => Position)` | Position details: user, poolId, baseAsset, chainId, range percents, status, amount, remotePositionId, timestamp |
-| `supportedChains` | `mapping(uint32 => Chain)`     | Registered chains: supported flag, xcmDestination, chainName, timestamp                                         |
-| `chainExecutors`  | `mapping(uint32 => address)`   | Authorized remote executor per chain (optional)                                                                 |
-| `testMode`        | `bool`                         | Skips actual XCM send for local testing                                                                         |
+| Variable                    | Type                           | Description                                                                                                     |
+| --------------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `userBalances`              | `mapping(address => uint256)`  | ETH/native balance per user                                                                                     |
+| `positions`                 | `mapping(bytes32 => Position)` | Position details: user, poolId, baseAsset, chainId, range percents, status, amount, remotePositionId, timestamp |
+| `userPositions`             | `mapping(address => bytes32[])` | User's position IDs for pagination                                                                             |
+| `supportedChains`           | `mapping(uint32 => ChainConfig)` | Registered chains: supported flag, xcmDestination, chainName, timestamp                                       |
+| `chainExecutors`            | `mapping(uint32 => address)`   | Authorized remote executor per chain (optional)                                                                 |
+| `trustedSettlementCaller`   | `address`                      | XCM-derived origin for production settlements                                                                   |
+| `testMode`                  | `bool`                         | Skips actual XCM send for local testing                                                                         |
 
 **User Operations:**
 
@@ -84,14 +86,14 @@ interface IXcm {
 
 **Chain Management:**
 
-* `ChainAdded(uint32 indexed chainId, string chainName)`
+* `ChainAdded(uint32 indexed chainId, bytes xcmDestination, address executor)`
 * `ChainRemoved(uint32 indexed chainId)`
 * `ExecutorUpdated(uint32 indexed chainId, address executor)`
 
 **XCM Operations:**
 
-* `XCMMessageSent(bytes32 messageHash, uint32 chainId)`
-* `XcmSendAttempt(uint32 chainId, bool success, bytes reason)`
+* `XCMMessageSent(bytes32 indexed messageHash, bytes destination, bytes message)`
+* `XcmSendAttempt(bytes32 indexed messageHash, bytes destination, bool success, bytes errorData)`
 
 ### Custom Errors
 
@@ -106,6 +108,8 @@ InsufficientBalance(), InvalidRange()
 // XCM & Chain
 XcmPrecompileNotSet(), ChainNotSupported()
 ChainIdMismatch(), ExecutorNotAuthorized()
+UnauthorizedXcmCall(), PositionNotActive()
+AmountMismatch(), AssetMismatch()
 ```
 
 ***
@@ -157,21 +161,23 @@ DEXNotConfigured(), NFPMNotSet()
 | **Owner**    | Configuration & admin              | Set integrations, XCM config, and system parameters |
 | **Operator** | Investment & liquidation execution | Execute pending investments and liquidate positions |
 
-| Variable                  | Type                                  | Description                                                                                                  |
-| ------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `supportedTokens`         | `mapping(address => bool)`            | Allowlist for inbound assets                                                                                 |
-| `pendingPositions`        | `mapping(bytes32 => PendingPosition)` | Positions awaiting execution (keyed by Asset Hub position ID)                                                |
-| `positions`               | `mapping(uint256 => Position)`        | Active positions: owner, pool, tokens, ticks, liquidity, NFPM tokenId, ranges, entryPrice, timestamp, active |
-| `quoterContract`          | `address`                             | Algebra Quoter for price quotes                                                                              |
-| `swapRouterContract`      | `address`                             | Algebra SwapRouter for token swaps                                                                           |
-| `nfpmContract`            | `address`                             | Algebra NFPM for LP position management                                                                      |
-| `xTokensPrecompile`       | `address`                             | XTokens precompile for cross-chain transfers                                                                 |
-| `xcmTransactorPrecompile` | `address`                             | XCM Transactor for remote calls                                                                              |
-| `defaultDestWeight`       | `uint64`                              | Default XCM destination weight                                                                               |
-| `assetHubParaId`          | `uint32`                              | Asset Hub parachain ID                                                                                       |
-| `trustedXcmCaller`        | `address`                             | Authorized XCM message sender                                                                                |
-| `defaultSlippageBps`      | `uint16`                              | Default slippage tolerance (basis points)                                                                    |
-| `testMode`                | `bool`                                | Skip XCM sends for local testing                                                                             |
+| Variable                    | Type                                  | Description                                                                                                  |
+| --------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `supportedTokens`           | `mapping(address => bool)`            | Allowlist for inbound assets                                                                                 |
+| `pendingPositions`          | `mapping(bytes32 => PendingPosition)` | Positions awaiting execution (keyed by Asset Hub position ID)                                                |
+| `positions`                 | `mapping(uint256 => Position)`        | Active positions: owner, pool, tokens, ticks, liquidity, NFPM tokenId, ranges, entryPrice, timestamp, status |
+| `assetHubPositionToLocalId` | `mapping(bytes32 => uint256)`         | Maps Asset Hub position ID to local position ID                                                              |
+| `quoterContract`            | `address`                             | Algebra Quoter for price quotes                                                                              |
+| `swapRouterContract`        | `address`                             | Algebra SwapRouter for token swaps                                                                           |
+| `nfpmContract`              | `address`                             | Algebra NFPM for LP position management                                                                      |
+| `xTokensPrecompile`         | `address`                             | XTokens precompile for cross-chain transfers                                                                 |
+| `xcmTransactorPrecompile`   | `address`                             | XCM Transactor for remote calls                                                                              |
+| `defaultDestWeight`         | `uint64`                              | Default XCM destination weight                                                                               |
+| `assetHubParaId`            | `uint32`                              | Asset Hub parachain ID                                                                                       |
+| `trustedXcmCaller`          | `address`                             | Authorized XCM message sender                                                                                |
+| `xcmConfigFrozen`           | `bool`                                | Freeze flag to prevent further XCM config changes                                                            |
+| `defaultSlippageBps`        | `uint16`                              | Default slippage tolerance (basis points)                                                                    |
+| `testMode`                  | `bool`                                | Skip XCM sends for local testing                                                                             |
 
 ### Events
 
@@ -210,12 +216,13 @@ function unpause() external onlyOwner
 #### XCM & Execution Functions
 
 ```solidity
-// Receive assets and create pending position (called via XCM)
+// Receive assets and create pending position (called via XCM Transact)
 function receiveAssets(
+    bytes32 assetHubPositionId,
     address token,
     address user,
     uint256 amount,
-    bytes calldata investmentParams
+    bytes memory investmentParams
 ) external
 
 // Execute pending investment
@@ -234,12 +241,18 @@ function executeFullLiquidation(
     uint256 positionId
 ) external onlyOperator returns (uint256 amount0, uint256 amount1)
 
+// Atomic check + liquidate if out of range
+function liquidateIfOutOfRange(
+    uint256 positionId
+) external onlyOperator returns (bool liquidated, uint256 amount0, uint256 amount1)
+
 // Liquidate, swap to base asset, and return via XCM
 function liquidateSwapAndReturn(
     uint256 positionId,
     address baseAsset,
     uint256 minAmountOut,
-    bytes calldata destination
+    bytes calldata destination,
+    bytes32 assetHubPositionId
 ) external onlyOperator
 
 // Return assets to Asset Hub
@@ -295,24 +308,25 @@ function getActivePositions() external view returns (Position[] memory)
 function getUserPositions(address user) external view returns (uint256[] memory)
 ```
 
-#### Moonbeam XCM-Transactor Helpers
+#### XCM Configuration (Owner)
 
 ```solidity
-// Build pallet call bytes for remote execution
-function buildPalletCallBytes(
-    uint8 palletIndex,
-    uint8 callIndex,
-    bytes calldata args
-) external pure returns (bytes memory)
+// XCM precompile configuration
+function setXTokensPrecompile(address precompile) external onlyOwner
+function setXcmTransactorPrecompile(address precompile) external onlyOwner
+function setDefaultDestWeight(uint64 weight) external onlyOwner
+function setAssetHubParaId(uint32 paraId) external onlyOwner
+function setTrustedXcmCaller(address caller) external onlyOwner
+function freezeXcmConfig() external onlyOwner
 
-// Execute remote call on Asset Hub
-function remoteCallAssetHub(
-    uint16 feeLocation,
-    uint64 weightAtMost,
-    bytes calldata call,
-    uint256 feeAmount,
-    uint64 overallWeight
-) external onlyOwner
+// DEX integration
+function setIntegrations(address quoter, address router) external onlyOwner
+function setNFPM(address nfpm) external onlyOwner
+
+// System settings
+function setDefaultSlippageBps(uint16 bps) external onlyOwner
+function setOperator(address newOperator) external onlyOwner
+function setTestMode(bool enabled) external onlyOwner
 ```
 
 ***
@@ -390,7 +404,7 @@ sequenceDiagram
 
 ***
 
-## Important Design Notes
+## Current Design Notes
 
 ### DEX Target: StellaSwap Pulsar (Algebra Integral)
 

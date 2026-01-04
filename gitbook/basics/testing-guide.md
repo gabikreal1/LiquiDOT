@@ -17,7 +17,7 @@ End-to-end steps to test LiquiDOT on Moonbase Alpha and Paseo Asset Hub.
 
 ### Testnet Funds
 - Moonbase DEV: https://faucet.moonbeam.network/
-- Paseo PAS: https://faucet.paseo.network/
+- Paseo PAS: https://faucet.polkadot.io/
 
 ### Environment Setup
 
