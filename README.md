@@ -58,24 +58,24 @@ LiquiDOT follows a **hub-and-spoke model** designed for scalable cross-chain liq
          ▼                       ▼                       │
 ┌─────────────────────────────────────────────────────────────────┐
 │                        Asset Hub                                │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │              AssetHubVault Contract                      │   │
-│  │  • User deposits/withdrawals                             │   │
-│  │  • Position accounting                                   │   │
-│  │  • XCM orchestration (IXcm @ 0x...a0000)                │   │
-│  └─────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │              AssetHubVault Contract                     │    │
+│  │  • User deposits/withdrawals                            │    │
+│  │  • Position accounting                                  │    │
+│  │  • XCM orchestration (IXcm @ 0x...a0000)                │    │
+│  └─────────────────────────────────────────────────────────┘    │
 └─────────────────────────────┬───────────────────────────────────┘
                               │ XCM
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                         Moonbeam                                │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │               XCMProxy Contract                          │   │
-│  │  • LP mint/burn via Algebra NFPM                        │   │
-│  │  • Swap execution                                        │   │
-│  │  • Operator-triggered liquidations                       │   │
-│  │  • XCM returns (IXTokens @ 0x...0804)                   │   │
-│  └─────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │               XCMProxy Contract                         │    │
+│  │  • LP mint/burn via Algebra NFPM                        │    │
+│  │  • Swap execution                                       │    │
+│  │  • Operator-triggered liquidations                      │    │
+│  │  • XCM returns (IXTokens @ 0x...0804)                   │    │
+│  └─────────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -119,7 +119,7 @@ See **[Backend/README.md](./Backend/README.md)** for full details.
 
 **Prerequisites:**
 - Polkadot-compatible wallet (Talisman, SubWallet, Polkadot.js)
-- Testnet tokens: [Moonbase DEV](https://faucet.moonbeam.network/) + [Paseo PAS](https://faucet.paseo.network/)
+- Testnet tokens: [Moonbase DEV](https://faucet.moonbeam.network/) + [Paseo PAS](https://faucet.polkadot.io/)
 
 **Deploy & Test:**
 
