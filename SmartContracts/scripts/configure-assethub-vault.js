@@ -14,7 +14,7 @@ const MOONBASE_PARA_ID = 1000; // Moonbase Alpha paraId
 const MOONBASE_XCM_DESTINATION = "0x00"; // Simplified placeholder
 
 // XCMProxy on Moonbase Alpha (from previous deployment)
-const MOONBASE_XCMPROXY = "0xe07d18eC747707f29cd3272d48CF84A383647dA1";
+const MOONBASE_XCMPROXY = "0x7f4b3620d6Ffcc15b11ca8679c57c076DCE109d1";
 
 // Helper to wait for block confirmation
 async function waitForBlock(ms = 6000) {

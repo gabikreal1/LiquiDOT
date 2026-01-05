@@ -465,44 +465,8 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         uint256 swapAmount = amount;
 
         if (token != baseAsset) {
-            if (swapRouterContract == address(0)) revert SwapRouterNotSet();
-
-            // Approve swap router
-            uint256 currentAllowance = IERC20(token).allowance(address(this), swapRouterContract);
-            if (currentAllowance != 0) {
-                IERC20(token).forceApprove(swapRouterContract, 0);
-            }
-            IERC20(token).forceApprove(swapRouterContract, amount);
-
-            // Calculate minimum output based on slippage
-            if (quoterContract == address(0)) revert QuoterNotSet();
-            // Note: Algebra Integral Quoter interface: (tokenIn, tokenOut, deployer, amountIn, limitSqrtPrice)
-            (uint256 expectedOut, ) = IQuoter(quoterContract).quoteExactInputSingle(
-                token, 
-                baseAsset, 
-                address(0), // deployer
-                amount, 
-                0 // limitSqrtPrice
-            );
-            
-            uint256 bps = slippageBps > 0 ? slippageBps : defaultSlippageBps;
-            uint256 amountOutMinimum = (expectedOut * (10_000 - bps)) / 10_000;
-
-            // Execute swap
-            swapAmount = _swapExactInputSingle(
-                token,
-                baseAsset,
-                address(this),
-                amount,
-                amountOutMinimum, 
-                0  // limitSqrtPrice
-            );
-
-            // Reset allowance
-            IERC20(token).forceApprove(swapRouterContract, 0);
-
+            swapAmount = _swapWithSlippage(token, baseAsset, amount, slippageBps);
             tokenToUse = baseAsset;
-
             emit ProceedsSwapped(token, baseAsset, amount, swapAmount, 0);
             if (swapAmount == 0) revert SwapZeroOutput();
         }
@@ -514,19 +478,35 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
             upperRangePercent
         );
 
-        // Step 3: Get pool tokens
+        // Step 3: Get pool tokens and current price state
         address token0 = IAlgebraPool(poolId).token0();
         address token1 = IAlgebraPool(poolId).token1();
+        (uint160 sqrtPriceX96, int24 currentTick, , , , ) = IAlgebraPool(poolId).globalState();
 
-        // Step 4: Prepare amounts for minting
-        uint256 amount0Desired = amounts.length > 0 ? amounts[0] : 0;
-        uint256 amount1Desired = amounts.length > 1 ? amounts[1] : 0;
+        // Step 4: Determine if we need to split into both tokens (price within range)
+        uint256 amount0Desired;
+        uint256 amount1Desired;
+        
+        bool priceInRange = currentTick >= bottomTick && currentTick < topTick;
+        
+        if (priceInRange && swapAmount > 0) {
+            // Price is within range - we need both tokens
+            // Calculate the ratio needed based on current price and tick range
+            (amount0Desired, amount1Desired) = _splitForDualSided(
+                tokenToUse, token0, token1, swapAmount,
+                sqrtPriceX96, bottomTick, topTick, slippageBps
+            );
+        } else {
+            // Price outside range OR using pre-specified amounts - use original logic
+            amount0Desired = amounts.length > 0 ? amounts[0] : 0;
+            amount1Desired = amounts.length > 1 ? amounts[1] : 0;
 
-        // If we swapped, adjust the amounts based on which token we got
-        if (tokenToUse == token0 && token != baseAsset) {
-            amount0Desired = swapAmount;
-        } else if (tokenToUse == token1 && token != baseAsset) {
-            amount1Desired = swapAmount;
+            // If we swapped, adjust the amounts based on which token we got
+            if (tokenToUse == token0 && token != baseAsset) {
+                amount0Desired = swapAmount;
+            } else if (tokenToUse == token1 && token != baseAsset) {
+                amount1Desired = swapAmount;
+            }
         }
 
         // Verify balances
@@ -557,7 +537,7 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
     uint256 amount1Min = 0;
 
         if (amount0Desired > 0 || amount1Desired > 0) {
-            (uint160 sqrtPriceX96, , , , , ) = IAlgebraPool(poolId).globalState();
+            // Reuse sqrtPriceX96 from Step 3 (already fetched above)
             uint160 sqrtRatioLowerX96 = TickMath.getSqrtRatioAtTick(bottomTick);
             uint160 sqrtRatioUpperX96 = TickMath.getSqrtRatioAtTick(topTick);
 
@@ -1187,6 +1167,109 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
                 deployer: address(0)
             })
         );
+    }
+
+    /**
+     * @dev Internal swap with automatic quote, slippage, and approval handling
+     * @param tokenIn Input token address
+     * @param tokenOut Output token address
+     * @param amountIn Amount to swap
+     * @param slippageBps Slippage tolerance in basis points (uses default if 0)
+     * @return amountOut Amount received from swap
+     */
+    function _swapWithSlippage(
+        address tokenIn,
+        address tokenOut,
+        uint256 amountIn,
+        uint16 slippageBps
+    ) internal returns (uint256 amountOut) {
+        if (quoterContract == address(0)) revert QuoterNotSet();
+        if (swapRouterContract == address(0)) revert SwapRouterNotSet();
+        
+        // Get quote
+        (uint256 expectedOut, ) = IQuoter(quoterContract).quoteExactInputSingle(
+            tokenIn, tokenOut, address(0), amountIn, 0
+        );
+        
+        // Calculate minimum with slippage
+        uint256 bps = slippageBps > 0 ? slippageBps : defaultSlippageBps;
+        uint256 minOut = (expectedOut * (10_000 - bps)) / 10_000;
+        
+        // Approve, swap, reset
+        IERC20(tokenIn).forceApprove(swapRouterContract, amountIn);
+        amountOut = _swapExactInputSingle(tokenIn, tokenOut, address(this), amountIn, minOut, 0);
+        IERC20(tokenIn).forceApprove(swapRouterContract, 0);
+    }
+
+    /**
+     * @dev Split a single token into both pool tokens for in-range LP minting
+     * @param tokenToUse The token we currently have (after initial swap)
+     * @param token0 Pool's token0
+     * @param token1 Pool's token1
+     * @param totalAmount Total amount of tokenToUse available
+     * @param sqrtPriceX96 Current pool sqrt price
+     * @param bottomTick Lower tick bound
+     * @param topTick Upper tick bound
+     * @param slippageBps Slippage tolerance
+     * @return amount0 Amount of token0 for minting
+     * @return amount1 Amount of token1 for minting
+     */
+    function _splitForDualSided(
+        address tokenToUse,
+        address token0,
+        address token1,
+        uint256 totalAmount,
+        uint160 sqrtPriceX96,
+        int24 bottomTick,
+        int24 topTick,
+        uint16 slippageBps
+    ) internal returns (uint256 amount0, uint256 amount1) {
+        // Calculate the ratio needed based on current price and tick range
+        uint160 sqrtRatioLowerX96 = TickMath.getSqrtRatioAtTick(bottomTick);
+        uint160 sqrtRatioUpperX96 = TickMath.getSqrtRatioAtTick(topTick);
+        
+        // Calculate amounts needed for reference liquidity at current price
+        (uint256 ratio0, uint256 ratio1) = LiquidityAmounts.getAmountsForLiquidity(
+            sqrtPriceX96, sqrtRatioLowerX96, sqrtRatioUpperX96, 1e18
+        );
+        
+        uint256 totalRatio = ratio0 + ratio1;
+        if (totalRatio == 0) {
+            // Edge case: return all as the token we have
+            if (tokenToUse == token0) {
+                return (totalAmount, 0);
+            } else {
+                return (0, totalAmount);
+            }
+        }
+        
+        if (tokenToUse == token0) {
+            // We have token0, need to swap some to get token1
+            uint256 amountToSwap = (totalAmount * ratio1) / totalRatio;
+            if (amountToSwap > 0) {
+                uint256 received1 = _swapWithSlippage(token0, token1, amountToSwap, slippageBps);
+                amount0 = totalAmount - amountToSwap;
+                amount1 = received1;
+                emit ProceedsSwapped(token0, token1, amountToSwap, received1, 1);
+            } else {
+                amount0 = totalAmount;
+                amount1 = 0;
+            }
+        } else if (tokenToUse == token1) {
+            // We have token1, need to swap some to get token0
+            uint256 amountToSwap = (totalAmount * ratio0) / totalRatio;
+            if (amountToSwap > 0) {
+                uint256 received0 = _swapWithSlippage(token1, token0, amountToSwap, slippageBps);
+                amount0 = received0;
+                amount1 = totalAmount - amountToSwap;
+                emit ProceedsSwapped(token1, token0, amountToSwap, received0, 1);
+            } else {
+                amount0 = 0;
+                amount1 = totalAmount;
+            }
+        } else {
+            revert("baseAsset must be token0 or token1");
+        }
     }
 
     // Swap exact input single via Algebra router (external wrapper with reentrancy protection)

@@ -16,7 +16,7 @@ Testnet-first guide for running the LiquiDOT smart-contract suites on Paseo Asse
 
 | AssetHubVault | Paseo Asset Hub | `0x68e86F267C5C37dd4947ef8e5823eBAeAf93Fde6` |- Environment variables (in shell or `.env` inside `SmartContracts/`)
 
-| XCMProxy | Moonbase Alpha | `0xe07d18eC747707f29cd3272d48CF84A383647dA1` |
+| XCMProxy | Moonbase Alpha | `0x7f4b3620d6Ffcc15b11ca8679c57c076DCE109d1` |
 
 ```bash
 
@@ -42,7 +42,7 @@ export ASSET_PK="0x..."     # Asset Hub deployer key (with 0x prefix)npm install
 
 export ASSETHUB_CONTRACT="0x68e86F267C5C37dd4947ef8e5823eBAeAf93Fde6"```
 
-export XCMPROXY_CONTRACT="0xe07d18eC747707f29cd3272d48CF84A383647dA1"
+export XCMPROXY_CONTRACT="0x7f4b3620d6Ffcc15b11ca8679c57c076DCE109d1"
 
 ```## 1. Deploy Contracts
 

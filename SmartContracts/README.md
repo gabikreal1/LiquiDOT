@@ -62,7 +62,7 @@ npm install
 | Contract | Network | Address |
 |----------|---------|---------|
 | AssetHubVault | Paseo Asset Hub | `0x68e86F267C5C37dd4947ef8e5823eBAeAf93Fde6` |
-| XCMProxy | Moonbase Alpha | `0xe07d18eC747707f29cd3272d48CF84A383647dA1` |
+| XCMProxy | Moonbase Alpha | `0x7f4b3620d6Ffcc15b11ca8679c57c076DCE109d1` |
 
 ### Deployment
 
@@ -110,7 +110,7 @@ ASSET_PK=0xyour_asset_hub_private_key
 
 # Contract addresses (set after deployment)
 ASSETHUB_CONTRACT=0x68e86F267C5C37dd4947ef8e5823eBAeAf93Fde6
-XCMPROXY_CONTRACT=0xe07d18eC747707f29cd3272d48CF84A383647dA1
+XCMPROXY_CONTRACT=0x7f4b3620d6Ffcc15b11ca8679c57c076DCE109d1
 ```
 
 ## 📚 Documentation
@@ -198,7 +198,7 @@ proxy.setTestMode(true);   // XCMProxy
 
 ### Single-Sided vs Dual-Sided Liquidity
 
-When minting LP positions, the `amounts` array must be populated based on the current pool price relative to the desired tick range. This is standard Uniswap V3/Algebra concentrated liquidity math:
+When minting LP positions, the token amounts depend on the current pool price relative to the tick range:
 
 | Pool Price vs Range | Token0 Required | Token1 Required |
 |---------------------|-----------------|-----------------|
@@ -206,7 +206,7 @@ When minting LP positions, the `amounts` array must be populated based on the cu
 | Price **above** range (currentTick > topTick) | ❌ No | ✅ Yes |
 | Price **within** range | ✅ Yes | ✅ Yes |
 
-**Operator Responsibility:** Ensure the correct tokens are available before executing positions. The backend calculates optimal swap amounts based on current pool state.
+**Implementation:** XCMProxy handles this **automatically on-chain**. When price is within the tick range, the contract calculates the optimal token ratio using `LiquidityAmounts.getAmountsForLiquidity()` and performs a second swap to split the base asset into both tokens. This targets in-range positions for maximum fee earning. See `XCMProxy.sol::executePendingInvestment()` for implementation.
 
 ### Settlement Accounting Model
 

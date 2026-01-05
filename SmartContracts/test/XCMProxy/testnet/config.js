@@ -49,10 +49,11 @@ function getMoonbaseTestConfig() {
   const fileConfig = readJson(bootstrapPath);
   console.log("File config address:", fileConfig.xcmProxy ? fileConfig.xcmProxy.address : "undefined");
 
+  // Prioritize file config over env vars for easier redeployment
   const proxyAddress =
+    normalizeAddress(fileConfig?.xcmProxy?.address) ||
     normalizeAddress(process.env.XCMPROXY_CONTRACT) ||
-    normalizeAddress(process.env.XCMPROXY_ADDRESS) ||
-    normalizeAddress(fileConfig?.xcmProxy?.address);
+    normalizeAddress(process.env.XCMPROXY_ADDRESS);
 
   if (!proxyAddress) {
     throw new Error(

@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ethers } from 'ethers';
 import { XCMProxyABI } from '../abis/XCMProxy.abi';
-import { ERC20_ABI } from '../../pools/abis/algebra.abi';
+import { ERC20_ABI, ALGEBRA_POOL_ABI } from '../../pools/abis/algebra.abi';
 
 /**
  * Parameters for liquidating a position and returning assets to AssetHub
@@ -611,6 +611,100 @@ export class MoonbeamService implements OnModuleInit {
       };
     } catch (error) {
       this.logger.error(`Failed to calculate tick range: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Gets pool state for monitoring and position analysis
+   * 
+   * This reads the current pool price and tick for:
+   * - Monitoring position range status
+   * - Determining single-sided vs dual-sided liquidity requirements
+   * - Pre-flight checks before investment execution
+   * 
+   * NOTE: The XCMProxy contract handles the actual liquidity math on-chain
+   * using Algebra's LiquidityAmounts library. This method is for backend
+   * monitoring and analysis only.
+   * 
+   * @param poolAddress - Algebra pool address
+   * @returns Pool state including current tick and price
+   */
+  async getPoolState(poolAddress: string): Promise<{
+    currentTick: number;
+    sqrtPriceX96: bigint;
+    feeZto: number;
+    feeOtz: number;
+    unlocked: boolean;
+  }> {
+    try {
+      const poolContract = new ethers.Contract(
+        poolAddress,
+        ALGEBRA_POOL_ABI,
+        this.provider,
+      );
+
+      // Use safelyGetStateOfAMM which is available in Algebra Integral
+      const state = await poolContract.safelyGetStateOfAMM();
+
+      return {
+        sqrtPriceX96: BigInt(state.sqrtPrice),
+        currentTick: Number(state.tick),
+        feeZto: Number(state.lastFee), // Fee for zero-to-one swaps
+        feeOtz: Number(state.lastFee), // Fee for one-to-zero swaps (same in Algebra v1.2)
+        unlocked: true, // safelyGetStateOfAMM doesn't return this, assume unlocked
+      };
+    } catch (error) {
+      this.logger.error(`Failed to get pool state: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Determines liquidity mode based on current price vs tick range
+   * 
+   * Returns which token(s) will be required for LP minting:
+   * - 'token0-only': Price below range, only token0 needed
+   * - 'token1-only': Price above range, only token1 needed  
+   * - 'dual-sided': Price within range, both tokens needed
+   * 
+   * @param poolAddress - Algebra pool address
+   * @param bottomTick - Lower tick of LP range
+   * @param topTick - Upper tick of LP range
+   */
+  async getLiquidityMode(
+    poolAddress: string,
+    bottomTick: number,
+    topTick: number,
+  ): Promise<{
+    mode: 'token0-only' | 'token1-only' | 'dual-sided';
+    currentTick: number;
+    priceInRange: boolean;
+  }> {
+    try {
+      const { currentTick } = await this.getPoolState(poolAddress);
+
+      let mode: 'token0-only' | 'token1-only' | 'dual-sided';
+      let priceInRange: boolean;
+
+      if (currentTick < bottomTick) {
+        mode = 'token0-only';
+        priceInRange = false;
+      } else if (currentTick >= topTick) {
+        mode = 'token1-only';
+        priceInRange = false;
+      } else {
+        mode = 'dual-sided';
+        priceInRange = true;
+      }
+
+      this.logger.debug(
+        `Liquidity mode for pool ${poolAddress}: ${mode} (tick ${currentTick} vs range [${bottomTick}, ${topTick}])`,
+      );
+
+      return { mode, currentTick, priceInRange };
+    } catch (error) {
+      this.logger.error(`Failed to determine liquidity mode: ${error.message}`);
       throw error;
     }
   }

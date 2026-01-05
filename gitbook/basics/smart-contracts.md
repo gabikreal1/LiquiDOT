@@ -13,7 +13,7 @@ LiquiDOT uses two production-focused contracts that coordinate via XCM to create
 | Contract          | Chain     | Network        | Address                                      |
 | ----------------- | --------- | -------------- | -------------------------------------------- |
 | **AssetHubVault** | Asset Hub | Paseo Testnet  | `0x68e86F267C5C37dd4947ef8e5823eBAeAf93Fde6` |
-| **XCMProxy**      | Moonbeam  | Moonbase Alpha | `0xe07d18eC747707f29cd3272d48CF84A383647dA1` |
+| **XCMProxy**      | Moonbeam  | Moonbase Alpha | `0x7f4b3620d6Ffcc15b11ca8679c57c076DCE109d1` |
 
 ### Contract Roles
 
@@ -117,7 +117,7 @@ AmountMismatch(), AssetMismatch()
 ## XCMProxy
 
 **Location:** Moonbeam (Moonbase Alpha)\
-**Address:** `0xe07d18eC747707f29cd3272d48CF84A383647dA1`
+**Address:** `0x7f4b3620d6Ffcc15b11ca8679c57c076DCE109d1`
 
 ### Overview
 
@@ -418,7 +418,7 @@ The XCMProxy contract uses `@cryptoalgebra/integral-*` interfaces which include 
 
 ### Single-Sided vs Dual-Sided Liquidity
 
-When minting LP positions, the `amounts` array must be populated based on the current pool price relative to the tick range:
+When minting LP positions, the token amounts depend on the current pool price relative to the tick range:
 
 | Pool Price vs Range | Token0 Required | Token1 Required |
 |---------------------|-----------------|-----------------|
@@ -426,7 +426,16 @@ When minting LP positions, the `amounts` array must be populated based on the cu
 | Price **above** range | ❌ No | ✅ Yes |
 | Price **within** range | ✅ Yes | ✅ Yes |
 
-This is standard Uniswap V3/Algebra concentrated liquidity math.
+**Implementation:** The XCMProxy contract handles this **automatically on-chain**:
+
+1. User deposits single token (e.g., DOT) → bridged to Moonbeam
+2. Contract swaps to pool's base asset (token0 or token1)
+3. Contract reads `pool.globalState()` to check if price is within the tick range
+4. **If price within range:** Contract calculates the required token ratio using `LiquidityAmounts.getAmountsForLiquidity()`, then performs a second swap to split the base asset into both tokens at the optimal ratio
+5. **If price outside range:** Uses single token directly (no split needed)
+6. Mints LP position with the correct token amounts
+
+This ensures positions are always created with the mathematically correct token ratios, targeting **in-range positions** for maximum fee earning potential. See `XCMProxy.sol::executePendingInvestment()` for implementation.
 
 ### Operator-Triggered Liquidations
 

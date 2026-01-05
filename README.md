@@ -19,7 +19,7 @@ Built on Asset Hub for custody and using XCM for execution across parachains, Li
 | Contract | Network | Address |
 |----------|---------|---------|
 | AssetHubVault | Paseo Asset Hub | `0x68e86F267C5C37dd4947ef8e5823eBAeAf93Fde6` |
-| XCMProxy | Moonbase Alpha | `0xe07d18eC747707f29cd3272d48CF84A383647dA1` |
+| XCMProxy | Moonbase Alpha | `0x7f4b3620d6Ffcc15b11ca8679c57c076DCE109d1` |
 
 ### Current Status
 
