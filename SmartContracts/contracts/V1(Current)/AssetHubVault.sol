@@ -463,26 +463,45 @@ contract AssetHubVault is ReentrancyGuard {
     /**
      * @dev Settle liquidation after assets have been returned from Moonbeam.
      *
-     * ACCOUNTING MODEL:
-     * -----------------
-     * The `receivedAmount` is CONTRACT-ENFORCED via event binding:
+     * ═══════════════════════════════════════════════════════════════════════════
+     * ACCOUNTING MODEL (MVP vs Production)
+     * ═══════════════════════════════════════════════════════════════════════════
+     *
+     * MVP (Current Implementation):
+     * -----------------------------
+     * The `receivedAmount` is EVENT-BOUND (not fully on-chain enforced):
      *
      * 1. Moonbeam XCMProxy.liquidateSwapAndReturn() computes `totalBase` ON-CHAIN
      *    (from actual LP removal + swap proceeds)
      * 2. Moonbeam emits LiquidationCompleted(positionId, assetHubPositionId, user, baseAsset, totalBase)
-     * 3. Offchain worker reads the event and uses `totalBase` as `receivedAmount`
-     * 4. Offchain worker calls settleLiquidation via XCM Transact (production) or directly (test mode)
+     * 3. Backend worker reads the event and uses `totalBase` as `receivedAmount`
+     * 4. Backend calls settleLiquidation (directly in test mode, via XCM in production)
      *
-     * The offchain worker cannot inflate `receivedAmount` beyond what the Moonbeam contract emitted.
-     * The Moonbeam contract is the source of truth for the amount.
+     * Trust Assumption: The backend MUST use the exact `totalBase` from the Moonbeam event.
+     * The backend cannot inflate this value, but this is enforced off-chain via event binding.
      *
-     * FUTURE: Moonbeam contract will atomically send XCM Transact with SCALE-encoded settlement call,
-     *         making the flow fully on-chain.
+     * Production (Future - SCALE-Encoded XCM):
+     * -----------------------------------------
+     * Moonbeam XCMProxy will atomically send a SCALE-encoded XCM Transact instruction
+     * that calls this function with the computed amount. This removes the backend from
+     * the trust path entirely:
      *
-     * SAFETY:
+     * XCMProxy.liquidateSwapAndReturn() → XCM Transact → AssetHubVault.settleLiquidation()
+     *
+     * The XCM message will be constructed on-chain with the settlement amount, making
+     * the entire flow trustless and fully on-chain enforced.
+     *
+     * ═══════════════════════════════════════════════════════════════════════════
+     * SECURITY PROPERTIES
+     * ═══════════════════════════════════════════════════════════════════════════
+     *
      * - Position can only be settled ONCE (status check + immediate flip to Liquidated)
-     * - Test mode: operator can settle (for local testing)
+     * - Test mode: operator can settle directly (for local testing without XCM)
      * - Production mode: only trustedSettlementCaller (XCM-derived origin) can settle
+     * - Native balance check prevents crediting more than contract holds
+     *
+     * NOTE: The `address(this).balance` check assumes settlement is in native tokens.
+     * For ERC20 settlements (future), this would need to check token balances instead.
      *
      * @param positionId The Asset Hub position being settled
      * @param receivedAmount Amount computed by Moonbeam contract (from LiquidationCompleted event)
@@ -496,8 +515,11 @@ contract AssetHubVault is ReentrancyGuard {
         Position storage position = positions[positionId];
         require(position.status == PositionStatus.Active, "Position not active");
 
-        // Ensure contract has enough balance to cover the settlement
-        // This protects against accounting errors where we credit more than we hold
+        // MVP: Check native balance as sanity check
+        // NOTE: This assumes settlements are in native tokens. For the MVP, XCM returns
+        // native assets which arrive at Substrate level. The trusted caller model ensures
+        // receivedAmount matches the Moonbeam-computed value from LiquidationCompleted event.
+        // Future: SCALE-encoded XCM will make this fully trustless.
         if (address(this).balance < receivedAmount) revert InsufficientBalance();
 
         // Mark as liquidated FIRST — prevents double-settlement (replay attack protection)
