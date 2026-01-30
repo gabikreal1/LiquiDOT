@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ethers } from 'ethers';
 import { XCMProxyABI } from '../abis/XCMProxy.abi';
+import { ERC20_ABI, ALGEBRA_POOL_ABI } from '../../pools/abis/algebra.abi';
 
 /**
  * Parameters for liquidating a position and returning assets to AssetHub
@@ -217,6 +218,12 @@ export class MoonbeamService implements OnModuleInit {
   private wallet: ethers.Wallet;
   private provider: ethers.Provider;
 
+  // Cached allowlist snapshot (because enumeration requires an input list)
+  private supportedTokenDiscoveryCache?: {
+    atMs: number;
+    result: Array<{ address: string; symbol: string; name?: string; decimals?: number }>;
+  };
+
   constructor(private configService: ConfigService) {}
 
   /**
@@ -268,6 +275,93 @@ export class MoonbeamService implements OnModuleInit {
    */
   isInitialized(): boolean {
     return !!this.contract;
+  }
+
+  /**
+   * Resolve token metadata (name/symbol/decimals) for a given ERC20 address.
+   * Best-effort: some tokens may not implement all optional views.
+   */
+  private async getErc20Metadata(tokenAddress: string): Promise<{ address: string; symbol: string; name?: string; decimals?: number }> {
+    const token = new ethers.Contract(tokenAddress, ERC20_ABI, this.provider);
+
+    const [nameRes, symbolRes, decimalsRes] = await Promise.allSettled([
+      token.name(),
+      token.symbol(),
+      token.decimals(),
+    ]);
+
+    const name = nameRes.status === 'fulfilled' ? (nameRes.value as string) : undefined;
+    const symbol = symbolRes.status === 'fulfilled' ? (symbolRes.value as string) : tokenAddress;
+    const decimals = decimalsRes.status === 'fulfilled' ? Number(decimalsRes.value) : undefined;
+
+    return {
+      address: tokenAddress,
+      symbol,
+      name,
+      decimals,
+    };
+  }
+
+  /**
+   * Contract-derived supported token list.
+   *
+   * IMPORTANT: the on-chain contract only exposes `supportedTokens(address)->bool`.
+   * That mapping is **not enumerable**, so the backend needs a candidate address list
+   * (e.g. from env/config, subgraph, or a static seed list) and will filter it by
+   * calling `supportedTokens(candidate)`. For candidates that are supported, we then
+   * resolve their name/symbol from the ERC20 contract.
+   */
+  async getSupportedTokensWithNames(params: {
+    candidateTokenAddresses: string[];
+    cacheTtlMs?: number;
+  }): Promise<Array<{ address: string; symbol: string; name?: string; decimals?: number }>> {
+    if (!this.readOnlyContract || !this.provider) {
+      throw new Error('MoonbeamService not initialized');
+    }
+
+    const ttl = params.cacheTtlMs ?? 60_000;
+    const now = Date.now();
+    if (this.supportedTokenDiscoveryCache && now - this.supportedTokenDiscoveryCache.atMs < ttl) {
+      return this.supportedTokenDiscoveryCache.result;
+    }
+
+    const candidates = (params.candidateTokenAddresses ?? [])
+      .map(a => a.trim())
+      .filter(Boolean);
+
+    // Deduplicate (case-insensitive)
+    const dedup = new Map<string, string>();
+    for (const a of candidates) {
+      try {
+        const normalized = ethers.getAddress(a);
+        dedup.set(normalized.toLowerCase(), normalized);
+      } catch {
+        // ignore invalid
+      }
+    }
+
+    const normalizedCandidates = [...dedup.values()];
+
+    const supportedChecks = await Promise.allSettled(
+      normalizedCandidates.map(addr => this.readOnlyContract.supportedTokens(addr) as Promise<boolean>),
+    );
+
+    const supportedAddresses: string[] = [];
+    for (let i = 0; i < supportedChecks.length; i++) {
+      const r = supportedChecks[i];
+      if (r.status === 'fulfilled' && r.value === true) {
+        supportedAddresses.push(normalizedCandidates[i]);
+      }
+    }
+
+    const meta = await Promise.all(supportedAddresses.map(a => this.getErc20Metadata(a)));
+
+    this.supportedTokenDiscoveryCache = {
+      atMs: now,
+      result: meta,
+    };
+
+    return meta;
   }
 
   /**
@@ -544,6 +638,100 @@ export class MoonbeamService implements OnModuleInit {
       };
     } catch (error) {
       this.logger.error(`Failed to calculate tick range: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Gets pool state for monitoring and position analysis
+   * 
+   * This reads the current pool price and tick for:
+   * - Monitoring position range status
+   * - Determining single-sided vs dual-sided liquidity requirements
+   * - Pre-flight checks before investment execution
+   * 
+   * NOTE: The XCMProxy contract handles the actual liquidity math on-chain
+   * using Algebra's LiquidityAmounts library. This method is for backend
+   * monitoring and analysis only.
+   * 
+   * @param poolAddress - Algebra pool address
+   * @returns Pool state including current tick and price
+   */
+  async getPoolState(poolAddress: string): Promise<{
+    currentTick: number;
+    sqrtPriceX96: bigint;
+    feeZto: number;
+    feeOtz: number;
+    unlocked: boolean;
+  }> {
+    try {
+      const poolContract = new ethers.Contract(
+        poolAddress,
+        ALGEBRA_POOL_ABI,
+        this.provider,
+      );
+
+      // Use safelyGetStateOfAMM which is available in Algebra Integral
+      const state = await poolContract.safelyGetStateOfAMM();
+
+      return {
+        sqrtPriceX96: BigInt(state.sqrtPrice),
+        currentTick: Number(state.tick),
+        feeZto: Number(state.lastFee), // Fee for zero-to-one swaps
+        feeOtz: Number(state.lastFee), // Fee for one-to-zero swaps (same in Algebra v1.2)
+        unlocked: true, // safelyGetStateOfAMM doesn't return this, assume unlocked
+      };
+    } catch (error) {
+      this.logger.error(`Failed to get pool state: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Determines liquidity mode based on current price vs tick range
+   * 
+   * Returns which token(s) will be required for LP minting:
+   * - 'token0-only': Price below range, only token0 needed
+   * - 'token1-only': Price above range, only token1 needed  
+   * - 'dual-sided': Price within range, both tokens needed
+   * 
+   * @param poolAddress - Algebra pool address
+   * @param bottomTick - Lower tick of LP range
+   * @param topTick - Upper tick of LP range
+   */
+  async getLiquidityMode(
+    poolAddress: string,
+    bottomTick: number,
+    topTick: number,
+  ): Promise<{
+    mode: 'token0-only' | 'token1-only' | 'dual-sided';
+    currentTick: number;
+    priceInRange: boolean;
+  }> {
+    try {
+      const { currentTick } = await this.getPoolState(poolAddress);
+
+      let mode: 'token0-only' | 'token1-only' | 'dual-sided';
+      let priceInRange: boolean;
+
+      if (currentTick < bottomTick) {
+        mode = 'token0-only';
+        priceInRange = false;
+      } else if (currentTick >= topTick) {
+        mode = 'token1-only';
+        priceInRange = false;
+      } else {
+        mode = 'dual-sided';
+        priceInRange = true;
+      }
+
+      this.logger.debug(
+        `Liquidity mode for pool ${poolAddress}: ${mode} (tick ${currentTick} vs range [${bottomTick}, ${topTick}])`,
+      );
+
+      return { mode, currentTick, priceInRange };
+    } catch (error) {
+      this.logger.error(`Failed to determine liquidity mode: ${error.message}`);
       throw error;
     }
   }

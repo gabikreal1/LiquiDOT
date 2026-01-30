@@ -11,3 +11,4 @@ import { PreferencesController } from './preferences.controller';
   exports: [TypeOrmModule, PreferencesService],
 })
 export class PreferencesModule {}
+

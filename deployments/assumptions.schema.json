@@ -1,0 +1,104 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LiquiDOT Deployment Assumptions Manifest",
+  "type": "object",
+  "required": ["generatedAt", "network", "chains"],
+  "properties": {
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "network": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "chains": {
+      "type": "object",
+      "properties": {
+        "assetHub": { "$ref": "#/definitions/chain" },
+        "moonbeam": { "$ref": "#/definitions/chain" }
+      },
+      "additionalProperties": true
+    },
+    "contracts": {
+      "type": "object",
+      "properties": {
+        "assetHubVault": { "$ref": "#/definitions/contract" },
+        "xcmProxy": { "$ref": "#/definitions/contract" }
+      },
+      "additionalProperties": true
+    },
+    "evidence": {
+      "type": "object",
+      "properties": {
+        "links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["label", "url"],
+            "properties": {
+              "label": { "type": "string" },
+              "url": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "txHashes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["label", "chain", "txHash"],
+            "properties": {
+              "label": { "type": "string" },
+              "chain": { "type": "string" },
+              "txHash": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "definitions": {
+    "chain": {
+      "type": "object",
+      "required": ["rpc"],
+      "properties": {
+        "rpc": { "type": "string" },
+        "chainId": { "type": "integer" },
+        "chainName": { "type": "string" },
+        "nativeCurrency": { "type": "string" },
+        "runtime": {
+          "type": "object",
+          "properties": {
+            "specVersion": { "type": "integer" },
+            "implVersion": { "type": "integer" }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "contract": {
+      "type": "object",
+      "required": ["address"],
+      "properties": {
+        "address": { "type": "string" },
+        "deploymentTx": { "type": "string" },
+        "notes": { "type": "string" },
+        "config": {
+          "type": "object",
+          "properties": {
+            "xcmPrecompile": { "type": "string" },
+            "xcmSender": { "type": "string" }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

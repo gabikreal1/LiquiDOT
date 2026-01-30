@@ -1,6 +1,8 @@
-# LiquiDOT Data Aggregator Service
+# LiquiDOT Data Aggregator Service (optional)
 
-A standalone microservice that fetches liquidity pool data from Dune Analytics API and stores it in time series format for the LiquiDOT project.
+Standalone microservice that fetches liquidity pool data from the Dune Analytics API and stores it as time-series files.
+
+This service is **optional**. The main backend can ingest pool data from a GraphQL subgraph (see `Backend/README.md`).
 
 ## Features
 
@@ -202,9 +204,9 @@ The service uses cron scheduling for automated data fetching:
 - Cleanup runs after each successful sync
 - `latest.json` and `latest_pools.json` are never deleted
 
-## Integration with Main Backend
+## Integration with the main backend
 
-The main LiquiDOT backend can consume the aggregated data by:
+The LiquiDOT backend can consume the aggregated data by:
 
 1. **Reading latest data files** directly from the storage directory
 2. **Setting up file watchers** to detect new data

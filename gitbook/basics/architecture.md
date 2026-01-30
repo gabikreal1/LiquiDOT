@@ -168,16 +168,16 @@ The frontend provides the user interface for:
 
 ```solidity
 // User operations
-deposit(amount, asset)
-withdraw(amount, asset)
+deposit()  // payable, native ETH
+withdraw(amount)
 
-// Investment orchestration
-investInPool(chainId, poolId, baseAsset, amounts, lowerRange, upperRange)
+// Investment orchestration (operator-triggered)
+dispatchInvestment(user, chainId, poolId, baseAsset, amount, lowerRangePercent, upperRangePercent, destination, preBuiltXcmMessage)
+confirmExecution(positionId, remotePositionId, liquidity)
 
 // Liquidation management
-receiveProceeds(chainId, positionId, finalAmounts)
+settleLiquidation(positionId, receivedAmount)
 emergencyLiquidatePosition(chainId, positionId)
-rebalancePosition(chainId, positionId)
 
 // Queries
 getUserBalance(user, asset)
@@ -208,19 +208,21 @@ getActiveInvestments(user)
 **Key Functions:**
 
 ```solidity
-// Investment execution
-executeInvestment(baseAsset, amounts, poolId, lowerRangePercent, upperRangePercent, positionOwner)
-calculateTickRange(pool, lowerRangePercent, upperRangePercent)
+// Asset reception (called via XCM Transact)
+receiveAssets(assetHubPositionId, token, user, amount, investmentParams)
+executePendingInvestment(assetHubPositionId)
+cancelPendingPosition(assetHubPositionId, destination)
 
 // Position management
-findPosition(pool, bottomTick, topTick)
+calculateTickRange(pool, lowerRangePercent, upperRangePercent)
 getActivePositions()
 getUserPositions(user)
 
-// Liquidation
-executeFullLiquidation(positionId, liquidationType)
-isPositionOutOfRange(positionId)
-swapToBaseAsset(token0Amount, token1Amount, baseAsset)
+// Liquidation (operator-triggered)
+isPositionOutOfRange(positionId)  // view function for monitoring
+liquidateIfOutOfRange(positionId)  // atomic check + liquidate
+executeFullLiquidation(positionId)
+liquidateSwapAndReturn(positionId, baseAsset, minAmountOut, destination, assetHubPositionId)
 
 // Asset management
 receiveAssets(token, user, amount, investmentParams)

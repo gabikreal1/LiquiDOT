@@ -6,6 +6,24 @@
 
 The Blockchain module provides type-safe services for all on-chain operations:
 
+## PAPI (Polkadot API) integration
+
+Some parts of the system require Substrate RPC access (Asset Hub / XCM tooling). To keep this isolated and aligned with grant commitments, we expose a dedicated PAPI client service:
+
+- `PapiClientService` (in `src/modules/blockchain/papi/`)
+
+### Configuration
+
+Set the following env var to enable PAPI connectivity:
+
+- `ASSET_HUB_PAPI_ENDPOINT` (WebSocket endpoint)
+  - Example: `wss://asset-hub-polkadot-rpc.polkadot.io`
+
+### Notes
+
+- Contract interactions (EVM/PolkaVM) continue to use `ethers` + JSON-RPC.
+- Substrate interactions (when needed) go through `polkadot-api` (PAPI).
+
 - **AssetHubService**: Manages the `AssetHubVault` contract (custody, investments, settlements)
 - **MoonbeamService**: Manages the `XCMProxy` contract (LP positions, liquidations, swaps)
 - **XcmBuilderService**: Constructs XCM messages using ParaSpell SDK

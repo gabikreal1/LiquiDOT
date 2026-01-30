@@ -6,6 +6,7 @@ export enum PositionStatus {
   PENDING_EXECUTION = 'PENDING_EXECUTION',
   ACTIVE = 'ACTIVE',
   OUT_OF_RANGE = 'OUT_OF_RANGE',
+  LIQUIDATION_PENDING = 'LIQUIDATION_PENDING',
   LIQUIDATED = 'LIQUIDATED',
   FAILED = 'FAILED',
 }
@@ -15,7 +16,7 @@ export class Position {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', length: 66 })
+  @Column({ type: 'varchar', length: 66, unique: true })
   assetHubPositionId: string; // bytes32 from contract
 
   @Column({ type: 'varchar', length: 66, nullable: true })
@@ -53,6 +54,13 @@ export class Position {
 
   @Column({ type: 'enum', enum: PositionStatus, default: PositionStatus.PENDING_EXECUTION })
   status: PositionStatus;
+
+  /**
+   * Idempotency key to avoid re-initiating liquidation for the same position
+   * across retries of decision execution.
+   */
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  lastWithdrawalPlanningKey?: string;
 
   @Column({ type: 'int' })
   chainId: number; // Destination chain (2004 for Moonbeam)

@@ -13,3 +13,4 @@ import { PoolsController } from './pools.controller';
   exports: [TypeOrmModule, PoolScannerService, PoolsService],
 })
 export class PoolsModule {}
+

@@ -1,0 +1,48 @@
+version: '3'
+
+services:
+  ipfs:
+    image: ipfs/kubo:v0.26.0
+    ports:
+      - '5001:5001'
+      - '8080:8080'
+    volumes:
+      - ipfs:/data/ipfs
+
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: graph
+      POSTGRES_PASSWORD: graph
+      POSTGRES_DB: graph
+    ports:
+      # Use 5433 to avoid colliding with developers already running Postgres on 5432.
+      - '5433:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  graph-node:
+    image: graphprotocol/graph-node:v0.35.1
+    depends_on:
+      - ipfs
+      - postgres
+    ports:
+      - '8000:8000' # GraphQL query
+      - '8020:8020' # admin/deploy
+      - '8030:8030' # index node status
+      - '8040:8040' # metrics
+    environment:
+      postgres_host: postgres
+      postgres_user: graph
+      postgres_pass: graph
+      postgres_db: graph
+      ipfs: 'ipfs:5001'
+
+      # Moonbase Alpha EVM RPC (chainId 1287)
+      ethereum: 'moonbase:https://rpc.api.moonbase.moonbeam.network'
+
+      RUST_LOG: info
+
+volumes:
+  ipfs:
+  pgdata:

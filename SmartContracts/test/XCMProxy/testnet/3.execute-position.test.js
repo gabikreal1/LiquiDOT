@@ -136,12 +136,27 @@ describe("XCMProxy Testnet - Position Execution", function () {
       // Receive assets (create pending position)
       const receiveTx = await proxy.receiveAssets(
         assetHubPositionId,
-  BASE_TOKEN,
+        BASE_TOKEN,
         operator.address,
         ethers.parseEther("1.0"),
         investmentParams
       );
       await receiveTx.wait();
+
+      // Fund the proxy with tokens to simulate XCM transfer
+      // The contract expects pending.amount (1.0) of BASE_TOKEN to be available
+      const baseTokenContract = await ethers.getContractAt("IERC20", BASE_TOKEN);
+      const fundBaseTx = await baseTokenContract.transfer(proxy.target, ethers.parseEther("1.0"));
+      await fundBaseTx.wait();
+      console.log(`   ✓ Proxy funded with BASE_TOKEN`);
+
+      // Also fund with QUOTE_TOKEN for the 50/50 requirement
+      if (QUOTE_TOKEN) {
+        const quoteTokenContract = await ethers.getContractAt("IERC20", QUOTE_TOKEN);
+        const fundQuoteTx = await quoteTokenContract.transfer(proxy.target, ethers.parseEther("0.5"));
+        await fundQuoteTx.wait();
+        console.log(`   ✓ Proxy funded with QUOTE_TOKEN`);
+      }
 
       console.log(`   ✓ Pending position created`);
 
@@ -185,7 +200,8 @@ describe("XCMProxy Testnet - Position Execution", function () {
 
       // Verify position created
       const position = await proxy.positions(localPositionId);
-      expect(position.active).to.be.true;
+      // Position struct has 'status' field instead of 'active'
+      expect(position.status).to.equal(0); // PositionStatus.Active = 0
       expect(position.owner).to.equal(operator.address);
       expect(position.assetHubPositionId).to.equal(assetHubPositionId);
 
@@ -211,7 +227,7 @@ describe("XCMProxy Testnet - Position Execution", function () {
 
       await expect(
         proxy.executePendingInvestment(fakePositionId)
-      ).to.be.revertedWith("Pending position not found");
+      ).to.be.revertedWithCustomError(proxy, "PendingPositionNotFound");
     });
 
     it("should only allow operator to execute positions", async function () {

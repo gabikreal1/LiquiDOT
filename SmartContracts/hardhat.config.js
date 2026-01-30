@@ -1,9 +1,15 @@
 require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config();
 
+// Helper to ensure private key has 0x prefix
+function normalizePrivateKey(key) {
+  if (!key) return "0x0000000000000000000000000000000000000000000000000000000000000000";
+  return key.startsWith("0x") ? key : `0x${key}`;
+}
+
 // Load private keys from environment variables
-const MOON_PRIVATE_KEY = process.env.MOON_PK || "0x0000000000000000000000000000000000000000000000000000000000000000";
-const ASSET_PRIVATE_KEY = process.env.ASSET_PK || "0x0000000000000000000000000000000000000000000000000000000000000000";
+const MOON_PRIVATE_KEY = normalizePrivateKey(process.env.MOON_PK);
+const ASSET_PRIVATE_KEY = normalizePrivateKey(process.env.ASSET_PK);
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -13,7 +19,7 @@ module.exports = {
       viaIR: true,
       optimizer: {
         enabled: true,
-        runs: 200
+        runs: 1
       }
     }
   },
@@ -24,7 +30,7 @@ module.exports = {
     },
     // Live Networks (EVM)
     moonbase: {
-      url: "https://rpc.api.moonbase.moonbeam.network",
+      url: "https://moonbeam-alpha.api.onfinality.io/public",
       chainId: 1287,
       accounts: [MOON_PRIVATE_KEY],
       gasPrice: 1000000000
@@ -33,7 +39,8 @@ module.exports = {
       url: 'https://testnet-passet-hub-eth-rpc.polkadot.io',
       chainId: 420420422,
       accounts: [ASSET_PRIVATE_KEY],
-      gasPrice: 1000000000,
+      // Let the chain determine gas price - Paseo uses higher gas prices
+      // gasPrice: "auto" is implicit when not specified
     }
   },
   paths: {

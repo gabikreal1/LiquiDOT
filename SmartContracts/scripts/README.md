@@ -7,7 +7,7 @@ Deploy and configure LiquiDOT for live testnet testing on Moonbase Alpha.
 ### Prerequisites
 
 1. **Install dependencies:**
-   ```powershell
+   ```bash
    cd SmartContracts
    npm install
    ```
@@ -17,10 +17,10 @@ Deploy and configure LiquiDOT for live testnet testing on Moonbase Alpha.
    - Paseo (Asset Hub) DOT: https://faucet.paseo.network/
 
 3. **Environment setup:**
-   ```powershell
-   # Create .env in SmartContracts directory
-   $env:MOON_PK="your_private_key"
-   $env:ASSETHUB_CONTRACT="0x..."  # Deploy via Remix first
+   ```bash
+   # Export env vars in your shell (or create a .env in SmartContracts/)
+   export MOON_PK="0x..."
+   export ASSETHUB_CONTRACT="0x..."  # deploy via Remix first
    ```
 
 ### Deployment Steps
@@ -45,9 +45,9 @@ Saves addresses to `deployments/` directory.
 
 See `test/helpers/` for setup scripts:
 
-```powershell
-$env:ASSETHUB_CONTRACT="0x..."     # From Remix
-$env:XCMPROXY_CONTRACT="0x..."     # From deployment above
+```bash
+export ASSETHUB_CONTRACT="0x..."     # from Remix
+export XCMPROXY_CONTRACT="0x..."     # from deployment above
 
 # Configure AssetHub (run on Paseo)
 npx hardhat run test/helpers/link-contracts.js --network passethub
@@ -72,7 +72,7 @@ npx hardhat run test/helpers/verify-xcmproxy-config.js --network moonbase
 
 ## Running Tests
 
-```powershell
+```bash
 # Testnet tests
 npx hardhat test test/AssetHubVault/testnet/**/*.test.js --network passethub
 npx hardhat test test/XCMProxy/testnet/**/*.test.js --network moonbase

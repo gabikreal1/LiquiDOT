@@ -4,99 +4,123 @@ icon: vial
 
 # Testing Guide
 
-End-to-end steps to test LiquiDOT on Moonbase Alpha and Paseo Asset Hub using the current deployment scripts and helpers.
+End-to-end steps to test LiquiDOT on Moonbase Alpha and Paseo Asset Hub.
 
-## Testing Logs
+## Current Testnet Deployments
 
-Moonbase logs : [link](../../SmartContracts/test/logs/20251027-223700-moonbase-all.log)
-
-Assethub logs: [link](../../SmartContracts/test/logs/20251027-224841-assethub-all.log)
+| Contract | Network | Address |
+|----------|---------|---------|
+| AssetHubVault | Paseo Asset Hub | `0x68e86F267C5C37dd4947ef8e5823eBAeAf93Fde6` |
+| XCMProxy | Moonbase Alpha | `0x7f4b3620d6Ffcc15b11ca8679c57c076DCE109d1` |
 
 ## Prerequisites
 
-## 1) Deploy contracts
+### Testnet Funds
+- Moonbase DEV: https://faucet.moonbeam.network/
+- Paseo PAS: https://faucet.polkadot.io/
 
-1. Deploy AssetHubVault (Paseo Asset Hub) via Remix:
-   * Open https://remix.polkadot.network/
-   * Load `contracts/V1(Current)/AssetHubVault.sol`
-   * Deploy with your Asset Hub key and copy the address
-   * Set for later steps:
+### Environment Setup
 
-```powershell
-$env:ASSETHUB_CONTRACT="0xYourAssetHubVault"
+Create a `.env` file in `SmartContracts/`:
+
+```bash
+# Private keys (with 0x prefix)
+MOON_PK=0x...      # Moonbase deployer key
+ASSET_PK=0x...     # Asset Hub deployer key
+
+# Contract addresses
+ASSETHUB_CONTRACT=0x68e86F267C5C37dd4947ef8e5823eBAeAf93Fde6
+XCMPROXY_CONTRACT=0x7f4b3620d6Ffcc15b11ca8679c57c076DCE109d1
 ```
 
-2. Deploy Moonbase infrastructure (Algebra + XCMProxy + test tokens + pool init):
+### Install Dependencies
 
-```powershell
+```bash
 cd SmartContracts
-npx hardhat run scripts/deploy-moonbase.js --network moonbase
+npm install
 ```
 
-What this does:
+## Test Suite Structure
 
-* Deploys Algebra (Factory/Router/Quoter/NFPM)
-* Deploys and configures XCMProxy (test mode enabled)
-* Deploys two test tokens (USDC/USDT)
-* Creates and initializes a pool for those tokens
-* Saves `deployments/moonbase_bootstrap.json` for tests to auto-discover addresses
+### AssetHubVault Tests (Paseo Asset Hub)
 
-Note: Initial liquidity is intentionally NOT provided during deployment. You can add it later with the helper.
+Located in `test/AssetHubVault/testnet/`:
 
-## 2) Wire contracts across chains
+| File | Description | Test IDs |
+|------|-------------|----------|
+| `1.config-check.test.js` | Configuration verification | TEST-AHV-001 to 006 |
+| `2.deposits.test.js` | Deposit/Withdraw flows | TEST-AHV-007 to 015 |
+| `3.investment.test.js` | Investment dispatch | TEST-AHV-016 to 023 |
+| `4.liquidation.test.js` | Liquidation settlement | TEST-AHV-024 to 028 |
+| `5.emergency.test.js` | Emergency functions | TEST-AHV-029 to 033 |
+| `6.security-checks.test.js` | Security validation | Security checks |
 
-Set the deployed XCMProxy address (from deploy output or `deployments/moonbase_bootstrap.json`):
+### XCMProxy Tests (Moonbase Alpha)
 
-```powershell
-$env:XCMPROXY_CONTRACT="0xYourXCMProxy"
+Located in `test/XCMProxy/testnet/`:
+
+| File | Description |
+|------|-------------|
+| `1.config-check.test.js` | Configuration verification |
+| `2.receive-assets.test.js` | Asset reception |
+| `3.execute-position.test.js` | Position execution |
+| `4.liquidation.test.js` | Liquidation flows |
+| `5.emergency.test.js` | Emergency functions |
+
+## Running Tests
+
+### AssetHubVault Tests
+
+```bash
+# Run individual test files
+npx hardhat test test/AssetHubVault/testnet/1.config-check.test.js --network passethub
+npx hardhat test test/AssetHubVault/testnet/2.deposits.test.js --network passethub
+npx hardhat test test/AssetHubVault/testnet/3.investment.test.js --network passethub
+npx hardhat test test/AssetHubVault/testnet/4.liquidation.test.js --network passethub
+npx hardhat test test/AssetHubVault/testnet/5.emergency.test.js --network passethub
+npx hardhat test test/AssetHubVault/testnet/6.security-checks.test.js --network passethub
 ```
 
-Link contracts on both networks and enable safe test mode on Asset Hub:
+### XCMProxy Tests
 
-```powershell
-# Add Moonbase to AssetHubVault chain registry
-npx hardhat run test/helpers/link-contracts.js --network passethub
-
-# Set AssetHubVault as trusted caller on XCMProxy
-npx hardhat run test/helpers/link-contracts.js --network moonbase
-
-# Enable test mode on AssetHubVault (bypasses XCM for testing)
-npx hardhat run test/helpers/enable-test-mode.js --network passethub
-```
-
-Optional: seed liquidity on Moonbase (recommended for manual experiments):
-
-```powershell
-# Uses pool and token addresses from the bootstrap file by default
-npx hardhat run test/helpers/provide-liquidity.js --network moonbase
-
-# Optionally tweak amounts/ticks
-$env:LP_AMOUNT0="500"; $env:LP_AMOUNT1="500"
-$env:MOONBASE_NFPM="0x..."  # If you want to override NFPM
-```
-
-## 3) Run tests
-
-The tests auto-read `deployments/moonbase_bootstrap.json` via `test/XCMProxy/testnet/config.js`.
-
-```powershell
-# XCMProxy tests
+```bash
+# Run individual test files
 npx hardhat test test/XCMProxy/testnet/1.config-check.test.js --network moonbase
 npx hardhat test test/XCMProxy/testnet/2.receive-assets.test.js --network moonbase
 npx hardhat test test/XCMProxy/testnet/3.execute-position.test.js --network moonbase
-
-# AssetHubVault tests
-npx hardhat test test/AssetHubVault/testnet/**/*.test.js --network passethub
-
-# Integration (guided) tests
-npx hardhat test test/Integration/testnet/**/*.test.js --network passethub
 ```
 
-## Notes and Troubleshooting
+## Test Results
 
-* Liquidity: The deploy script does not add liquidity. Use `test/helpers/provide-liquidity.js` if needed.
-* Trusted caller: If `$env:ASSETHUB_CONTRACT` is set before deployment, the script passes it to XCMProxy; otherwise set it with the link helper on Moonbase.
-* Low DEV funds: Fund the Moonbase account from the faucet.
-* Address discovery: Use `SmartContracts/deployments/moonbase_bootstrap.json` for all addresses required by tests.
+Latest test run (January 2026):
+- **AssetHubVault**: 61 passing, 5 pending
+- **XCMProxy**: 57 passing, 0 failing
+
+## Test Mode
+
+Both contracts support a `testMode` flag for development:
+
+- **AssetHubVault**: Skips XCM send calls, allows operator to confirm/settle locally
+- **XCMProxy**: Skips XCM return transfers
+
+Enable via:
+```javascript
+await vault.setTestMode(true);
+await proxy.setTestMode(true);
+```
+
+## Troubleshooting
+
+### "Transaction is temporarily banned"
+Paseo Asset Hub requires higher gas prices (~1000 Gwei). Remove any explicit `gasPrice` from hardhat config.
+
+### "Priority is too low"
+Transactions submitted too quickly. Wait a few seconds between transactions.
+
+### Timeouts
+Some tests take 2-4 minutes. Tests have 120-240s timeouts configured.
+
+### Missing Environment Variables
+Ensure `ASSETHUB_CONTRACT` and `ASSET_PK` are set in `.env`.
 
 **Next:** [Smart Contracts](smart-contracts.md)

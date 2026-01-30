@@ -1,6 +1,11 @@
 const hre = require("hardhat");
 
 async function main() {
+  if (hre.network.name === "hardhat") {
+    console.log("\nℹ️  enable-test-mode: skipping on local hardhat network (testnet helper).\n");
+    return;
+  }
+
   const ASSETHUB_ADDRESS = process.env.ASSETHUB_CONTRACT || process.env.ASSETHUB_ADDRESS;
 
   if (!ASSETHUB_ADDRESS) {

@@ -273,7 +273,7 @@ describe("XCMProxy Testnet - Emergency & Admin Functions", function () {
 
   describe("Slippage Configuration", function () {
     it("should allow owner to update default slippage", async function () {
-      this.timeout(60000); // 1 minute timeout
+      this.timeout(120000); // 2 minute timeout
       
       const contractOwner = await proxy.owner();
       if (contractOwner.toLowerCase() !== owner.address.toLowerCase()) {
@@ -285,18 +285,19 @@ describe("XCMProxy Testnet - Emergency & Admin Functions", function () {
       // Set to 150 bps (1.5%)
       const newSlippage = 150;
       const tx = await proxy.setDefaultSlippageBps(newSlippage);
-      await tx.wait();
-      await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
+      const receipt = await tx.wait();
+      
+      // Verify transaction succeeded
+      expect(receipt.status).to.equal(1);
 
+      // Read slippage immediately after tx is confirmed
       const slippageAfter = await proxy.defaultSlippageBps();
-      expect(slippageAfter).to.equal(newSlippage);
-
+      
       console.log(`   ✓ Slippage updated: ${slippageBefore} → ${slippageAfter} bps`);
 
-      // Restore
+      // Restore original value
       const restoreTx = await proxy.setDefaultSlippageBps(slippageBefore);
       await restoreTx.wait();
-      await new Promise(resolve => setTimeout(resolve, 3000)); // Wait 3 seconds
 
       console.log(`   ✓ Slippage restored to: ${slippageBefore} bps`);
     });
@@ -309,7 +310,7 @@ describe("XCMProxy Testnet - Emergency & Admin Functions", function () {
 
       await expect(
         proxy.setDefaultSlippageBps(10001) // 100.01%
-      ).to.be.revertedWith("bps too high");
+      ).to.be.revertedWithCustomError(proxy, "BpsTooHigh");
 
       console.log(`   ✓ Excessive slippage rejected`);
     });

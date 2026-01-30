@@ -1,5 +1,5 @@
 ---
-description: (Not yet live) Release Q4 2025
+description: MVP on Testnets - January 2026
 icon: bolt
 layout:
   width: default
@@ -21,6 +21,15 @@ layout:
 
 Get started with LiquiDOT in minutes. This guide will walk you through setting up your first automated liquidity position.
 
+## Current Status
+
+LiquiDOT is currently deployed on testnets:
+
+| Contract | Network | Address |
+|----------|---------|---------|
+| AssetHubVault | Paseo Asset Hub | `0x68e86F267C5C37dd4947ef8e5823eBAeAf93Fde6` |
+| XCMProxy | Moonbase Alpha | `0x7f4b3620d6Ffcc15b11ca8679c57c076DCE109d1` |
+
 ## Prerequisites
 
 Before you begin, make sure you have:
@@ -28,11 +37,11 @@ Before you begin, make sure you have:
 * A Polkadot-compatible wallet (e.g., Polkadot.js, Talisman, SubWallet)
 * Testnet tokens:
   * **Moonbase DEV** - Get from [Moonbeam Faucet](https://faucet.moonbeam.network/)
-  * **Paseo PAS** - Get from [Paseo Faucet](https://faucet.polkadot.io/)
+  * **Paseo PAS** - Get from [Paseo Faucet](https://faucet.paseo.network/)
 * Basic understanding of liquidity provision
 
 {% hint style="info" %}
-Currently, LiquiDOT is in MVP phase and operates on testnets. Mainnet deployment is planned for future releases.
+LiquiDOT is in MVP phase on testnets. Mainnet deployment is planned for future releases.
 {% endhint %}
 
 ## Step 1: Connect Your Wallet
