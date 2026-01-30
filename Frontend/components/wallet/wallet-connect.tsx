@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { 
   Dialog, 
@@ -19,6 +19,8 @@ import { useWalletContext } from '@/context/wallet-context'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { WALLET_CONNECT_PROJECT_ID } from '@/lib/walletconnect-config'
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+
 interface WalletConnectProps {
   onConnect?: () => void
 }
@@ -26,6 +28,7 @@ interface WalletConnectProps {
 export function WalletConnect({ onConnect }: WalletConnectProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [isRegistering, setIsRegistering] = useState(false)
   const { connect, isPending, error } = useConnect()
   const { disconnect } = useDisconnect()
   
@@ -35,17 +38,45 @@ export function WalletConnect({ onConnect }: WalletConnectProps) {
     formatDisplayAddress
   } = useWalletContext()
 
+  // Register user in backend when wallet connects
+  const registerUser = useCallback(async (walletAddress: string) => {
+    try {
+      setIsRegistering(true)
+      const response = await fetch(`${API_BASE_URL}/api/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress }),
+      })
+      
+      if (!response.ok) {
+        console.warn('User registration failed:', response.statusText)
+      } else {
+        console.log('User registered/retrieved successfully')
+      }
+    } catch (err) {
+      // Non-blocking - log but don't interrupt user flow
+      console.warn('Failed to register user:', err)
+    } finally {
+      setIsRegistering(false)
+    }
+  }, [])
+
   // Only render wallet UI after client-side hydration
   useEffect(() => {
     setMounted(true)
   }, [])
 
   useEffect(() => {
-    if (isConnected && onConnect) {
-      onConnect()
+    if (isConnected && address) {
+      // Register user in backend
+      registerUser(address)
+      
+      if (onConnect) {
+        onConnect()
+      }
       setIsOpen(false)
     }
-  }, [isConnected, onConnect])
+  }, [isConnected, address, onConnect, registerUser])
 
   const handleConnect = (connector: any) => {
     connect({ connector })

@@ -168,6 +168,33 @@ export interface MoonbeamEventCallbacks {
     blockNumber: number;
     transactionHash: string;
   }) => void;
+  onPendingPositionCancelled?: (event: {
+    assetHubPositionId: string;
+    user: string;
+    refundAmount: string;
+    blockNumber: number;
+    transactionHash: string;
+  }) => void;
+  onXcmTransferAttempt?: (event: {
+    token: string;
+    destination: string;
+    amount: string;
+    success: boolean;
+    errorData: string;
+    blockNumber: number;
+    transactionHash: string;
+  }) => void;
+  onXcmRemoteCallAttempt?: (event: {
+    paraId: number;
+    feeLocation: number;
+    transactRequiredWeightAtMost: string;
+    feeAmount: string;
+    overallWeight: string;
+    success: boolean;
+    errorData: string;
+    blockNumber: number;
+    transactionHash: string;
+  }) => void;
 }
 
 /**
@@ -933,6 +960,56 @@ export class MoonbeamService implements OnModuleInit {
           destination,
           amount: amount.toString(),
           positionId: Number(positionId),
+          blockNumber: event.log.blockNumber,
+          transactionHash: event.log.transactionHash,
+        });
+      });
+    }
+
+    // PendingPositionCancelled event
+    if (callbacks.onPendingPositionCancelled) {
+      this.contract.on('PendingPositionCancelled', (assetHubPositionId, user, refundAmount, event) => {
+        this.logger.log(`Event: PendingPositionCancelled ${assetHubPositionId}`);
+        callbacks.onPendingPositionCancelled!({
+          assetHubPositionId,
+          user,
+          refundAmount: refundAmount.toString(),
+          blockNumber: event.log.blockNumber,
+          transactionHash: event.log.transactionHash,
+        });
+      });
+    }
+
+    // XcmTransferAttempt event
+    if (callbacks.onXcmTransferAttempt) {
+      this.contract.on('XcmTransferAttempt', (token, dest, amount, success, errorData, event) => {
+        this.logger.log(`Event: XcmTransferAttempt success=${success}`);
+        callbacks.onXcmTransferAttempt!({
+          token,
+          destination: dest,
+          amount: amount.toString(),
+          success,
+          errorData: errorData || '',
+          blockNumber: event.log.blockNumber,
+          transactionHash: event.log.transactionHash,
+        });
+      });
+    }
+
+    // XcmRemoteCallAttempt event
+    if (callbacks.onXcmRemoteCallAttempt) {
+      this.contract.on('XcmRemoteCallAttempt', (
+        paraId, feeLocation, transactRequiredWeightAtMost, feeAmount, overallWeight, success, errorData, event
+      ) => {
+        this.logger.log(`Event: XcmRemoteCallAttempt paraId=${paraId} success=${success}`);
+        callbacks.onXcmRemoteCallAttempt!({
+          paraId: Number(paraId),
+          feeLocation: Number(feeLocation),
+          transactRequiredWeightAtMost: transactRequiredWeightAtMost.toString(),
+          feeAmount: feeAmount.toString(),
+          overallWeight: overallWeight.toString(),
+          success,
+          errorData: errorData || '',
           blockNumber: event.log.blockNumber,
           transactionHash: event.log.transactionHash,
         });

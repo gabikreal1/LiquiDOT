@@ -21,6 +21,8 @@ import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { injected } from 'wagmi/connectors'
 import { toast } from 'sonner'
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+
 // Define types for investment decisions
 interface Token {
   symbol: string
@@ -69,7 +71,7 @@ export default function LiquidityManager() {
     if (mounted) {
       const checkBackendStatus = async () => {
         try {
-          const response = await fetch('http://localhost:3001/api/health', {
+          const response = await fetch(`${API_BASE_URL}/api/health`, {
             method: 'GET',
             signal: AbortSignal.timeout(3000) // 3 second timeout
           });
@@ -146,7 +148,7 @@ export default function LiquidityManager() {
     }
     
     if (backendStatus === 'offline') {
-      toast.error("Backend server is not running. Please start the backend server at http://localhost:3001");
+      toast.error(`Backend server is not running. Please start the backend server at ${API_BASE_URL}`);
       return;
     }
 
@@ -156,33 +158,34 @@ export default function LiquidityManager() {
     setIsLoading(true);
 
     try {
-      // Create the request payload
+      // Create the request payload - mapped to new NestJS DTO format
       const payload = {
-        coinLimit: parseInt(maxAllocation, 10),
-        minRequiredApr: parseInt(aprValue, 10),
-        minMarketCap: marketCapValue[0],
-        stopLossLevel: Math.abs(slTpRange[0]),  // Convert negative to positive value
-        takeProfitLevel: slTpRange[1],
-        riskStrategy: riskStrategy === "market-cap" ? "highestMarketCap" : "highestApr",
-        userAddress: address,
-        // When "All Coins" is selected (showAllCoins is true), use an empty array for allowedCoins
-        allowedCoins: showAllCoins 
-          ? [] 
-          : (selectedCoins.length > 0 
-              ? selectedCoins.map(coin => {
-                  // For tokens with 'xc' prefix, ensure 'xc' is lowercase and the rest is uppercase
-                  if (coin.toLowerCase().startsWith('xc')) {
-                    return 'xc' + coin.substring(2).toUpperCase();
-                  }
-                  return coin.toUpperCase();
-                }) 
-              : ["WGLMR", "xcDOT", "xcUSDT", "xcUSDC", "USDC", "xcMANTA", "STELLA"])  // Default allowed coins
+        walletAddress: address,
+        depositAmount: parseFloat(depositAmount) || 0,
+        selectedDepositCoin: selectedDepositCoin,
+        preferences: {
+          minApy: parseInt(aprValue, 10),
+          maxAllocation: parseInt(maxAllocation, 10),
+          allowedTokens: showAllCoins 
+            ? [] 
+            : (selectedCoins.length > 0 
+                ? selectedCoins.map(coin => {
+                    // For tokens with 'xc' prefix, ensure 'xc' is lowercase and the rest is uppercase
+                    if (coin.toLowerCase().startsWith('xc')) {
+                      return 'xc' + coin.substring(2).toUpperCase();
+                    }
+                    return coin.toUpperCase();
+                  }) 
+                : ["WGLMR", "xcDOT", "xcUSDT", "xcUSDC", "USDC", "xcMANTA", "STELLA"]),
+          riskStrategy: riskStrategy === "market-cap" ? "conservative" : "aggressive",
+          slTpRange: [Math.abs(slTpRange[0]), slTpRange[1]] as [number, number],
+        }
       };
 
       console.log("Sending request to backend:", payload);
 
       // Send the POST request to the backend
-      const response = await fetch("http://localhost:3001/api/investmentDecisions", {
+      const response = await fetch(`${API_BASE_URL}/api/investmentDecisions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -197,9 +200,12 @@ export default function LiquidityManager() {
       if (response.ok) {
         toast.success("Successfully deposited into the vault!");
         console.log("Investment decisions:", data);
-        // Store the investment decisions from the API response
-        if (data.data && data.data.decisions) {
-          setInvestmentDecisions(data.data.decisions);
+        // Handle both old and new response formats
+        // New format: { success: true, data: { decisions: [...] } }
+        // Legacy format: { data: { decisions: [...] } }
+        const decisions = data.data?.decisions || data.decisions || [];
+        if (decisions.length > 0) {
+          setInvestmentDecisions(decisions);
           setShowDecisions(true);
         }
       } else {
@@ -209,7 +215,7 @@ export default function LiquidityManager() {
     } catch (error) {
       console.error("Failed to deposit to vault:", error);
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        toast.error("Failed to connect to the backend. Please ensure the backend server is running at http://localhost:3001");
+        toast.error(`Failed to connect to the backend. Please ensure the backend server is running at ${API_BASE_URL}`);
       } else {
         toast.error("An unexpected error occurred. Please try again later.");
       }

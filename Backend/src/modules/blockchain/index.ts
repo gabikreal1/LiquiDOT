@@ -9,6 +9,8 @@
  *   BlockchainModule,
  *   AssetHubService,
  *   MoonbeamService,
+ *   TestModeService,
+ *   XcmRetryService,
  * } from '@/modules/blockchain';
  * ```
  */
@@ -24,6 +26,10 @@ export {
   BlockchainEventListenerService,
 } from './services';
 
+// New services
+export { TestModeService } from './services/test-mode.service';
+export { XcmRetryService, XcmErrorType } from './services/xcm-retry.service';
+
 // Types
 export * from './types';
 
@@ -31,3 +37,14 @@ export * from './types';
 export {
   PositionStatus,
 } from './services/asset-hub.service';
+
+// Re-export new service types
+export type {
+  TestModeStatus,
+} from './services/test-mode.service';
+
+export type {
+  RetryPolicy,
+  RetryAttempt,
+  XcmOperation,
+} from './services/xcm-retry.service';

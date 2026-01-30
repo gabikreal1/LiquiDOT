@@ -1,55 +1,102 @@
-# CrossLiquidity Provider Backend
+# LiquiDOT Backend
 
-This directory contains the JavaScript utilities for interacting with the CrossLiquidity smart contracts on Polkadot's EVM parachains (Moonbeam/Moonbase Alpha).
+Automated DeFi liquidity management service for Polkadot ecosystem. Optimizes LP positions across Moonbeam DEXes using cross-chain messaging (XCM) from Asset Hub.
 
-## Files
+## 📖 Documentation
 
-- `interact-with-contract.js` - Main interaction examples for basic contract functions
-- `liquidity-swapper.js` - Advanced examples for token swapping functionality
-- `example.js` - Example usage showing how to interact with the contracts
-- `.env.example` - Example environment variable configuration
+| Document | Description |
+|----------|-------------|
+| [**README**](./docs/README.md) | Complete backend overview and quick start |
+| [**API Reference**](./docs/API_REFERENCE.md) | Full REST API documentation |
+| [**Database Schema**](./docs/DATABASE_SCHEMA.md) | Entity relationships and table definitions |
+| [**Investment Algorithm**](./docs/INVESTMENT_ALGORITHM.md) | How the optimization math works |
+| [**Architecture**](./docs/ARCHITECTURE.md) | System design and data flows |
 
-## Setup
-
-1. Install dependencies:
+## 🚀 Quick Start
 
 ```bash
+# Install dependencies
 npm install
-```
 
-2. Create an environment file for your secrets:
-
-```bash
-# Copy the example file
+# Copy environment template
 cp .env.example .env
 
-# Edit the .env file with your actual values
-nano .env  # or use any text editor
+# Configure your environment (see .env.example for all options)
+# Required: DATABASE_URL, MOONBEAM_RPC_URL, PRIVATE_KEY
+
+# Run database migrations
+npm run migration:run
+
+# Start development server
+npm run start:dev
 ```
 
-3. Configure your environment variables in the `.env` file:
+## 🏗️ Tech Stack
+
+- **NestJS 10** - Backend framework
+- **TypeORM** - Database ORM with PostgreSQL
+- **Ethers.js 6** - Ethereum/Moonbeam interactions
+- **Polkadot.js** - Asset Hub / XCM operations
+- **TypeChain** - Type-safe contract bindings
+
+## 📁 Project Structure
 
 ```
-# RPC endpoint (defaults to Moonbase Alpha if not specified)
-RPC_URL=https://rpc.api.moonbase.moonbeam.network
-
-# Contract addresses
-PROVIDER_CONTRACT_ADDRESS=0x123...  # Your LiquidityProvider address
-ROUTER_CONTRACT_ADDRESS=0x456...    # Your LiquidityRouter address
-
-# Your private key (keep this secret!)
-PRIVATE_KEY=0x789...
-
-# Example token addresses for testing
-TOKEN0_ADDRESS=0xAcc15dC74880C9944775448304B263D191c6077F  # WGLMR on Moonbase Alpha
-TOKEN1_ADDRESS=0xFfFFfFff1FcaCBd218EDc0EbA20Fc2308C778080  # xcDOT on Moonbase Alpha
-POOL_ADDRESS=0xabc...
+src/
+├── modules/
+│   ├── blockchain/           # Chain interactions (Asset Hub, Moonbeam)
+│   ├── investment-decision/  # Core optimization algorithm
+│   ├── stop-loss-worker/     # Position monitoring
+│   ├── pools/                # DEX pool data
+│   ├── positions/            # User positions
+│   ├── preferences/          # User settings
+│   └── users/                # User management
+├── health.controller.ts
+├── app.module.ts
+└── main.ts
 ```
 
-⚠️ **Security Warning**: 
-- Never commit your `.env` file to version control
-- Add `.env` to your `.gitignore` file
-- Consider using a vault service for production deployments
+## 🔧 Environment Variables
+
+See [`.env.example`](.env.example) for all configuration options. Key variables:
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | PostgreSQL connection string |
+| `MOONBEAM_RPC_URL` | Moonbeam RPC endpoint |
+| `ASSET_HUB_RPC_URL` | Asset Hub RPC endpoint |
+| `PRIVATE_KEY` | Wallet private key (never commit!) |
+| `STOP_LOSS_CHECK_INTERVAL_MS` | Position monitoring interval |
+
+## 📡 API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/health` | Health check |
+| `POST` | `/users` | Register user |
+| `GET` | `/users/:id/balance` | Get user balance |
+| `GET` | `/positions` | List positions |
+| `GET` | `/positions/:id/pnl` | Get position P&L |
+| `POST` | `/preferences/:userId` | Set preferences |
+| `GET` | `/pools/top` | Get top pools by APR |
+
+Full API documentation: [docs/API_REFERENCE.md](./docs/API_REFERENCE.md)
+
+## 🧠 How It Works
+
+1. **Data Aggregation** - Pools synced from DEX subgraphs
+2. **Opportunity Detection** - Algorithm ranks pools by risk-adjusted returns
+3. **Portfolio Optimization** - Utility-maximizing allocation computed
+4. **Automated Execution** - Rebalancing via XCM to Moonbeam
+5. **Position Monitoring** - Stop-loss and take-profit checks every 30s
+
+See [Investment Algorithm](./docs/INVESTMENT_ALGORITHM.md) for the math.
+
+---
+
+## Legacy Information
+
+The information below is outdated and kept for reference only.
 
 ## Running the Code
 
