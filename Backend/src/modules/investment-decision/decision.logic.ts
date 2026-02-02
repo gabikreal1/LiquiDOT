@@ -8,7 +8,7 @@ import {
 } from './decision.types';
 
 const DEFAULTS = {
-  minPositionSizeUsd: 3000,
+  minPositionSizeUsd: 45, // ~30 DOT at current prices - testnet default
   minTvlUsd: 1_000_000,
   minAgeDays: 14,
   dailyRebalanceLimit: 8,

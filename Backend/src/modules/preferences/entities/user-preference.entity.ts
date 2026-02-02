@@ -73,8 +73,8 @@ export class UserPreference {
   @Column({ type: 'decimal', precision: 5, scale: 2, default: '6.0' })
   maxIlLossPercent: string; // Max IL loss before postponing exit (default 6%)
 
-  @Column({ type: 'decimal', precision: 30, scale: 2, default: '3000' })
-  minPositionSizeUsd: string; // Minimum position size (not worth gas below this)
+  @Column({ type: 'decimal', precision: 30, scale: 2, default: '45' })
+  minPositionSizeUsd: string; // Minimum position size ~30 DOT (testnet default)
 
   // === Automation ===
 

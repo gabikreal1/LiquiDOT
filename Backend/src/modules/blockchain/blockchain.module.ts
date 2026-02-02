@@ -8,6 +8,7 @@ import { BlockchainEventListenerService } from './services/event-listener.servic
 import { TestModeService } from './services/test-mode.service';
 import { XcmRetryService } from './services/xcm-retry.service';
 import { EventPersistenceService } from './services/event-persistence.service';
+import { PapiModule } from './papi/papi.module';
 import { User } from '../users/entities/user.entity';
 import { Position } from '../positions/entities/position.entity';
 import { Pool } from '../pools/entities/pool.entity';
@@ -50,6 +51,7 @@ import { Pool } from '../pools/entities/pool.entity';
   imports: [
     ConfigModule,
     TypeOrmModule.forFeature([User, Position, Pool]),
+    PapiModule, // P-API client for Substrate chain connectivity
   ],
   providers: [
     // Core services

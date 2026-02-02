@@ -94,7 +94,11 @@ Set the maximum USD value for any single position.
 
 The smallest position LiquiDOT will create.
 
-**Default:** $3,000 USD
+**Testnet Default:** 30 DOT (~$45 USD)
+
+{% hint style="info" %}
+**Deposits accept DOT only** (native asset on Asset Hub). The testnet minimum is set low for experimentation; production values will be higher.
+{% endhint %}
 
 **Why this matters:**
 - Very small positions have unfavorable gas cost ratios

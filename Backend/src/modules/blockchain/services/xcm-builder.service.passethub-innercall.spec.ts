@@ -1,5 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { XcmBuilderService } from './xcm-builder.service';
+import { PapiClientService } from '../papi/papi-client.service';
 
 /**
  * These tests are intentionally "offline": they validate gating + input validation
@@ -12,7 +13,15 @@ describe('XcmBuilderService PassetHub innerCall builder', () => {
         Object.prototype.hasOwnProperty.call(cfg, key) ? cfg[key] : defaultValue,
     } as unknown as ConfigService;
 
-    return new XcmBuilderService(configService);
+    // Mock PapiClientService - these tests only validate input/config validation
+    // before P-API calls are made
+    const papiClientService = {
+      getReviveCallTransaction: jest.fn(),
+      buildReviveMapAccount: jest.fn(),
+      buildUtilityBatch: jest.fn(),
+    } as unknown as PapiClientService;
+
+    return new XcmBuilderService(configService, papiClientService);
   };
 
   it('rejects when feature flag disabled', async () => {
@@ -29,21 +38,6 @@ describe('XcmBuilderService PassetHub innerCall builder', () => {
         receivedAmount: 1n,
       }),
     ).rejects.toThrow(/disabled/i);
-  });
-
-  it('rejects when PASSET_HUB_WS missing', async () => {
-    const svc = makeService({
-      ENABLE_PASSETHUB_TRANSACT_SETTLEMENT: true,
-    });
-
-    await expect(
-      svc.buildPassetHubSettleLiquidationInnerCall({
-        assetHubVaultAddress: '0x0000000000000000000000000000000000000000',
-        positionId:
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
-        receivedAmount: 1n,
-      }),
-    ).rejects.toThrow(/PASSET_HUB_WS/i);
   });
 
   it('rejects invalid AssetHubVault address format', async () => {

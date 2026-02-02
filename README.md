@@ -36,6 +36,31 @@ Built on Asset Hub for custody and using XCM for execution across parachains, Li
 - **LP newcomers** who want a reliable, automated entry into liquidity provision
 - **Developers and projects** building on parachains who need efficient liquidity management
 
+### 💡 How to Use (Testnet)
+
+**1. Connect Your Wallet**
+- Use Talisman, SubWallet, or Polkadot.js extension
+- Switch to Paseo Asset Hub network
+
+**2. Deposit DOT**
+- Deposits accept **DOT only** (native asset on Asset Hub)
+- Minimum position size: **30 DOT** (~$45 USD for testnet)
+- Funds are held securely in the AssetHubVault contract
+
+**3. Set Your Preferences**
+- Choose risk profile (Conservative/Moderate/Aggressive)
+- Set minimum APY target
+- Select allowed tokens for LP pairs
+- Configure stop-loss and take-profit levels
+
+**4. Automated Management**
+- System analyzes pools on Moonbeam DEXes
+- Optimal LP positions are created via XCM
+- 24/7 monitoring for stop-loss/take-profit triggers
+- Automatic rebalancing when conditions change
+
+> **Testnet Limits:** For testing purposes, minimum position is 30 DOT. Production will use higher minimums to ensure gas efficiency.
+
 ### 📚 Documentation
 
 | Resource | Description |
@@ -151,7 +176,7 @@ See **[SmartContracts/README.md](./SmartContracts/README.md)** for full deployme
 | **Blockchain** | Polkadot, XCM, Asset Hub, Moonbeam (EVM) |
 | **Contracts** | Solidity, Hardhat, Foundry, OpenZeppelin |
 | **DEX** | Algebra Integral (StellaSwap Pulsar compatible) |
-| **Backend** | NestJS, TypeScript, PostgreSQL, ethers.js |
+| **Backend** | NestJS, TypeScript, PostgreSQL, ethers.js, P-API (polkadot-api) |
 | **Frontend** | Next.js, Wagmi, Tailwind CSS |
 
 ### 📄 License

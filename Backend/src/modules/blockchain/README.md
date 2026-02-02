@@ -6,23 +6,46 @@
 
 The Blockchain module provides type-safe services for all on-chain operations:
 
-## PAPI (Polkadot API) integration
+## P-API (Polkadot-API) Integration
 
-Some parts of the system require Substrate RPC access (Asset Hub / XCM tooling). To keep this isolated and aligned with grant commitments, we expose a dedicated PAPI client service:
+Substrate RPC access is handled via **P-API** (`polkadot-api`) - the modern, light-client-first Polkadot API library. This aligns with grant commitments and replaces the legacy Polkadot.js (`@polkadot/api`).
 
-- `PapiClientService` (in `src/modules/blockchain/papi/`)
+### Services
+
+- `PapiClientService` (in `src/modules/blockchain/papi/`) - Multi-chain client management
+- `PapiModule` - NestJS module for P-API integration
+
+### Features
+
+- **Multi-chain support**: Asset Hub and PassetHub (Revive pallet) connectivity
+- **UnsafeApi**: Dynamic pallet access without pre-generated descriptors
+- **SCALE encoding**: Build and encode extrinsics for XCM Transact calls
 
 ### Configuration
 
-Set the following env var to enable PAPI connectivity:
+Set the following env vars to enable P-API connectivity:
 
-- `ASSET_HUB_PAPI_ENDPOINT` (WebSocket endpoint)
-  - Example: `wss://asset-hub-polkadot-rpc.polkadot.io`
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `ASSET_HUB_PAPI_ENDPOINT` | Asset Hub WebSocket endpoint | `wss://polkadot-asset-hub-rpc.polkadot.io` |
+| `PASSET_HUB_WS` | PassetHub WebSocket endpoint (for Revive pallet) | `wss://...` |
+
+### Usage
+
+```typescript
+// XcmBuilderService uses P-API internally for PassetHub calls
+const innerCall = await xcmBuilderService.buildPassetHubSettleLiquidationInnerCall({
+  assetHubVaultAddress: '0x...',
+  positionId: '0x...',
+  receivedAmount: 1000000n,
+});
+```
 
 ### Notes
 
 - Contract interactions (EVM/PolkaVM) continue to use `ethers` + JSON-RPC.
-- Substrate interactions (when needed) go through `polkadot-api` (PAPI).
+- Substrate interactions go through `polkadot-api` (P-API) with UnsafeApi for dynamic access.
+- No Polkadot.js (`@polkadot/api`) dependencies - fully migrated to P-API.
 
 - **AssetHubService**: Manages the `AssetHubVault` contract (custody, investments, settlements)
 - **MoonbeamService**: Manages the `XCMProxy` contract (LP positions, liquidations, swaps)
@@ -401,11 +424,16 @@ src/modules/blockchain/
 ├── abis/
 │   ├── AssetHubVault.abi.ts   # AssetHubVault contract ABI
 │   └── XCMProxy.abi.ts        # XCMProxy contract ABI
+├── papi/                       # P-API (polkadot-api) integration
+│   ├── papi.module.ts         # NestJS module for P-API
+│   ├── papi-client.service.ts # Multi-chain P-API client
+│   ├── papi.types.ts          # P-API type definitions
+│   └── papi.constants.ts      # P-API constants
 ├── services/
 │   ├── index.ts               # Services barrel export
 │   ├── asset-hub.service.ts   # AssetHub contract service
 │   ├── moonbeam.service.ts    # Moonbeam contract service
-│   ├── xcm-builder.service.ts # XCM message builder
+│   ├── xcm-builder.service.ts # XCM message builder (uses P-API)
 │   └── event-listener.service.ts # Unified event listener
 ├── types/
 │   └── index.ts               # Shared types and enums

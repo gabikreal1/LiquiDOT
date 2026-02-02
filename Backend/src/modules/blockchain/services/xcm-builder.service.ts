@@ -1,7 +1,8 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ApiPromise, WsProvider } from '@polkadot/api';
 import { Interface } from 'ethers';
+import { PapiClientService } from '../papi/papi-client.service';
+import { PAPI_DEFAULT_GAS_LIMIT } from '../papi/papi.constants';
 
 /**
  * XCM Investment Parameters
@@ -62,13 +63,14 @@ export class XcmBuilderService implements OnModuleDestroy {
   private readonly testMode: boolean;
   private readonly moonbeamParaId: number;
   private readonly assetHubParaId: number;
-  private readonly passetHubWs?: string;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private papiClient: PapiClientService,
+  ) {
     this.testMode = this.configService.get<boolean>('XCM_TEST_MODE', false);
     this.moonbeamParaId = this.configService.get<number>('MOONBEAM_PARA_ID', 2004);
     this.assetHubParaId = this.configService.get<number>('ASSET_HUB_PARA_ID', 1000);
-    this.passetHubWs = this.configService.get<string>('PASSET_HUB_WS');
 
     if (this.testMode) {
       this.logger.warn('XCM Builder running in TEST MODE - using mock XCM messages');
@@ -89,8 +91,9 @@ export class XcmBuilderService implements OnModuleDestroy {
    * - Metadata-driven (no hardcoded pallet indices)
    * - Uses EVM ABI encoding for the target call: AssetHubVault.settleLiquidation(bytes32,uint256)
    * - Optionally wraps in utility.forceBatch/batchAll/batch and optionally includes revive.mapAccount()
+   * - Uses P-API (polkadot-api) instead of Polkadot.js for grant compliance
    *
-   * WARNING: This method requires a live connection to a Passet Hub node (PASSET_HUB_WS).
+   * WARNING: This method requires a live connection to a PassetHub node (PASSET_HUB_WS).
    */
   async buildPassetHubSettleLiquidationInnerCall(params: {
     assetHubVaultAddress: string;
@@ -108,10 +111,6 @@ export class XcmBuilderService implements OnModuleDestroy {
       );
     }
 
-    if (!this.passetHubWs) {
-      throw new Error('Missing PASSET_HUB_WS (required to build PassetHub innerCall)');
-    }
-
     if (!/^0x[0-9a-fA-F]{40}$/.test(params.assetHubVaultAddress)) {
       throw new Error(
         `assetHubVaultAddress must be an EVM address (0x + 40 hex chars), got: ${params.assetHubVaultAddress}`,
@@ -127,92 +126,40 @@ export class XcmBuilderService implements OnModuleDestroy {
       params.receivedAmount,
     ]) as `0x${string}`;
 
-    // Connect to Passet Hub and build SCALE bytes using chain metadata.
-    const provider = new WsProvider(this.passetHubWs);
-    const api = await ApiPromise.create({ provider });
+    const includeMapAccount = params.includeMapAccount === true;
 
-    try {
-      if (!(api.tx as any).revive?.call) {
-        throw new Error('PassetHub metadata does not expose revive.call; cannot build innerCall');
-      }
+    // Build revive.call transaction using P-API
+    const reviveCallTx = await this.papiClient.getReviveCallTransaction({
+      dest: params.assetHubVaultAddress,
+      value: 0n,
+      gasLimit: PAPI_DEFAULT_GAS_LIMIT,
+      storageDepositLimit: null,
+      inputData: evmCalldata,
+    });
 
-      const includeMapAccount = params.includeMapAccount === true;
-      const reviveCall = (api.tx as any).revive.call;
-      const reviveMapAccount = (api.tx as any).revive.mapAccount;
-      const utility = (api.tx as any).utility;
+    this.logger.log(
+      `PassetHub settleLiquidation innerCall built using P-API Revive.call`,
+    );
 
-      // Heuristic revive.call argument candidates (runtime-dependent signature).
-      const candidates: Array<{ label: string; args: unknown[] }> = [
-        {
-          label: 'A(dest,value,gasLimit,storageDepositLimit,inputData)',
-          args: [params.assetHubVaultAddress, 0, 1_000_000_000n, null, evmCalldata],
-        },
-        {
-          label: 'B(dest,value,gasLimitWeight,storageDepositLimit,inputData)',
-          args: [
-            params.assetHubVaultAddress,
-            0,
-            { refTime: 1_000_000_000n, proofSize: 0n },
-            null,
-            evmCalldata,
-          ],
-        },
-        {
-          label: 'C(dest,value,gasLimit,inputData)',
-          args: [params.assetHubVaultAddress, 0, 1_000_000_000n, evmCalldata],
-        },
-      ];
-
-      let reviveCallExtrinsic: any | null = null;
-      let reviveCallUsed: string | null = null;
-
-      for (const c of candidates) {
+    // Try to wrap in utility batch if requested
+    if (includeMapAccount) {
+      const mapAccountTx = await this.papiClient.buildReviveMapAccount();
+      if (mapAccountTx) {
         try {
-          reviveCallExtrinsic = reviveCall(...c.args);
-          reviveCallUsed = c.label;
-          break;
+          const batchResult = await this.papiClient.buildUtilityBatch([
+            mapAccountTx,
+            reviveCallTx,
+          ]);
+          return batchResult.hex;
         } catch (e) {
-          // keep trying
+          this.logger.warn(`utility batching failed; returning Revive.call innerCall only: ${e}`);
         }
       }
-
-      if (!reviveCallExtrinsic) {
-        const meta = (api.tx as any).revive.call.meta;
-        const argTypes = meta?.args?.map((a: any) => `${a.name.toString()}:${a.type.toString()}`) ?? [];
-        throw new Error(
-          `Failed to construct revive.call extrinsic. Metadata args: [${argTypes.join(', ')}]`,
-        );
-      }
-
-      this.logger.log(
-        `PassetHub settleLiquidation innerCall built using revive.call candidate=${reviveCallUsed}`,
-      );
-
-      // Try to wrap in utility batch if available.
-      const batchFn = utility?.forceBatch || utility?.batchAll || utility?.batch;
-      if (batchFn) {
-        const calls: any[] = [];
-        if (includeMapAccount && typeof reviveMapAccount === 'function') {
-          try {
-            calls.push(reviveMapAccount());
-          } catch (e) {
-            this.logger.warn(`revive.mapAccount() construction failed; continuing without it`);
-          }
-        }
-        calls.push(reviveCallExtrinsic);
-
-        try {
-          const batched = batchFn(calls);
-          return batched.method.toHex() as `0x${string}`;
-        } catch (e) {
-          this.logger.warn(`utility batching failed; returning revive.call innerCall only`);
-        }
-      }
-
-      return reviveCallExtrinsic.method.toHex() as `0x${string}`;
-    } finally {
-      await api.disconnect();
     }
+
+    // Return just the revive.call encoded
+    const encoded = await reviveCallTx.getEncodedData();
+    return encoded.asHex() as `0x${string}`;
   }
 
   /**

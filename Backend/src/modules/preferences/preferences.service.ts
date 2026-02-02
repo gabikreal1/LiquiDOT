@@ -100,7 +100,7 @@ const DEFAULT_PREFERENCES: EffectivePreferences = {
   defaultLowerRangePercent: -5,
   defaultUpperRangePercent: 10,
   maxIlLossPercent: 6.0,
-  minPositionSizeUsd: 3000,
+  minPositionSizeUsd: 45, // ~30 DOT at current prices - testnet default
   autoInvestEnabled: true,
   investmentCheckIntervalSeconds: 14400, // 4 hours
 };

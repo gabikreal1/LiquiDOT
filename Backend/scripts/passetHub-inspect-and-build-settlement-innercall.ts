@@ -1,13 +1,14 @@
 /*
-  Passet Hub metadata inspector + settlement innerCall builder.
+  PassetHub metadata inspector + settlement innerCall builder.
+
+  MIGRATED TO P-API (polkadot-api) - replaces previous Polkadot.js implementation.
 
   What it does:
-  - Connects to PASSET_HUB_WS via polkadot-js
-  - Prints runtime version/spec
+  - Connects to PASSET_HUB_WS via P-API (polkadot-api)
   - Checks availability of pallets/calls used for Transact settlement
   - Builds SCALE-encoded innerCall hex for:
-      - revive.call(...)
-      - utility.forceBatch([...]) (if available)
+      - Revive.call(...)
+      - Utility.force_batch([...]) (if available)
 
   Usage (run from Backend/):
     PASSET_HUB_WS=wss://... \
@@ -18,10 +19,9 @@
 
   Notes:
   - This script is metadata-driven: it does not hardcode pallet indices.
-  - It intentionally prints informative errors when pallet/call names differ.
+  - Uses P-API UnsafeApi for dynamic pallet access (no codegen required).
 */
 
-import { ApiPromise, WsProvider } from '@polkadot/api';
 import { Interface } from 'ethers';
 
 type HexString = `0x${string}`;
@@ -46,6 +46,22 @@ function optionalBool(v: string | undefined): boolean {
   return ['1', 'true', 'yes', 'y'].includes(v.toLowerCase());
 }
 
+/**
+ * UnsafeApi type - provides dynamic access to pallets without descriptors
+ */
+type UnsafeApi = {
+  tx: Record<string, Record<string, (args: Record<string, unknown>) => unknown>>;
+  query: Record<string, Record<string, unknown>>;
+};
+
+/**
+ * Transaction type from polkadot-api
+ */
+interface PapiTransaction {
+  getEncodedData(): Promise<{ asHex(): string; asBytes(): Uint8Array }>;
+  decodedCall: unknown;
+}
+
 async function main() {
   const ws = requireEnv('PASSET_HUB_WS');
   const assetHubVault = requireEnv('ASSET_HUB_VAULT');
@@ -58,160 +74,154 @@ async function main() {
   }
   const amount = BigInt(amountStr);
 
-  const provider = new WsProvider(ws);
-  const api = await ApiPromise.create({ provider });
+  // Dynamic import P-API (ESM-only)
+  const { createClient } = await import('polkadot-api');
+  const { getWsProvider } = await import('polkadot-api/ws-provider/node');
+
+  console.log(`Connecting to PassetHub: ${ws}`);
+  const provider = getWsProvider(ws);
+  const client = createClient(provider);
 
   try {
-    const rv = api.runtimeVersion;
-    // eslint-disable-next-line no-console
-    console.log('Runtime:', {
-      specName: rv.specName.toString(),
-      specVersion: rv.specVersion.toNumber(),
-      implName: rv.implName.toString(),
-      implVersion: rv.implVersion.toNumber(),
-      transactionVersion: rv.transactionVersion.toNumber(),
-    });
+    // Get UnsafeApi for dynamic pallet access
+    const unsafeApi = (client as any).getUnsafeApi() as UnsafeApi;
 
-    const hasRevive = !!api.tx['revive'];
-    const hasUtility = !!api.tx['utility'];
+    const hasRevive = !!unsafeApi.tx.Revive;
+    const hasUtility = !!unsafeApi.tx.Utility;
 
-    // eslint-disable-next-line no-console
-    console.log('Pallets present:', { revive: hasRevive, utility: hasUtility });
+    console.log('Pallets present:', { Revive: hasRevive, Utility: hasUtility });
 
     if (!hasRevive) {
-      throw new Error(`No revive pallet found in metadata (api.tx.revive is undefined).`);
+      throw new Error(`No Revive pallet found in metadata (unsafeApi.tx.Revive is undefined).`);
     }
 
-    const reviveAny = api.tx['revive'] as any;
-    const reviveCall = reviveAny['call'];
-    const reviveMapAccount = reviveAny['mapAccount'];
+    const reviveCall = unsafeApi.tx.Revive?.call;
+    const reviveMapAccount = unsafeApi.tx.Revive?.map_account;
 
-    // eslint-disable-next-line no-console
-    console.log('revive calls present:', {
+    console.log('Revive calls present:', {
       call: typeof reviveCall === 'function',
-      mapAccount: typeof reviveMapAccount === 'function',
+      map_account: typeof reviveMapAccount === 'function',
     });
 
     // Build the EVM calldata for AssetHubVault.settleLiquidation(bytes32,uint256)
-    // NOTE: This is EVM ABI calldata used as the payload for revive.call.
     const vaultIface = new Interface([
       'function settleLiquidation(bytes32 positionId,uint256 receivedAmount)',
     ]);
     const evmCalldata = vaultIface.encodeFunctionData('settleLiquidation', [positionId, amount]) as HexString;
 
-    // eslint-disable-next-line no-console
     console.log('EVM calldata:', { evmCalldata, bytes: (evmCalldata.length - 2) / 2 });
 
-    // ----- Try to construct revive.call(...) in a runtime-agnostic way -----
-    // We don’t know the exact revive.call signature across runtimes.
-    // So we introspect metadata and attempt a best-effort call creation.
-    const reviveCallMeta = api.tx.revive.call.meta;
-    // eslint-disable-next-line no-console
-    console.log('revive.call meta args:', reviveCallMeta.args.map((a) => ({ name: a.name.toString(), type: a.type.toString() })));
+    // ----- Try to construct Revive.call(...) in a runtime-agnostic way -----
+    const candidates: Array<{ label: string; args: Record<string, unknown> }> = [
+      {
+        label: 'A(dest,value,gas_limit,storage_deposit_limit,data)',
+        args: {
+          dest: assetHubVault,
+          value: 0n,
+          gas_limit: 1_000_000_000n,
+          storage_deposit_limit: undefined,
+          data: evmCalldata,
+        },
+      },
+      {
+        label: 'B(dest,value,gas_limit,storage_deposit_limit,input_data)',
+        args: {
+          dest: assetHubVault,
+          value: 0n,
+          gas_limit: 1_000_000_000n,
+          storage_deposit_limit: undefined,
+          input_data: evmCalldata,
+        },
+      },
+      {
+        label: 'C(dest,value,gas_limit,data) - no storage limit',
+        args: {
+          dest: assetHubVault,
+          value: 0n,
+          gas_limit: 1_000_000_000n,
+          data: evmCalldata,
+        },
+      },
+    ];
 
-    // Heuristic argument mapping:
-    // Common patterns are something like:
-    //   call(dest: H160/AccountId, value: Balance, gasLimit/weight, storageDepositLimit?, inputData: Bytes)
-    // We will attempt a couple of candidate layouts.
-
-    const candidates: Array<{ label: string; args: unknown[] }> = [];
-
-    // Candidate A: (dest, value, gasLimit, storageDepositLimit, inputData)
-    candidates.push({
-      label: 'A(dest,value,gasLimit,storageDepositLimit,inputData)',
-      args: [assetHubVault, 0, 1_000_000_000n, null, evmCalldata],
-    });
-
-    // Candidate B: (dest, value, gasLimit, storageDepositLimit, inputData) but gasLimit as WeightV2-like object
-    candidates.push({
-      label: 'B(dest,value,gasLimitWeight,storageDepositLimit,inputData)',
-      args: [assetHubVault, 0, { refTime: 1_000_000_000n, proofSize: 0n }, null, evmCalldata],
-    });
-
-    // Candidate C: (dest, value, gasLimit, inputData)
-    candidates.push({
-      label: 'C(dest,value,gasLimit,inputData)',
-      args: [assetHubVault, 0, 1_000_000_000n, evmCalldata],
-    });
-
-    let reviveCallExtrinsic: any | null = null;
+    let reviveCallTx: PapiTransaction | null = null;
     let reviveCallUsed: string | null = null;
 
     for (const c of candidates) {
       try {
-        reviveCallExtrinsic = (api.tx as any).revive.call(...c.args);
+        reviveCallTx = reviveCall!(c.args) as PapiTransaction;
         reviveCallUsed = c.label;
         break;
       } catch (e: any) {
-        // eslint-disable-next-line no-console
-        console.log(`revive.call candidate failed (${c.label}): ${e?.message ?? e}`);
+        console.log(`Revive.call candidate failed (${c.label}): ${e?.message ?? e}`);
       }
     }
 
-    if (!reviveCallExtrinsic) {
-      throw new Error('Failed to construct revive.call extrinsic with all candidates. Use the printed meta args to update the builder.');
+    if (!reviveCallTx) {
+      throw new Error('Failed to construct Revive.call extrinsic with all candidates.');
     }
 
-    const reviveInnerCallHex = reviveCallExtrinsic.method.toHex() as HexString;
-    // eslint-disable-next-line no-console
-    console.log('revive.call constructed with:', reviveCallUsed);
-    // eslint-disable-next-line no-console
-    console.log('innerCallHex (revive.call only):', reviveInnerCallHex);
+    const reviveInnerCallEncoded = await reviveCallTx.getEncodedData();
+    const reviveInnerCallHex = reviveInnerCallEncoded.asHex() as HexString;
 
-    // ----- Optionally wrap in utility.forceBatch -----
-    const utilityAny = hasUtility ? (api.tx['utility'] as any) : null;
-    const forceBatch = utilityAny?.forceBatch;
-    const batchAll = utilityAny?.batchAll;
-    const batch = utilityAny?.batch;
+    console.log('Revive.call constructed with:', reviveCallUsed);
+    console.log('innerCallHex (Revive.call only):', reviveInnerCallHex);
+
+    // ----- Optionally wrap in utility batch -----
+    const forceBatch = unsafeApi.tx.Utility?.force_batch;
+    const batchAll = unsafeApi.tx.Utility?.batch_all;
+    const batch = unsafeApi.tx.Utility?.batch;
 
     const canMap = typeof reviveMapAccount === 'function';
 
     if (hasUtility && (typeof forceBatch === 'function' || typeof batchAll === 'function' || typeof batch === 'function')) {
-      const calls: any[] = [];
+      const calls: unknown[] = [];
 
       if (includeMapAccount) {
         if (!canMap) {
-          // eslint-disable-next-line no-console
-          console.log('INCLUDE_MAP_ACCOUNT was set, but revive.mapAccount is not available on this runtime. Skipping.');
+          console.log('INCLUDE_MAP_ACCOUNT was set, but Revive.map_account is not available on this runtime. Skipping.');
         } else {
           try {
-            calls.push((api.tx as any).revive.mapAccount());
+            const mapAccountTx = reviveMapAccount!({}) as PapiTransaction;
+            calls.push(mapAccountTx.decodedCall);
           } catch (e: any) {
-            // eslint-disable-next-line no-console
-            console.log(`revive.mapAccount() construct failed: ${e?.message ?? e}`);
+            console.log(`Revive.map_account() construct failed: ${e?.message ?? e}`);
           }
         }
       }
 
-      calls.push(reviveCallExtrinsic);
+      calls.push(reviveCallTx.decodedCall);
 
-      const batchFn = (typeof forceBatch === 'function' && forceBatch) || (typeof batchAll === 'function' && batchAll) || batch;
+      const batchFn = forceBatch || batchAll || batch;
       const batchLabel =
-        batchFn === forceBatch ? 'utility.forceBatch' : batchFn === batchAll ? 'utility.batchAll' : 'utility.batch';
+        batchFn === forceBatch ? 'Utility.force_batch' : batchFn === batchAll ? 'Utility.batch_all' : 'Utility.batch';
 
-      const batched = batchFn(calls);
-      const batchedInnerCallHex = batched.method.toHex() as HexString;
+      const batchedTx = batchFn!({ calls }) as PapiTransaction;
+      const batchedEncoded = await batchedTx.getEncodedData();
+      const batchedInnerCallHex = batchedEncoded.asHex() as HexString;
 
-      // eslint-disable-next-line no-console
       console.log('innerCallHex (batched):', { batchLabel, batchedInnerCallHex });
     } else {
-      // eslint-disable-next-line no-console
-      console.log('utility batching not available on this runtime; only revive.call innerCall produced.');
+      console.log('Utility batching not available on this runtime; only Revive.call innerCall produced.');
     }
 
-    // Bonus: print revive.mapAccount meta if present
+    // Bonus: print Revive.map_account availability
     if (canMap) {
-      const meta = (api.tx as any).revive.mapAccount.meta;
-      // eslint-disable-next-line no-console
-      console.log('revive.mapAccount meta args:', meta.args.map((a: any) => ({ name: a.name.toString(), type: a.type.toString() })));
+      console.log('Revive.map_account is available on this runtime');
     }
   } finally {
-    await api.disconnect();
+    // Disconnect client
+    try {
+      const c: any = client;
+      if (c?.disconnect) await c.disconnect();
+      if (c?.destroy) await c.destroy();
+    } catch (e) {
+      // Ignore cleanup errors
+    }
   }
 }
 
 main().catch((e) => {
-  // eslint-disable-next-line no-console
   console.error(e);
   process.exit(1);
 });

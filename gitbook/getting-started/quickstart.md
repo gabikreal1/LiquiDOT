@@ -53,12 +53,20 @@ LiquiDOT is in MVP phase on testnets. Mainnet deployment is planned for future r
 
 ## Step 2: Deposit Funds
 
+{% hint style="warning" %}
+**DOT Only:** Deposits accept DOT (native asset) only. Other tokens are not supported for deposits.
+{% endhint %}
+
 1. Go to the **Dashboard**
 2. Click **Deposit**
-3. Enter the amount you want to deposit in PAS
+3. Enter the amount you want to deposit in **DOT** (minimum: 30 DOT ≈ $45)
 4. Confirm the transaction in your wallet
 
 Your funds will be securely held in the Asset Hub Vault Contract.
+
+| Testnet Limit | Value |
+|---------------|-------|
+| Minimum Position | 30 DOT (~$45 USD) |
 
 ## Step 3: Configure Your Strategy
 

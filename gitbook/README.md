@@ -57,6 +57,16 @@ While trading platforms have long supported features like automation, stop loss,
 * **Custom asset preferences** for personalized exposure
 * **Capital control** with allocation limits and APR thresholds
 
+## 💰 Testnet Deposits & Limits
+
+**Deposits accept DOT only** (native asset on Asset Hub). The minimum position size for testnet is:
+
+| Limit | DOT | USD Equivalent |
+|-------|-----|----------------|
+| Minimum Position | 30 DOT | ~$45 |
+
+> **Note:** These limits are set low for testnet experimentation. Production values will be higher.
+
 ## 🎯 Target Audience
 
 LiquiDOT is designed for:

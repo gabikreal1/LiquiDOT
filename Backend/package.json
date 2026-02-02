@@ -42,8 +42,6 @@
     "@nestjs/schedule": "^4.0.0",
     "@nestjs/typeorm": "^10.0.0",
     "@paraspell/sdk": "^11.0.0",
-    "@polkadot/api": "^10.11.2",
-    "@polkadot/api-contract": "^10.11.2",
     "axios": "^1.6.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.0",
