@@ -14,4 +14,4 @@ import { BlockchainModule } from '../blockchain/blockchain.module';
   providers: [UsersService],
   exports: [TypeOrmModule, UsersService],
 })
-export class UsersModule {}
+export class UsersModule { }

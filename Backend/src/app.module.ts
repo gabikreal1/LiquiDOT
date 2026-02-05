@@ -11,6 +11,8 @@ import { InvestmentDecisionModule } from './modules/investment-decision/investme
 import { StopLossWorkerModule } from './modules/stop-loss-worker/stop-loss-worker.module';
 import { UsersModule } from './modules/users/users.module';
 import { PreferencesModule } from './modules/preferences/preferences.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { ActivityLogsModule } from './modules/activity-logs/activity-logs.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -38,7 +40,9 @@ import { HealthController } from './health.controller';
     StopLossWorkerModule,
     UsersModule,
     PreferencesModule,
+    AuthModule,
+    ActivityLogsModule,
   ],
   controllers: [HealthController],
 })
-export class AppModule {}
+export class AppModule { }

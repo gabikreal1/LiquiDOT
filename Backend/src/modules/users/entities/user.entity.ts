@@ -7,7 +7,7 @@ export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true, length: 42 })
+  @Column({ unique: true, length: 64 })
   walletAddress: string;
 
   @Column({ type: 'boolean', default: true })

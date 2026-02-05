@@ -12,6 +12,10 @@ import { PapiModule } from './papi/papi.module';
 import { User } from '../users/entities/user.entity';
 import { Position } from '../positions/entities/position.entity';
 import { Pool } from '../pools/entities/pool.entity';
+import { BlockchainController } from './blockchain.controller';
+import { BlockchainDiagnosticsController } from './blockchain-diagnostics.controller';
+import { BlockchainDiagnosticsService } from './blockchain-diagnostics.service';
+import { ActivityLogsModule } from '../activity-logs/activity-logs.module';
 
 /**
  * BlockchainModule
@@ -51,21 +55,29 @@ import { Pool } from '../pools/entities/pool.entity';
   imports: [
     ConfigModule,
     TypeOrmModule.forFeature([User, Position, Pool]),
-    PapiModule, // P-API client for Substrate chain connectivity
+    PapiModule,
+    ActivityLogsModule,
+  ],
+  controllers: [
+    BlockchainController,
+    BlockchainDiagnosticsController,
   ],
   providers: [
     // Core services
-    TestModeService,        // Must be first - other services may depend on test mode
-    XcmRetryService,        // Retry logic for XCM operations
-    
+    TestModeService,
+    XcmRetryService,
+
     // Contract interaction services
-    XcmBuilderService,      // XCM message building
-    AssetHubService,        // AssetHub contract interactions
-    MoonbeamService,        // Moonbeam contract interactions
-    
+    XcmBuilderService,
+    AssetHubService,
+    MoonbeamService,
+
+    // Diagnostics
+    BlockchainDiagnosticsService,
+
     // Event handling
     BlockchainEventListenerService,
-    EventPersistenceService, // Persists events to database
+    EventPersistenceService,
   ],
   exports: [
     AssetHubService,
@@ -74,6 +86,7 @@ import { Pool } from '../pools/entities/pool.entity';
     BlockchainEventListenerService,
     TestModeService,
     XcmRetryService,
+    BlockchainDiagnosticsService,
   ],
 })
-export class BlockchainModule {}
+export class BlockchainModule { }

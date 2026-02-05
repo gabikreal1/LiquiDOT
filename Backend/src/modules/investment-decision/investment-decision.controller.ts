@@ -9,6 +9,7 @@ import {
   Logger,
   BadRequestException,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { InvestmentDecisionService } from './investment-decision.service';
 import { RebalanceDecision, RebalanceAction } from './types/investment.types';
 
@@ -37,19 +38,19 @@ export class InvestmentDecisionRequestDto {
 export class UserPreferencesDto {
   /** Minimum acceptable APY (e.g., 8 for 8%) */
   minApy?: number;
-  
+
   /** Max allocation per pool as percentage (e.g., 20 for 20%) */
   maxAllocation?: number;
-  
+
   /** List of allowed token symbols */
   allowedTokens?: string[];
-  
+
   /** Risk strategy: "conservative" | "moderate" | "aggressive" */
   riskStrategy?: string;
-  
+
   /** Stop-loss and take-profit range [stopLoss, takeProfit] */
   slTpRange?: [number, number];
-  
+
   /** Risk aversion factor (0-1, higher = more risk averse) */
   lambdaRiskAversion?: number;
 }
@@ -83,25 +84,25 @@ export interface PoolDecision {
   poolAddress?: string;
   dex?: string;
   fee?: number;
-  
+
   /** Risk-adjusted APY after IL factor */
   realApy?: number;
-  
+
   /** Effective APY after risk aversion applied */
   effectiveApy?: number;
-  
+
   /** Impermanent loss risk factor (0-0.30) */
   ilRiskFactor?: number;
-  
+
   /** Utility score from optimization */
   utilityScore?: number;
-  
+
   /** Allocation in USD */
   allocationUsd?: number;
-  
+
   /** 24h trading volume */
   volume24hUsd?: number;
-  
+
   /** Pool age in days */
   poolAgeDays?: number;
 }
@@ -113,10 +114,10 @@ export interface PoolDecision {
 export interface InvestmentDecisionResponse {
   success: boolean;
   message: string;
-  
+
   /** Pool allocation decisions */
   decisions: PoolDecision[];
-  
+
   /** Portfolio-level metadata */
   metadata?: {
     totalCapitalUsd: number;
@@ -127,18 +128,18 @@ export interface InvestmentDecisionResponse {
     profit30dUsd: number;
     netProfit30dUsd: number;
     calculatedAt: string;
-    
+
     // Utility analysis
     currentUtility?: number;
     targetUtility?: number;
     netUtilityGain?: number;
-    
+
     // Rebalancing info
     shouldRebalance: boolean;
     rebalancesToday?: number;
     dailyRebalanceLimit?: number;
   };
-  
+
   /** Actions to execute (for automation) */
   actions?: {
     toWithdraw: RebalanceAction[];
@@ -150,13 +151,14 @@ export interface InvestmentDecisionResponse {
 // Controller
 // ============================================================
 
+@ApiTags('investment-decision')
 @Controller('investmentDecisions')
 export class InvestmentDecisionController {
   private readonly logger = new Logger(InvestmentDecisionController.name);
 
   constructor(
     private readonly investmentDecisionService: InvestmentDecisionService,
-  ) {}
+  ) { }
 
   /**
    * POST /api/investmentDecisions
@@ -164,6 +166,7 @@ export class InvestmentDecisionController {
    * Calculate optimal investment decisions for a user.
    * Returns both legacy format (for current frontend) and enhanced data.
    */
+  @ApiOperation({ summary: 'Calculate optimal investment allocation' })
   @Post()
   @HttpCode(HttpStatus.OK)
   async getInvestmentDecisions(
@@ -219,7 +222,7 @@ export class InvestmentDecisionController {
     try {
       // Get user's balance from blockchain
       const balance = await this.investmentDecisionService.getUserBalanceByWallet(walletAddress);
-      
+
       if (balance <= 0) {
         return {
           success: true,
@@ -268,7 +271,7 @@ export class InvestmentDecisionController {
 
     try {
       const balance = await this.investmentDecisionService.getUserBalance(userId);
-      
+
       if (balance <= 0) {
         return {
           success: true,
@@ -360,7 +363,7 @@ export class InvestmentDecisionController {
     const decisions: PoolDecision[] = decision.toAdd.map((action) => {
       const poolData = (action as any).poolData || {};
       const slTpRange = preferences?.slTpRange || [-5, 10];
-      
+
       return {
         // Legacy fields
         poolId: action.poolId,
@@ -381,8 +384,8 @@ export class InvestmentDecisionController {
         totalValueLockedUSD: poolData.tvlUsd || 0,
         stopLoss: slTpRange[0],
         takeProfit: slTpRange[1],
-        proportion: totalCapitalUsd > 0 
-          ? (action.targetAllocationUsd / totalCapitalUsd) * 100 
+        proportion: totalCapitalUsd > 0
+          ? (action.targetAllocationUsd / totalCapitalUsd) * 100
           : 0,
 
         // Enhanced fields

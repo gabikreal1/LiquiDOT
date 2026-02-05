@@ -1,0 +1,44 @@
+#cloud-config
+users:
+  - name: liquidot
+    groups: [docker]
+    shell: /bin/bash
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - docker.io
+  - docker-compose
+
+write_files:
+  - path: /opt/liquidot/docker-compose.yml
+    content: |
+      version: '3'
+      services:
+        backend:
+          image: gabikreal1/liquidot-backend:latest
+          restart: always
+          ports:
+            - "3001:3001"
+          env_file: .env
+          depends_on:
+            - db
+        db:
+          image: postgres:15
+          environment:
+            POSTGRES_USER: ${DB_USERNAME}
+            POSTGRES_PASSWORD: ${DB_PASSWORD}
+            POSTGRES_DB: ${DB_DATABASE}
+          volumes:
+            - db_data:/var/lib/postgresql/data
+      volumes:
+        db_data:
+
+runcmd:
+  - systemctl enable docker
+  - systemctl start docker
+  - mkdir -p /opt/liquidot
+  # Make sure to populate .env in production via secrets management or manual scp
+  - touch /opt/liquidot/.env

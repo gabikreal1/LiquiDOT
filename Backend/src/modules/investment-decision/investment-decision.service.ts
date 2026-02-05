@@ -13,16 +13,19 @@
 
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan, In } from 'typeorm';
+import { Repository, MoreThan, In, MoreThanOrEqual } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { AssetHubService } from '../blockchain/services/asset-hub.service';
+import { MoonbeamService } from '../blockchain/services/moonbeam.service';
+import { XcmBuilderService } from '../blockchain/services/xcm-builder.service';
 import { Pool } from '../pools/entities/pool.entity';
 import { Position, PositionStatus } from '../positions/entities/position.entity';
 import { User } from '../users/entities/user.entity';
 import { UserPreference } from '../preferences/entities/user-preference.entity';
-import { 
-  PoolCandidate, 
-  IdealAllocation, 
-  RebalanceDecision, 
+import {
+  PoolCandidate,
+  IdealAllocation,
+  RebalanceDecision,
   RebalanceAction,
   BotState,
   UserInvestmentConfig,
@@ -32,12 +35,13 @@ import {
   TOKEN_RISK_CLASSIFICATION,
   GAS_COEFFICIENTS,
   SAFETY_THRESHOLDS,
+  ExecuteDecisionParams,
 } from './types/investment.types';
 
 @Injectable()
 export class InvestmentDecisionService implements OnModuleInit {
   private readonly logger = new Logger(InvestmentDecisionService.name);
-  
+
   // Track daily rebalances per user (resets at midnight UTC)
   private userRebalanceCounts: Map<string, { count: number; date: string }> = new Map();
 
@@ -50,10 +54,83 @@ export class InvestmentDecisionService implements OnModuleInit {
     private userRepository: Repository<User>,
     @InjectRepository(UserPreference)
     private preferenceRepository: Repository<UserPreference>,
-  ) {}
+    private readonly assetHubService: AssetHubService,
+    private readonly moonbeamService: MoonbeamService,
+    private readonly xcmBuilderService: XcmBuilderService,
+  ) { }
 
   async onModuleInit() {
     this.logger.log('InvestmentDecisionService initialized');
+  }
+
+  /**
+  * Cron job to run investment decisions every hour.
+  * Fetches all users and runs decision logic for them.
+  */
+  @Cron(CronExpression.EVERY_HOUR)
+  async scheduledDecisionRun() {
+    this.logger.log('Starting scheduled investment decision run...');
+    try {
+      // Fetch all active users
+      const users = await this.userRepository.find({ where: { isActive: true } });
+      this.logger.log(`Found ${users.length} active users to process.`);
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      for (const user of users) {
+        try {
+          const pref = await this.preferenceRepository.findOne({ where: { userId: user.id } });
+          if (!pref || !pref.autoInvestEnabled) {
+            this.logger.debug(`Skipping user ${user.id}: No prefs or auto-invest disabled`);
+            continue;
+          }
+
+          // Count rebalances today
+          const rebalancesToday = await this.positionRepository.count({
+            where: {
+              userId: user.id,
+              executedAt: MoreThanOrEqual(today) as any,
+            }
+          });
+
+          // Fetch balance from Asset Hub
+          let availableCapitalUsd = 0;
+          try {
+            const balance = await this.assetHubService.getUserBalance(user.walletAddress);
+            const DOT_PRICE_USD = 5.0; // Mock price
+            availableCapitalUsd = (Number(balance) / 1e10) * DOT_PRICE_USD;
+          } catch (e) {
+            this.logger.error(`Failed to fetch balance for ${user.id}: ${e.message}`);
+            continue;
+          }
+
+          if (availableCapitalUsd < 50) {
+            continue;
+          }
+
+          const decision = await this.evaluateInvestmentDecision(user.id, availableCapitalUsd);
+
+          if (decision.shouldRebalance) {
+            this.logger.log(`Executing decision for user ${user.id}`);
+            await this.executeDecision({
+              decision,
+              userWalletAddress: user.walletAddress,
+              baseAssetAddress: pref.preferredTokens?.[0] || '0x0000000000000000000000000000000000000000',
+              amountWei: BigInt(0), // Placeholder amount, real amount calculated inside or passed differently
+              lowerRangePercent: pref.defaultLowerRangePercent,
+              upperRangePercent: pref.defaultUpperRangePercent,
+              chainId: 2004,
+            });
+          }
+
+        } catch (err) {
+          this.logger.error(`Failed to process user ${user.id}: ${err.message}`);
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Scheduled run failed: ${error.message}`);
+    }
   }
 
   /**
@@ -71,7 +148,7 @@ export class InvestmentDecisionService implements OnModuleInit {
 
     // 2. Get current bot state
     const botState = await this.getBotState(userId, availableCapitalUsd);
-    
+
     // 3. Check rate limiting
     const rebalancesToday = this.getRebalancesToday(userId);
     if (rebalancesToday >= config.dailyRebalanceLimit) {
@@ -87,7 +164,9 @@ export class InvestmentDecisionService implements OnModuleInit {
 
     // 5. Step 2-3: Calculate real APY and sort
     const rankedPools = this.calculateAndRankPools(candidatePools, config);
-    this.logger.debug(`Top pool: ${rankedPools[0]?.pair} with effective APY ${rankedPools[0]?.effectiveApy.toFixed(2)}%`);
+    if (rankedPools.length > 0) {
+      this.logger.debug(`Top pool: ${rankedPools[0]?.pair} with effective APY ${rankedPools[0]?.effectiveApy.toFixed(2)}%`);
+    }
 
     // 6. Step 4: Build ideal portfolio
     const idealPortfolio = this.buildIdealPortfolio(rankedPools, botState.totalCapitalUsd, config);
@@ -161,6 +240,74 @@ export class InvestmentDecisionService implements OnModuleInit {
   }
 
   /**
+   * Execute the decision by dispatching investments for each ideal position.
+   */
+  async executeDecision(params: ExecuteDecisionParams): Promise<{ dispatchedPositionIds: string[] }> {
+    if (!params.decision.shouldRebalance) {
+      return { dispatchedPositionIds: [] };
+    }
+
+    if (!this.assetHubService.isInitialized()) {
+      throw new Error('AssetHubService is not initialized (missing env vars)');
+    }
+
+    if (!this.moonbeamService.isInitialized()) {
+      throw new Error('MoonbeamService is not initialized (missing env vars)');
+    }
+
+    if (!this.xcmBuilderService) {
+      throw new Error('XcmBuilderService is not initialized');
+    }
+
+    const dispatchedPositionIds: string[] = [];
+
+    // Liquidations
+    for (const w of params.decision.toWithdraw) {
+      try {
+        const dbPos = await this.positionRepository.findOne({
+          where: { id: w.positionId },
+          relations: ['pool'],
+        });
+
+        if (!dbPos?.moonbeamPositionId || !dbPos.assetHubPositionId) {
+          this.logger.warn(`Skip liquidation; missing moonbeamPositionId/assetHubPositionId for snapshot positionId=${w.positionId}`);
+          continue;
+        }
+
+        const moonbeamLocalId = Number(dbPos.moonbeamPositionId);
+
+        const destination = await this.xcmBuilderService.buildReturnDestination({
+          userAddress: params.userWalletAddress,
+          amount: 1n,
+        });
+
+        await this.moonbeamService.liquidateSwapAndReturn({
+          positionId: moonbeamLocalId,
+          baseAsset: dbPos.baseAsset,
+          destination,
+          minAmountOut0: 0n,
+          minAmountOut1: 0n,
+          limitSqrtPrice: 0n,
+          assetHubPositionId: dbPos.assetHubPositionId,
+        } as any);
+
+        this.logger.log(`Liquidation initiated for dbPositionId=${dbPos.id}`);
+      } catch (e) {
+        this.logger.warn(`Liquidation initiation failed for positionId=${w.positionId}: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
+
+    // Investments
+    for (const a of params.decision.toAdd) {
+      // Implementation of investment dispatch
+      // This would call assetHubService logic similar to legacy runDecision
+      this.logger.log(`Would dispatch investment for pool ${a.poolId} amount $${a.targetAllocationUsd}`);
+    }
+
+    return { dispatchedPositionIds };
+  }
+
+  /**
    * Step 1: Collect Candidate Pools (Section 4)
    * Filter all available pools based on user criteria
    */
@@ -192,7 +339,7 @@ export class InvestmentDecisionService implements OnModuleInit {
       // Token filter: both tokens must be in allowed list
       const isToken0Allowed = this.isTokenAllowed(pool.token0Symbol, config.allowedTokens);
       const isToken1Allowed = this.isTokenAllowed(pool.token1Symbol, config.allowedTokens);
-      
+
       if (!isToken0Allowed || !isToken1Allowed) {
         continue;
       }
@@ -235,16 +382,16 @@ export class InvestmentDecisionService implements OnModuleInit {
     for (const pool of pools) {
       // Calculate IL risk factor based on token pair
       pool.ilRiskFactor = this.calculateIlRiskFactor(pool.token0Symbol, pool.token1Symbol);
-      
+
       // Calculate real APY: apy_30d_average × (1 - il_risk_factor)
       pool.realApy = pool.apy30dAverage * (1 - pool.ilRiskFactor);
-      
+
       // Effective APY (can add more adjustments here)
       pool.effectiveApy = pool.realApy;
-      
+
       // Risk score for utility calculation (simple: use IL factor as proxy)
       pool.riskScore = pool.ilRiskFactor * 100; // Convert to percentage
-      
+
       // Protocol fees (estimate based on DEX)
       pool.protocolFees = this.estimateProtocolFees(pool.dex, pool.fee);
     }
@@ -321,7 +468,7 @@ export class InvestmentDecisionService implements OnModuleInit {
     // Find positions to withdraw (not in ideal OR allocation differs > 5%)
     for (const current of currentPositions) {
       const ideal = idealByPool.get(current.poolId);
-      
+
       if (!ideal) {
         // Position not in ideal portfolio - withdraw entirely
         toWithdraw.push({
@@ -408,7 +555,7 @@ export class InvestmentDecisionService implements OnModuleInit {
     const apyDifference = idealWeightedApy - currentWeightedApy;
     const profit30d = (apyDifference / 100) * totalCapitalUsd * (30 / 365);
     const netProfit30d = profit30d - estimatedGasTotal;
-    
+
     return { profit30d, netProfit30d };
   }
 
@@ -470,10 +617,10 @@ export class InvestmentDecisionService implements OnModuleInit {
   ): number {
     // Convert horizon to fraction of year
     const horizonYearFraction = planningHorizonDays / 365;
-    
+
     // Convert transaction cost to utility units (fraction of portfolio)
     const transactionCostUtility = transactionCostUsd / totalCapitalUsd;
-    
+
     // ΔUⁿᵉᵗ = ΔUᵍʳᵒˢˢ · (T / 1 year) - Cᵗˣₜₒₜₐₗ
     return grossUtilityImprovement * horizonYearFraction - transactionCostUtility;
   }
@@ -510,9 +657,9 @@ export class InvestmentDecisionService implements OnModuleInit {
 
     // Condition 1: Net profit must cover 4x gas over 30 days (Section 6)
     if (netProfit30d <= estimatedGasTotal * SAFETY_THRESHOLDS.MIN_GAS_COVERAGE_MULTIPLIER) {
-      return { 
-        shouldRebalance: false, 
-        reason: `30-day net profit ($${netProfit30d.toFixed(2)}) doesn't cover ${SAFETY_THRESHOLDS.MIN_GAS_COVERAGE_MULTIPLIER}x gas ($${(estimatedGasTotal * SAFETY_THRESHOLDS.MIN_GAS_COVERAGE_MULTIPLIER).toFixed(2)})` 
+      return {
+        shouldRebalance: false,
+        reason: `30-day net profit ($${netProfit30d.toFixed(2)}) doesn't cover ${SAFETY_THRESHOLDS.MIN_GAS_COVERAGE_MULTIPLIER}x gas ($${(estimatedGasTotal * SAFETY_THRESHOLDS.MIN_GAS_COVERAGE_MULTIPLIER).toFixed(2)})`
       };
     }
 
@@ -531,9 +678,9 @@ export class InvestmentDecisionService implements OnModuleInit {
     // For now, we skip this check if IL data not available
 
     // All conditions passed
-    return { 
-      shouldRebalance: true, 
-      reason: `All conditions met: APY +${apyImprovement.toFixed(2)}%, net profit $${netProfit30d.toFixed(2)}` 
+    return {
+      shouldRebalance: true,
+      reason: `All conditions met: APY +${apyImprovement.toFixed(2)}%, net profit $${netProfit30d.toFixed(2)}`
     };
   }
 
@@ -546,7 +693,6 @@ export class InvestmentDecisionService implements OnModuleInit {
     const tier0 = this.getTokenRiskTier(token0);
     const tier1 = this.getTokenRiskTier(token1);
 
-    // For stable-stable pairs, IL factor is 0
     if (tier0 === TokenRiskTier.STABLE && tier1 === TokenRiskTier.STABLE) {
       return IL_RISK_FACTORS[TokenRiskTier.STABLE];
     }
@@ -554,7 +700,7 @@ export class InvestmentDecisionService implements OnModuleInit {
     // Use the higher risk tier's factor
     const factor0 = IL_RISK_FACTORS[tier0];
     const factor1 = IL_RISK_FACTORS[tier1];
-    
+
     return Math.max(factor0, factor1);
   }
 
@@ -592,11 +738,11 @@ export class InvestmentDecisionService implements OnModuleInit {
    */
   private calculateWeightedApy(positions: CurrentPosition[], totalCapital: number): number {
     if (positions.length === 0 || totalCapital === 0) return 0;
-    
+
     const weightedSum = positions.reduce((sum, pos) => {
       return sum + (pos.allocationUsd * pos.currentApy);
     }, 0);
-    
+
     return weightedSum / totalCapital;
   }
 
@@ -605,12 +751,12 @@ export class InvestmentDecisionService implements OnModuleInit {
    */
   private calculateIdealWeightedApy(portfolio: IdealAllocation[], totalCapital: number): number {
     if (portfolio.length === 0 || totalCapital === 0) return 0;
-    
+
     const totalAllocation = portfolio.reduce((sum, a) => sum + a.allocationUsd, 0);
     const weightedSum = portfolio.reduce((sum, alloc) => {
       return sum + (alloc.allocationUsd * alloc.pool.effectiveApy);
     }, 0);
-    
+
     return weightedSum / totalAllocation;
   }
 
@@ -621,7 +767,7 @@ export class InvestmentDecisionService implements OnModuleInit {
     // Parse pair to get tokens
     const [token0, token1] = pos.pair.split('/');
     if (!token0 || !token1) return 30; // Default high risk if can't parse
-    
+
     return this.calculateIlRiskFactor(token0, token1) * 100;
   }
 
@@ -633,20 +779,20 @@ export class InvestmentDecisionService implements OnModuleInit {
     if (!pref) return null;
 
     return {
-      minApy: parseFloat(pref.minApy),
+      minApy: parseFloat(pref.minApy as any),
       allowedTokens: pref.allowedTokens || [],
       maxPositions: pref.maxPositions,
-      maxAllocPerPositionUsd: parseFloat(pref.maxAllocPerPositionUsd),
+      maxAllocPerPositionUsd: parseFloat(pref.maxAllocPerPositionUsd as any),
       dailyRebalanceLimit: pref.dailyRebalanceLimit,
-      expectedGasUsd: parseFloat(pref.expectedGasUsd),
-      lambda: parseFloat(pref.lambdaRiskAversion),
-      theta: parseFloat(pref.thetaMinBenefit),
+      expectedGasUsd: parseFloat(pref.expectedGasUsd as any),
+      lambda: parseFloat(pref.lambdaRiskAversion as any),
+      theta: parseFloat(pref.thetaMinBenefit as any),
       planningHorizonDays: pref.planningHorizonDays,
-      minTvlUsd: parseFloat(pref.minTvlUsd),
+      minTvlUsd: parseFloat(pref.minTvlUsd as any),
       minPoolAgeDays: pref.minPoolAgeDays,
       preferredDexes: pref.preferredDexes,
-      maxIlLossPercent: parseFloat(pref.maxIlLossPercent),
-      minPositionSizeUsd: parseFloat(pref.minPositionSizeUsd),
+      maxIlLossPercent: parseFloat(pref.maxIlLossPercent as any),
+      minPositionSizeUsd: parseFloat(pref.minPositionSizeUsd as any),
     };
   }
 
@@ -656,7 +802,7 @@ export class InvestmentDecisionService implements OnModuleInit {
   private async getBotState(userId: string, totalCapitalUsd: number): Promise<BotState> {
     // Get active positions
     const positions = await this.positionRepository.find({
-      where: { 
+      where: {
         userId,
         status: In([PositionStatus.ACTIVE, PositionStatus.PENDING_EXECUTION])
       },
@@ -686,11 +832,11 @@ export class InvestmentDecisionService implements OnModuleInit {
   private getRebalancesToday(userId: string): number {
     const today = new Date().toISOString().split('T')[0];
     const record = this.userRebalanceCounts.get(userId);
-    
+
     if (!record || record.date !== today) {
       return 0;
     }
-    
+
     return record.count;
   }
 
@@ -700,7 +846,7 @@ export class InvestmentDecisionService implements OnModuleInit {
   incrementRebalanceCount(userId: string): void {
     const today = new Date().toISOString().split('T')[0];
     const record = this.userRebalanceCounts.get(userId);
-    
+
     if (!record || record.date !== today) {
       this.userRebalanceCounts.set(userId, { count: 1, date: today });
     } else {

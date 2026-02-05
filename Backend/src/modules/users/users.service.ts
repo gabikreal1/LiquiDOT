@@ -24,7 +24,7 @@ export interface UserBalance {
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
-  
+
   // In-memory cache for balances (event-driven updates)
   private balanceCache: Map<string, UserBalance> = new Map();
 
@@ -32,7 +32,7 @@ export class UsersService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private assetHubService: AssetHubService,
-  ) {}
+  ) { }
 
   /**
    * Create a new user
@@ -111,7 +111,7 @@ export class UsersService {
    */
   async getBalance(userId: string): Promise<UserBalance> {
     const user = await this.findOne(userId);
-    
+
     // Check cache first
     const cached = this.balanceCache.get(userId);
     if (cached) {
@@ -130,7 +130,7 @@ export class UsersService {
 
     try {
       const balanceWei = await this.assetHubService.getUserBalance(user.walletAddress);
-      
+
       const balance: UserBalance = {
         userId,
         walletAddress: user.walletAddress,
@@ -177,7 +177,7 @@ export class UsersService {
    */
   async refreshAllBalances(): Promise<void> {
     const users = await this.findAll();
-    
+
     for (const user of users) {
       try {
         await this.syncBalanceFromChain(user.id);

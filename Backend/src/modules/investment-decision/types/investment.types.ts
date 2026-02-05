@@ -38,7 +38,7 @@ export const TOKEN_RISK_CLASSIFICATION: Record<string, TokenRiskTier> = {
   'TUSD': TokenRiskTier.STABLE,
   'xcUSDT': TokenRiskTier.STABLE,
   'xcUSDC': TokenRiskTier.STABLE,
-  
+
   // Blue-chip (Tier 1)
   'ETH': TokenRiskTier.BLUECHIP,
   'WETH': TokenRiskTier.BLUECHIP,
@@ -50,7 +50,7 @@ export const TOKEN_RISK_CLASSIFICATION: Record<string, TokenRiskTier> = {
   'WGLMR': TokenRiskTier.BLUECHIP,
   'DOT': TokenRiskTier.BLUECHIP,
   'xcDOT': TokenRiskTier.BLUECHIP,
-  
+
   // Mid-cap (Tier 2)
   'AAVE': TokenRiskTier.MIDCAP,
   'UNI': TokenRiskTier.MIDCAP,
@@ -123,7 +123,7 @@ export interface PoolCandidate {
   volume24hUsd: number;
   ageInDays: number;
   fee: number;
-  
+
   // Calculated fields
   ilRiskFactor: number;
   realApy: number;
@@ -160,31 +160,31 @@ export interface RebalanceAction {
 export interface RebalanceDecision {
   shouldRebalance: boolean;
   reason: string;
-  
+
   // Portfolio analysis
   currentWeightedApy: number;
   idealWeightedApy: number;
   apyImprovement: number;
-  
+
   // Utility calculations (Section 3)
   currentUtility: number;
   targetUtility: number;
   grossUtilityImprovement: number;
   netUtilityGain: number;
-  
+
   // Cost estimates (Section 4, Step 6)
   estimatedGasTotalUsd: number;
   profit30dUsd: number;
   netProfit30dUsd: number;
-  
+
   // Actions to take
   toWithdraw: RebalanceAction[];
   toAdd: RebalanceAction[];
-  
+
   // State
   rebalancesTodayBefore: number;
   rebalancesTodayAfter: number;
-  
+
   // Metadata
   calculatedAt: Date;
   configUsed: UserInvestmentConfig;
@@ -208,3 +208,16 @@ export const SAFETY_THRESHOLDS = {
   MIN_POSITION_SIZE_USD: 3000,          // Below this, not worth gas
   DEFAULT_IL_LOSS_THRESHOLD: 6,         // 6% IL loss threshold
 };
+
+/**
+ * Parameters for executing an investment decision
+ */
+export interface ExecuteDecisionParams {
+  decision: RebalanceDecision;
+  userWalletAddress: string;
+  baseAssetAddress: string;
+  amountWei: bigint;
+  lowerRangePercent: number;
+  upperRangePercent: number;
+  chainId: number;
+}
