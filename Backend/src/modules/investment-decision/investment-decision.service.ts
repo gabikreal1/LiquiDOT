@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 /**
  * Investment Decision Service
  * 
@@ -10,6 +11,12 @@
  * 4. Compare with current portfolio and decide on rebalancing
  * 5. Execute rebalancing via MoonbeamService
  */
+=======
+import { Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, MoreThanOrEqual } from 'typeorm';
+>>>>>>> Stashed changes
 
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -64,16 +71,114 @@ export class InvestmentDecisionService implements OnModuleInit {
   }
 
   /**
+<<<<<<< Updated upstream
   * Cron job to run investment decisions every hour.
   * Fetches all users and runs decision logic for them.
   */
+=======
+   * Cron job to run investment decisions every hour.
+   * Fetches all users and runs decision logic for them.
+   */
+>>>>>>> Stashed changes
   @Cron(CronExpression.EVERY_HOUR)
   async scheduledDecisionRun() {
     this.logger.log('Starting scheduled investment decision run...');
     try {
       // Fetch all active users
+<<<<<<< Updated upstream
       const users = await this.userRepository.find({ where: { isActive: true } });
       this.logger.log(`Found ${users.length} active users to process.`);
+=======
+      const users = await this.userRepo.find({ where: { isActive: true } });
+      this.logger.log(`Found ${users.length} active users to process.`);
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      for (const user of users) {
+        try {
+          const pref = await this.prefRepo.findOne({ where: { userId: user.id } });
+          if (!pref || !pref.autoInvestEnabled) {
+            this.logger.debug(`Skipping user ${user.id}: No prefs or auto-invest disabled`);
+            continue;
+          }
+
+          // Resolve Base Asset
+          let baseAssetAddress = '0x0000000000000000000000000000000000000000'; // Default placeholder
+          if (pref.preferredTokens && pref.preferredTokens.length > 0) {
+            // Use the first preferred token as the base asset
+            // In a real scenario, this might need more sophisticated selection logic
+            baseAssetAddress = pref.preferredTokens[0];
+          } else {
+            this.logger.warn(`Skipping user ${user.id}: No preferred base asset found`);
+            continue;
+          }
+
+          // Count rebalances today
+          const rebalancesToday = await this.positionRepo.count({
+            where: {
+              userId: user.id,
+              executedAt: MoreThanOrEqual(today) as any, // TypeORM query
+            }
+          });
+
+          this.logger.debug(`Processing user ${user.id} (rebalancesToday=${rebalancesToday})...`);
+
+          const decision = await this.runDecision({
+            userId: user.id,
+            userWalletAddress: user.walletAddress,
+            baseAssetAddress,
+            rebalancesToday,
+            deriveTotalCapitalFromVault: true,
+            deriveCurrentPositionsFromVault: true
+          });
+
+          if (decision.shouldExecute) {
+            this.logger.log(`Executing decision for user ${user.id}...`);
+            await this.executeDecision({
+              decision,
+              userWalletAddress: user.walletAddress,
+              baseAssetAddress,
+              // For executeDecision, we need total amount to allocate. 
+              // logic.ts `allocateWeiByUsd` uses `params.amountWei`.
+              // We need to resolve this from the runDecision context if possible, 
+              // or re-fetch balance.
+              // For now, let's fetch balance again to be safe.
+              amountWei: await this.assetHubService.getUserBalance(user.walletAddress),
+              lowerRangePercent: pref.defaultLowerRangePercent,
+              upperRangePercent: pref.defaultUpperRangePercent,
+              chainId: 2004,
+            });
+          } else {
+            this.logger.debug(`Decision for user ${user.id}: NO EXECUTE (${decision.reasons.join(', ')})`);
+          }
+
+        } catch (err) {
+          this.logger.error(`Failed to process user ${user.id}: ${err.message}`);
+        }
+      }
+    } catch (error) {
+      this.logger.error(`Scheduled run failed: ${error.message}`);
+    }
+  }
+
+  /**
+  * Compute a decision result using the deterministic decision logic.
+  *
+  * Data sources:
+  * - Pools/APR/TVL come from Postgres (`Pool`).
+  * - Total capital can come from:
+  *   - `totalCapitalUsd` (if you have a pricing layer), OR
+  *   - `totalCapitalBaseAssetWei`, OR
+  *   - `deriveTotalCapitalFromVault=true` (fetches `AssetHubVault.getUserBalance(user)` on-chain).
+  *
+  * Current limitation (pre-production):
+  * - Per-position allocation sizing is not yet derived from on-chain positions; it is currently estimated.
+  *   For production, prefer mapping `AssetHubVault.getUserPositions*()` amounts into the decision engine.
+   */
+  async runDecision(params: RunDecisionParams): Promise<InvestmentDecisionResult> {
+    const userWalletAddress = await this.resolveUserWalletAddress(params);
+>>>>>>> Stashed changes
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -168,9 +273,13 @@ export class InvestmentDecisionService implements OnModuleInit {
       this.logger.debug(`Top pool: ${rankedPools[0]?.pair} with effective APY ${rankedPools[0]?.effectiveApy.toFixed(2)}%`);
     }
 
+<<<<<<< Updated upstream
     // 6. Step 4: Build ideal portfolio
     const idealPortfolio = this.buildIdealPortfolio(rankedPools, botState.totalCapitalUsd, config);
     this.logger.debug(`Ideal portfolio has ${idealPortfolio.length} positions`);
+=======
+    const totalCapitalUsd = await this.resolveTotalCapitalUsd({ ...params, userWalletAddress });
+>>>>>>> Stashed changes
 
     // 7. Step 5: Compare with current portfolio
     const { toWithdraw, toAdd } = this.comparePortfolios(botState.currentPositions, idealPortfolio, config);
@@ -275,6 +384,30 @@ export class InvestmentDecisionService implements OnModuleInit {
         }
 
         const moonbeamLocalId = Number(dbPos.moonbeamPositionId);
+<<<<<<< Updated upstream
+=======
+        if (!Number.isFinite(moonbeamLocalId) || moonbeamLocalId <= 0) {
+          this.logger.warn(`Skip liquidation; invalid moonbeamPositionId=${dbPos.moonbeamPositionId} for positionId=${dbPos.id}`);
+          continue;
+        }
+
+        const planningKey = this.buildWithdrawalPlanningKey({
+          userWalletAddress: params.userWalletAddress,
+          positionId: dbPos.id,
+          moonbeamPositionId: moonbeamLocalId,
+          assetHubPositionId: dbPos.assetHubPositionId,
+        });
+
+        if (dbPos.lastWithdrawalPlanningKey === planningKey) {
+          this.logger.log(`Skip liquidation; already initiated for dbPositionId=${dbPos.id} key=${planningKey}`);
+          continue;
+        }
+
+        // Best-effort DB marker: don't block execution if entity doesn't yet have these columns.
+        dbPos.lastWithdrawalPlanningKey = planningKey;
+        dbPos.status = 'LIQUIDATION_PENDING' as any;
+        await this.positionRepo.save(dbPos);
+>>>>>>> Stashed changes
 
         const destination = await this.xcmBuilderService.buildReturnDestination({
           userAddress: params.userWalletAddress,

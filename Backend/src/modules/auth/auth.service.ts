@@ -78,9 +78,15 @@ export class AuthService {
         // I will assume standard interaction or fix lightly later.
         const normalizedAddress = type === 'EVM' ? walletAddress.toLowerCase() : walletAddress;
 
+<<<<<<< Updated upstream
         let user = await this.usersService.findByWallet(normalizedAddress);
         if (!user) {
             user = await this.usersService.create(normalizedAddress);
+=======
+        let user = await this.usersService.findOneByAddress(normalizedAddress);
+        if (!user) {
+            user = await this.usersService.create({ walletAddress: normalizedAddress });
+>>>>>>> Stashed changes
         }
         return user;
     }

@@ -42,7 +42,11 @@
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^10.0.0",
     "@nestjs/schedule": "^4.0.0",
+<<<<<<< Updated upstream
     "@nestjs/swagger": "^7.1.0",
+=======
+    "@nestjs/swagger": "^11.2.6",
+>>>>>>> Stashed changes
     "@nestjs/typeorm": "^10.0.0",
     "@paraspell/sdk": "^11.0.0",
     "@polkadot/api": "^10.11.2",

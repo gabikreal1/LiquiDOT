@@ -52,6 +52,7 @@ import { ActivityLogsModule } from '../activity-logs/activity-logs.module';
  * ```
  */
 @Module({
+<<<<<<< Updated upstream
   imports: [
     ConfigModule,
     TypeOrmModule.forFeature([User, Position, Pool]),
@@ -62,6 +63,10 @@ import { ActivityLogsModule } from '../activity-logs/activity-logs.module';
     BlockchainController,
     BlockchainDiagnosticsController,
   ],
+=======
+  imports: [ConfigModule, PapiModule, ActivityLogsModule],
+  controllers: [BlockchainController, BlockchainDiagnosticsController],
+>>>>>>> Stashed changes
   providers: [
     // Core services
     TestModeService,

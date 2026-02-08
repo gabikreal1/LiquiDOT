@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import {
   Controller,
   Post,
@@ -9,10 +10,14 @@ import {
   Logger,
   BadRequestException,
 } from '@nestjs/common';
+=======
+import { Body, Controller, Param, Post } from '@nestjs/common';
+>>>>>>> Stashed changes
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { InvestmentDecisionService } from './investment-decision.service';
 import { RebalanceDecision, RebalanceAction } from './types/investment.types';
 
+<<<<<<< Updated upstream
 // ============================================================
 // DTOs - Request/Response Types
 // ============================================================
@@ -159,6 +164,29 @@ export class InvestmentDecisionController {
   constructor(
     private readonly investmentDecisionService: InvestmentDecisionService,
   ) { }
+=======
+@ApiTags('investment-decision')
+@Controller('users/:userId/decision')
+export class InvestmentDecisionController {
+  constructor(private readonly decisionService: InvestmentDecisionService) { }
+
+  @ApiOperation({ summary: 'Run investment decision logic for a user (dry run or execute)' })
+  @Post('run')
+  async run(@Param('userId') userId: string, @Body() body: RunDecisionDto) {
+    return this.decisionService.runDecision({
+      userId,
+      totalCapitalUsd: body.totalCapitalUsd,
+      totalCapitalBaseAssetWei: body.totalCapitalBaseAssetWei
+        ? BigInt(body.totalCapitalBaseAssetWei)
+        : undefined,
+      deriveTotalCapitalFromVault: body.deriveTotalCapitalFromVault,
+      deriveCurrentPositionsFromVault: body.deriveCurrentPositionsFromVault,
+      rebalancesToday: body.rebalancesToday,
+      baseAssetAddress: body.baseAssetAddress,
+      userWalletAddress: body.userWalletAddress,
+    });
+  }
+>>>>>>> Stashed changes
 
   /**
    * POST /api/investmentDecisions
@@ -166,6 +194,7 @@ export class InvestmentDecisionController {
    * Calculate optimal investment decisions for a user.
    * Returns both legacy format (for current frontend) and enhanced data.
    */
+<<<<<<< Updated upstream
   @ApiOperation({ summary: 'Calculate optimal investment allocation' })
   @Post()
   @HttpCode(HttpStatus.OK)
@@ -173,6 +202,13 @@ export class InvestmentDecisionController {
     @Body() dto: InvestmentDecisionRequestDto,
   ): Promise<InvestmentDecisionResponse> {
     this.logger.log(`Investment decision request for wallet: ${dto.walletAddress}`);
+=======
+  @ApiOperation({ summary: 'Preview allocation for hypothetical capital' })
+  @Post('preview-allocation')
+  async previewAllocation(@Param('userId') userId: string, @Body() dto: PreviewAllocationDto) {
+    return this.decisionService.previewInitialAllocation({ userId, ...dto });
+  }
+>>>>>>> Stashed changes
 
     // Validation
     if (!dto.walletAddress) {

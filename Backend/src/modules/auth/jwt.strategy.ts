@@ -19,7 +19,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     async validate(payload: any) {
         // payload.sub is userId
+<<<<<<< Updated upstream
         const user = await this.usersService.findOne(payload.sub);
+=======
+        const user = await this.usersService.findOneById(payload.sub);
+>>>>>>> Stashed changes
         if (!user) {
             throw new UnauthorizedException();
         }

@@ -1,6 +1,7 @@
 # API Reference
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 This document describes all REST API endpoints exposed by the LiquiDOT backend.
 
 ## Base URL
@@ -718,6 +719,8 @@ This returns results 41-60.
 - User, Position, Preference, and Pool endpoints
 - Health check endpoints
 =======
+=======
+>>>>>>> Stashed changes
 LiquiDOT Backend API allows the frontend to manage authentication, preferences, investment decisions, and activity history.
 
 **Base URL**: `/api`
@@ -806,4 +809,7 @@ Manually trigger the investment decision engine for a user.
 
 ## Health Check
 - `GET /health`: Returns `{ status: 'ok' }`
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
