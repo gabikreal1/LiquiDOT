@@ -35,12 +35,22 @@ module.exports = {
       accounts: [MOON_PRIVATE_KEY],
       gasPrice: 1000000000
     },
+    moonbeam: {
+      url: "https://rpc.api.moonbeam.network",
+      chainId: 1284,
+      accounts: [MOON_PRIVATE_KEY],
+    },
     passethub: {
       url: 'https://testnet-passet-hub-eth-rpc.polkadot.io',
       chainId: 420420422,
       accounts: [ASSET_PRIVATE_KEY],
       // Let the chain determine gas price - Paseo uses higher gas prices
       // gasPrice: "auto" is implicit when not specified
+    },
+    assethub: {
+      url: "https://eth-rpc.polkadot.io",
+      chainId: 1000,
+      accounts: [ASSET_PRIVATE_KEY],
     }
   },
   paths: {

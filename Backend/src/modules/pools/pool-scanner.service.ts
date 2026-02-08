@@ -85,7 +85,10 @@ export class PoolScannerService implements OnModuleInit {
     `;
 
     try {
-      const data: any = await request(this.subgraphUrl, query);
+      const apiKey = this.configService.get<string>('ALGEBRA_SUBGRAPH_API_KEY');
+      const headers = apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined;
+      
+      const data: any = await request(this.subgraphUrl, query, undefined, headers);
       
       for (const graphPool of data.pools) {
         // 1. Calculate 24h Fees (Sum of last 24 hourly snapshots)
