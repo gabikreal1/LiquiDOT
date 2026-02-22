@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-01-05T00:17:49.665Z",
+  "generatedAt": "2026-02-21T21:33:08.003Z",
   "network": {
     "name": "moonbase",
     "chainId": 1287
@@ -13,13 +13,13 @@
     "wdev": "0x5bDdA8D0FDFB75c05cC9a64dc07B24EAC8058923"
   },
   "xcmProxy": {
-    "address": "0x7f4b3620d6Ffcc15b11ca8679c57c076DCE109d1",
-    "operator": "0x2372cB955817cD5200a559c2faAC93d0B3a88f2d",
+    "address": "0xEb5A73319dF0652C695B9892f572D66AEf3093c7",
+    "operator": "0x741Ae17d47D479E878ADFB3c78b02DB583c63d58",
     "testMode": true,
     "assetHubParaId": 420420422,
-    "trustedXcmCaller": "0x3B0D87f3d0AE4CDC8C0102DAEfB7433aaED15CCF",
     "defaultSlippageBps": 100,
     "defaultDestWeight": "6000000000",
+    "previousAddress": "0x0cfb7CE7D66C7CdAe5827074C5f5A62223a0c230",
     "seedTarget": "1000000000000000000000",
     "seededBalances": [
       {
@@ -36,8 +36,7 @@
         "decimals": 18,
         "status": "seeded"
       }
-    ],
-    "previousAddress": "0x7f4b3620d6Ffcc15b11ca8679c57c076DCE109d1"
+    ]
   },
   "tokens": [
     {

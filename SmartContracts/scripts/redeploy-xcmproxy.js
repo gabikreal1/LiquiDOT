@@ -14,7 +14,7 @@ const path = require("path");
 
 // Moonbase Alpha XCM precompile addresses
 const MOONBASE_PRECOMPILES = {
-  xTokens: "0x0000000000000000000000000000000000000804",
+  xcmPallet: "0x000000000000000000000000000000000000081A",
   xcmTransactor: "0x0000000000000000000000000000000000000806",
 };
 
@@ -79,25 +79,20 @@ async function main() {
   await tx.wait();
   console.log(`   ✓ Set Operator: ${oldConfig.operator}`);
   
-  // Set XTokens precompile
-  tx = await proxy.setXTokensPrecompile(MOONBASE_PRECOMPILES.xTokens);
+  // Set XCM precompile (PalletXcm)
+  tx = await proxy.setXcmPrecompile(MOONBASE_PRECOMPILES.xcmPallet);
   await tx.wait();
-  console.log("   ✓ Set XTokens Precompile");
-  
+  console.log("   ✓ Set XCM Precompile");
+
   // Set XCM Transactor precompile
   tx = await proxy.setXcmTransactorPrecompile(MOONBASE_PRECOMPILES.xcmTransactor);
   await tx.wait();
   console.log("   ✓ Set XCM Transactor Precompile");
-  
+
   // Set Asset Hub ParaId
   tx = await proxy.setAssetHubParaId(oldConfig.assetHubParaId);
   await tx.wait();
   console.log(`   ✓ Set Asset Hub ParaId: ${oldConfig.assetHubParaId}`);
-  
-  // Set default dest weight
-  tx = await proxy.setDefaultDestWeight(BigInt(oldConfig.defaultDestWeight));
-  await tx.wait();
-  console.log("   ✓ Set Default Dest Weight");
   
   // Set default slippage
   tx = await proxy.setDefaultSlippageBps(oldConfig.defaultSlippageBps);

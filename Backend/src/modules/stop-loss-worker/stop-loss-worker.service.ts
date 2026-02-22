@@ -8,39 +8,39 @@ import { ConfigService } from '@nestjs/config';
 export class StopLossWorkerService implements OnModuleInit {
   private readonly logger = new Logger(StopLossWorkerService.name);
   private isProcessing = false;
+  private readonly enabled: boolean;
 
   constructor(
     private readonly moonbeamService: MoonbeamService,
     private readonly xcmBuilderService: XcmBuilderService,
     private readonly configService: ConfigService,
-  ) {}
+  ) {
+    this.enabled = this.configService.get<boolean>('ENABLE_STOP_LOSS_SIMPLE_WORKER', false);
+  }
 
   onModuleInit() {
-    this.logger.log('Stop-Loss Worker initialized');
+    this.logger.log(`Stop-Loss Worker initialized (enabled: ${this.enabled})`);
   }
 
   @Cron(CronExpression.EVERY_MINUTE)
   async checkPositions() {
-    if (this.isProcessing) {
-      this.logger.debug('Previous stop-loss check still running, skipping...');
+    if (!this.enabled || this.isProcessing) {
       return;
     }
 
     this.isProcessing = true;
     try {
       this.logger.debug('Starting stop-loss check...');
-      
-      // 1. Get all active positions from Moonbeam
-      // In a production environment with thousands of positions, we should paginate
-      // or use a subgraph. For MVP, fetching all active positions is acceptable.
+
+      // Get all active positions — getActivePositions() now iterates
+      // positionCounter + positions(id) since the unbounded view was removed
       const activePositions = await this.moonbeamService.getActivePositions();
       this.logger.debug(`Found ${activePositions.length} active positions`);
 
       for (const position of activePositions) {
         try {
-          // 2. Check if position is out of range
-          // The contract handles the math: currentTick < bottomTick || currentTick >= topTick
-          const { outOfRange, currentPrice } = await this.moonbeamService.isPositionOutOfRange(
+          // Check if position is out of range
+          const { outOfRange } = await this.moonbeamService.isPositionOutOfRange(
             position.tokenId,
           );
 
@@ -49,29 +49,18 @@ export class StopLossWorkerService implements OnModuleInit {
               `Position ${position.tokenId} (AssetHub: ${position.assetHubPositionId}) is OUT OF RANGE. Triggering liquidation...`,
             );
 
-            // 3. Prepare liquidation
-            // We need to return funds to the user on AssetHub (Chain 1000)
-            const destination = await this.xcmBuilderService.buildReturnDestination({
-              userAddress: position.owner,
-              amount: 1n, // Placeholder amount for destination builder
-            });
-
-            // 4. Calculate min amounts (simplified for MVP: 0 slippage protection here, 
-            // relying on contract or high slippage tolerance)
-            // In a real prod environment, we would calculate minAmountOut based on oralce price.
+            // minAmountOut 0 = let the contract's defaultSlippageBps handle it
             const liquidateParams: LiquidateParams = {
               positionId: position.tokenId,
-              baseAsset: position.token0, // Assuming token0 is base for simplicity, need logic if token1
-              destination,
+              baseAsset: position.token0,
+              beneficiary: position.owner,
               minAmountOut0: 0n,
               minAmountOut1: 0n,
               limitSqrtPrice: 0n,
               assetHubPositionId: position.assetHubPositionId,
             };
 
-            // 5. Execute Liquidation
             await this.moonbeamService.liquidateSwapAndReturn(liquidateParams);
-            
             this.logger.log(`Successfully liquidated position ${position.tokenId}`);
           }
         } catch (err) {

@@ -40,7 +40,7 @@ SmartContracts/
 - Cross-chain execution engine
 - Integrates with Algebra DEX for trading
 - Manages liquidity positions via NFPM
-- Returns profits via XCM (IXTokens precompile)
+- Returns profits via XCM (`IPalletXcm` precompile at `0x0000000000000000000000000000000000000810`)
 - Custom error handling for gas-efficient reverts
 - Operator-triggered liquidation model
 
@@ -57,7 +57,13 @@ npm install
 # - Paseo PAS: https://faucet.paseo.network/
 ```
 
-### Current Testnet Deployments
+### Mainnet Deployments
+
+| Contract | Network | Address |
+|----------|---------|---------|
+| XCMProxy | Moonbeam (1284) | `0x0cfb7CE7D66C7CdAe5827074C5f5A62223a0c230` |
+
+### Testnet Deployments
 
 | Contract | Network | Address |
 |----------|---------|---------|
@@ -122,7 +128,9 @@ XCMPROXY_CONTRACT=0x7f4b3620d6Ffcc15b11ca8679c57c076DCE109d1
 
 | Network | Chain ID | Description |
 |---------|----------|-------------|
+| Moonbeam | 1284 | Moonbeam mainnet |
 | Moonbase Alpha | 1287 | Moonbeam testnet |
+| Polkadot Asset Hub | 420420419 | Asset Hub mainnet (ParaId: 1000) |
 | Paseo Asset Hub | 420420422 | Asset Hub testnet (ParaId: 1000) |
 
 ## ⚠️ Important Design Notes
@@ -140,14 +148,22 @@ interface IXcm {
 }
 ```
 
-**Moonbeam (IXTokens)**
+**Moonbeam (IPalletXcm)**
 ```solidity
-// Address: 0x0000000000000000000000000000000000000804
-interface IXTokens {
-    function transfer(address currencyAddress, uint256 amount, Multilocation memory destination, uint64 weight) external;
-    function transferMultiasset(Multilocation memory asset, uint256 amount, Multilocation memory destination, uint64 weight) external;
+// Address: 0x0000000000000000000000000000000000000810
+interface IPalletXcm {
+    function transferAssetsUsingTypeAndThenAddress(
+        XcmV3Multilocation memory dest,
+        XcmV3AssetMultiAsset[] memory assets,
+        string memory assetsTransferType,      // "2" = DestinationReserve
+        string memory remoteFeesIdIndex,
+        string memory feesTransferType,        // "2" = DestinationReserve
+        bytes memory customXcmOnDest,          // Empty or additional XCM
+        XcmV3WeightLimit weightLimit
+    ) external;
 }
 ```
+XCMProxy uses `transferAssetsUsingTypeAndThenAddress` with `TransferType::DestinationReserve(2)` to return DOT to Asset Hub. The contract internally converts H160 beneficiary addresses to AccountId32 via EE-padding (`address + 0xEE...EE`).
 
 ### Custom Errors
 

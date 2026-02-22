@@ -60,6 +60,10 @@ export type { IXTokens } from "./contracts/V1(Current)/xcm/MoonbeamXTokensSender
 export { IXTokens__factory } from "./factories/contracts/V1(Current)/xcm/MoonbeamXTokensSender.sol/IXTokens__factory";
 export type { MoonbeamXTokensSender } from "./contracts/V1(Current)/xcm/MoonbeamXTokensSender.sol/MoonbeamXTokensSender";
 export { MoonbeamXTokensSender__factory } from "./factories/contracts/V1(Current)/xcm/MoonbeamXTokensSender.sol/MoonbeamXTokensSender__factory";
+export type { XcmExecuteAdapter } from "./contracts/V1(Current)/XcmExecuteAdapter.sol/XcmExecuteAdapter";
+export { XcmExecuteAdapter__factory } from "./factories/contracts/V1(Current)/XcmExecuteAdapter.sol/XcmExecuteAdapter__factory";
+export type { IPalletXcm } from "./contracts/V1(Current)/XCMProxy.sol/IPalletXcm";
+export { IPalletXcm__factory } from "./factories/contracts/V1(Current)/XCMProxy.sol/IPalletXcm__factory";
 export type { IXCMTransactor } from "./contracts/V1(Current)/XCMProxy.sol/IXCMTransactor";
 export { IXCMTransactor__factory } from "./factories/contracts/V1(Current)/XCMProxy.sol/IXCMTransactor__factory";
 export type { XCMProxy } from "./contracts/V1(Current)/XCMProxy.sol/XCMProxy";

@@ -1,8 +1,8 @@
 # API Reference
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 This document describes all REST API endpoints exposed by the LiquiDOT backend.
+
+**Base URL**: `/api`
 
 ## Base URL
 
@@ -13,9 +13,33 @@ Production: https://api.liquidot.io
 
 ## Authentication
 
-**MVP**: No authentication required. User identification is done via wallet address.
+### `POST /auth/login/evm`
+Login with an Ethereum (EVM) wallet signature (SIWE).
+- **Body**:
+  ```json
+  {
+    "address": "0x123...",
+    "message": "Sign in to LiquiDOT...",
+    "signature": "0xabc..."
+  }
+  ```
+- **Response**: `{ "access_token": "jwt...", "user": { ... } }`
 
-**Future**: Wallet signature verification will be added for sensitive operations.
+### `POST /auth/login/substrate`
+Login with a Polkadot (Substrate) wallet signature (SIWS).
+- **Body**:
+  ```json
+  {
+    "address": "5GrwvaEF...",
+    "message": "Sign in to LiquiDOT...",
+    "signature": "0xabc..."
+  }
+  ```
+- **Response**: `{ "access_token": "jwt...", "user": { ... } }`
+
+**MVP Note**: Some endpoints may not require authentication during development. User identification is done via wallet address.
+
+**Future**: Wallet signature verification will be enforced for all sensitive operations.
 
 ---
 
@@ -90,6 +114,32 @@ Get test mode synchronization status across backend and smart contracts.
 **Notes:**
 - Test mode is auto-enabled when `NODE_ENV=development` or `TEST_MODE=true`
 - In test mode, XCM validation is skipped in contracts
+
+---
+
+## Activity Logs
+
+### `GET /users/:userId/activity`
+Fetch the history of cross-chain operations.
+- **Headers**: `Authorization: Bearer <token>`
+- **Query Params**:
+    - `limit` (default 20)
+    - `offset` (default 0)
+- **Response**:
+  ```json
+  {
+    "logs": [
+      {
+        "id": "uuid",
+        "type": "INVESTMENT",
+        "status": "SUBMITTED",
+        "txHash": "0x123...",
+        "createdAt": "2024-01-01T12:00:00Z"
+      }
+    ],
+    "count": 10
+  }
+  ```
 
 ---
 
@@ -410,6 +460,23 @@ All fields are optional. Defaults are applied for missing fields.
 
 ---
 
+### `POST /users/:id/preferences`
+Save user investment preferences (risk range, target assets).
+- **Headers**: `Authorization: Bearer <token>`
+- **Body**:
+  ```json
+  {
+    "riskLevel": "low",
+    "baseAsset": "DOT",
+    "targetPools": ["0xabc..."]
+  }
+  ```
+
+### `GET /users/:id/preferences`
+Get current preferences.
+
+---
+
 ### PATCH /preferences/:userId
 
 Update preferences for a user.
@@ -588,6 +655,13 @@ Get active positions with rebalancing recommendations.
 
 ---
 
+### `POST /users/:id/decision/execute`
+Manually trigger the investment decision engine for a user.
+- **Headers**: `Authorization: Bearer <token>`
+- **Response**: `{ "status": "success", "decisions": [...] }`
+
+---
+
 ## Pools Endpoints
 
 ### GET /pools
@@ -718,98 +792,5 @@ This returns results 41-60.
 - Initial release
 - User, Position, Preference, and Pool endpoints
 - Health check endpoints
-=======
-=======
->>>>>>> Stashed changes
-LiquiDOT Backend API allows the frontend to manage authentication, preferences, investment decisions, and activity history.
-
-**Base URL**: `/api`
-
-## Authentication
-
-### `POST /auth/login/evm`
-Login with an Ethereum (EVM) wallet signature (SIWE).
-- **Body**:
-  ```json
-  {
-    "address": "0x123...",
-    "message": "Sign in to LiquiDOT...",
-    "signature": "0xabc..."
-  }
-  ```
-- **Response**: `{ "access_token": "jwt...", "user": { ... } }`
-
-### `POST /auth/login/substrate`
-Login with a Polkadot (Substrate) wallet signature (SIWS).
-- **Body**:
-  ```json
-  {
-    "address": "5GrwvaEF...",
-    "message": "Sign in to LiquiDOT...",
-    "signature": "0xabc..."
-  }
-  ```
-- **Response**: `{ "access_token": "jwt...", "user": { ... } }`
-
----
-
-## Activity Logs
-
-### `GET /users/:userId/activity`
-Fetch the history of cross-chain operations.
-- **Headers**: `Authorization: Bearer <token>`
-- **Query Params**:
-    - `limit` (default 20)
-    - `offset` (default 0)
-- **Response**:
-  ```json
-  {
-    "logs": [
-      {
-        "id": "uuid",
-        "type": "INVESTMENT",
-        "status": "SUBMITTED",
-        "txHash": "0x123...",
-        "createdAt": "2024-01-01T12:00:00Z"
-      }
-    ],
-    "count": 10
-  }
-  ```
-
----
-
-## User Preferences
-
-### `POST /users/:id/preferences`
-Save user investment preferences (risk range, target assets).
-- **Headers**: `Authorization: Bearer <token>`
-- **Body**:
-  ```json
-  {
-    "riskLevel": "low",
-    "baseAsset": "DOT",
-    "targetPools": ["0xabc..."]
-  }
-  ```
-
-### `GET /users/:id/preferences`
-Get current preferences.
-
----
-
-## Investment Decisions
-
-### `POST /users/:id/decision/execute`
-Manually trigger the investment decision engine for a user.
-- **Headers**: `Authorization: Bearer <token>`
-- **Response**: `{ "status": "success", "decisions": [...] }`
-
----
-
-## Health Check
-- `GET /health`: Returns `{ status: 'ok' }`
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
+- Authentication (SIWE/SIWS)
+- Activity logs

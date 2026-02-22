@@ -11,23 +11,28 @@ interface IXTokens {
 /// @notice Adapter that turns LiquiDOT's generic sendXcm(destination,message) into an XTokens transfer.
 /// @dev This is intentionally narrow: it's useful for "return assets" flows where message is not needed.
 ///      For general XCM programs, Moonbeam typically uses different precompiles (XCM Transactor).
+/// @notice Only the authorized caller (XCMProxy or AssetHubVault) may invoke sendXcm.
 contract MoonbeamXTokensSender is IXcmSender {
     error ZeroAddress();
+    error UnauthorizedCaller();
 
     IXTokens public immutable xtokens;
     address public immutable token;
     uint64 public immutable destWeight;
+    address public immutable authorizedCaller;
 
-    constructor(address xTokensPrecompile, address tokenToSend, uint64 defaultDestWeight) {
-        if (xTokensPrecompile == address(0) || tokenToSend == address(0)) revert ZeroAddress();
+    constructor(address xTokensPrecompile, address tokenToSend, uint64 defaultDestWeight, address _authorizedCaller) {
+        if (xTokensPrecompile == address(0) || tokenToSend == address(0) || _authorizedCaller == address(0)) revert ZeroAddress();
         xtokens = IXTokens(xTokensPrecompile);
         token = tokenToSend;
         destWeight = defaultDestWeight;
+        authorizedCaller = _authorizedCaller;
     }
 
     /// @dev Interprets `message` as the uint256 amount to transfer.
     ///      This keeps the adapter interface stable while allowing us to move logic out of core contracts.
     function sendXcm(bytes calldata destination, bytes calldata message) external override {
+        if (msg.sender != authorizedCaller) revert UnauthorizedCaller();
         require(message.length == 32, "amount must be 32 bytes");
         uint256 amount;
         assembly {

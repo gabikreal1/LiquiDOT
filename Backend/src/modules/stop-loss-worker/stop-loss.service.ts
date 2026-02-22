@@ -21,11 +21,12 @@ import { Interval } from '@nestjs/schedule';
 import { Position, PositionStatus } from '../positions/entities/position.entity';
 import { MoonbeamService } from '../blockchain/services/moonbeam.service';
 import { AssetHubService } from '../blockchain/services/asset-hub.service';
-import { 
-  PositionCheckResult, 
-  LiquidationResult, 
+import { XcmBuilderService } from '../blockchain/services/xcm-builder.service';
+import {
+  PositionCheckResult,
+  LiquidationResult,
   StopLossConfig,
-  MonitoredPositionStatus 
+  MonitoredPositionStatus
 } from './types/stop-loss.types';
 
 @Injectable()
@@ -40,6 +41,7 @@ export class StopLossService implements OnModuleInit {
     private positionRepository: Repository<Position>,
     private moonbeamService: MoonbeamService,
     private assetHubService: AssetHubService,
+    private xcmBuilderService: XcmBuilderService,
     private configService: ConfigService,
   ) {
     this.enabled = this.configService.get<boolean>('ENABLE_STOP_LOSS_WORKER', true);
@@ -209,17 +211,20 @@ export class StopLossService implements OnModuleInit {
 
       this.logger.log(`Initiating liquidation for position ${position.id}`);
 
-      // Step 2: Build XCM destination for AssetHub
-      const xcmDestination = await this.buildXcmDestination(position.user?.walletAddress || '');
+      // Step 2: Beneficiary address for XCM return (contract handles EE-padding)
+      const beneficiary = position.user?.walletAddress || '';
 
-      // Step 3: Call Moonbeam to liquidate
+      // Step 3: Calculate slippage-adjusted minimum amounts
+      // Use configurable slippage (default 100 bps = 1%) applied by the contract
+      // We pass 0 here to let the contract's defaultSlippageBps handle it,
+      // which is safer than pre-calculating without oracle prices
       const liquidateParams = {
         positionId: parseInt(position.moonbeamPositionId!),
         baseAsset: position.baseAsset,
-        destination: xcmDestination,
-        minAmountOut0: BigInt(0), // TODO: Calculate with slippage
-        minAmountOut1: BigInt(0),
-        limitSqrtPrice: BigInt(0),
+        beneficiary,
+        minAmountOut0: 0n, // Contract applies defaultSlippageBps
+        minAmountOut1: 0n,
+        limitSqrtPrice: 0n,
         assetHubPositionId: position.assetHubPositionId,
       };
 
@@ -257,12 +262,12 @@ export class StopLossService implements OnModuleInit {
   }
 
   /**
-   * Build XCM destination bytes for AssetHub
+   * Get beneficiary address for XCM return to AssetHub.
+   * The XCMProxy contract handles XCM routing internally via IPalletXcm.
+   * @deprecated Pass beneficiary address directly to liquidateSwapAndReturn
    */
-  private async buildXcmDestination(userAddress: string): Promise<Uint8Array> {
-    // This would build the proper XCM MultiLocation bytes
-    // For now, return empty - actual implementation would depend on Polkadot.js
-    return new Uint8Array();
+  private getBeneficiary(userAddress: string): string {
+    return userAddress;
   }
 
   /**

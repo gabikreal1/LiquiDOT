@@ -23,13 +23,25 @@ uint256 constant SCALE_SQRT_AUX = 1_000_000_000_000;
 
 
 
-// Minimal XTokens precompile interface (ABI-compatible placeholder)
-interface IXTokens {
-    function transfer(
-        address token,
-        uint256 amount,
-        bytes calldata dest,
-        uint64 destWeight
+// Moonbeam PalletXcm precompile at 0x081A
+interface IPalletXcm {
+    struct Location {
+        uint8 parents;
+        bytes[] interior;
+    }
+
+    struct AssetAddressInfo {
+        address asset;
+        uint256 amount;
+    }
+
+    function transferAssetsUsingTypeAndThenAddress(
+        Location calldata dest,
+        AssetAddressInfo[] calldata assets,
+        uint8 assetsTransferType,
+        uint8 remoteFeesIdIndex,
+        uint8 feesTransferType,
+        bytes calldata customXcmOnDest
     ) external;
 }
 
@@ -45,57 +57,9 @@ interface IXCMTransactor {
     ) external;
 }
 
-/**
- * @title XCMProxy
- * @dev Cross-chain execution engine for LiquiDOT on Moonbeam
- *
- * DEX INTEGRATION: Algebra Integral (StellaSwap Pulsar)
- * -----------------------------------------------------
- * This contract is built for Algebra Integral (cryptoalgebra/integral-* npm packages) which
- * includes the `deployer` field in mint/swap parameters.
- *
- * TARGET DEX: StellaSwap Pulsar on Moonbeam
- * StellaSwap uses Algebra Integral v1.2 (stellaswap/Integral-contracts on GitHub).
- * The interfaces are COMPATIBLE - StellaSwap includes the `deployer` field.
- *
- * LIQUIDATION MODEL: Operator-Triggered
- * -------------------------------------
- * Liquidations are NOT automated on-chain. The backend monitors positions using
- * isPositionOutOfRange() and triggers liquidation via executeFullLiquidation() or
- * liquidateSwapAndReturn() when conditions are met.
- *
- * SINGLE-SIDED LIQUIDITY (OPERATOR RESPONSIBILITY):
- * --------------------------------------------------
- * When minting LP positions, token requirements depend on current price vs tick range:
- * - Price below range (currentTick < bottomTick): only token0 needed
- * - Price above range (currentTick > topTick): only token1 needed  
- * - Price within range: BOTH tokens required in correct ratio
- *
- * OPERATOR MUST calculate token amounts BEFORE dispatching investment:
- * 1. Read pool.globalState() to get currentTick
- * 2. Calculate bottomTick/topTick using calculateTickRange()
- * 3. If currentTick is INSIDE [bottomTick, topTick]:
- *    - Use LiquidityAmounts.getAmountsForLiquidity() to compute required ratio
- *    - Swap incoming token to get both token0 and token1 in correct proportions
- *    - Populate amounts[0] and amounts[1] accordingly
- * 4. If currentTick is OUTSIDE the range:
- *    - Only one token is needed (token0 if below, token1 if above)
- *
- * Failure to provide correct token amounts will cause mint to fail or result in
- * suboptimal liquidity positioning.
- *
- * DEX TARGET: StellaSwap Pulsar (Algebra Integral v1.2)
- * -----------------------------------------------------
- * This contract targets StellaSwap Pulsar on Moonbeam, which uses Algebra Integral v1.2.
- * The interfaces imported (from cryptoalgebra/integral-*) include the `deployer` field in
- * mint/swap parameters, which is compatible with StellaSwap's deployment.
- *
- * Target Addresses (Moonbeam):
- * - Factory: 0x... (See deployments/moonbase_bootstrap.json)
- * - Router: 0x...
- * - Quoter: 0x...
- * - NFPM: 0x...
- */
+/// @title XCMProxy
+/// @dev Cross-chain execution engine for LiquiDOT on Moonbeam (Algebra Integral / StellaSwap Pulsar)
+/// @dev Operator-triggered liquidation model. See CLAUDE.md for architecture details.
 contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
     using SafeERC20 for IERC20;
 
@@ -109,8 +73,6 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
     error NFPMNotSet();
     error ZeroLiquidityPreview();
     error QuoterNotSet();
-    error XTokensNotSet();
-    error InvalidDestination();
     error BaseAssetNotSupported();
     error PositionNotActive();
     error PositionNotLiquidated();
@@ -125,6 +87,8 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
     error PositionAlreadyPending();
     error XcmTransferFailed();
     error UnauthorizedCaller();
+    error NotEmergencyAdmin();
+    error DeadlineTooFar();
 
     // State variables
     mapping(address => bool) public supportedTokens;
@@ -142,8 +106,7 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
     address public nfpmContract;
 
     // XCM configuration (set per-network during deployment)
-    address public xTokensPrecompile; // e.g., 0x...0804 on Moonbeam-family chains
-    uint64 public defaultDestWeight; // conservative default; tune per target chain
+    address public xcmPrecompile; // PalletXcm precompile at 0x081A on Moonbeam
     uint32 public assetHubParaId; // target Asset Hub parachain id on the same relay
     address public trustedXcmCaller; // optional: derived XCM caller or allowed system caller
     bool public xcmConfigFrozen; // freeze flag to prevent further config changes
@@ -156,13 +119,19 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
 
     // Operator role for day-to-day execution
     address public operator;
-    
+
+    // H-5: Emergency admin — separate from owner, can pause the contract
+    address public emergencyAdmin;
+
+    // M-1: Maximum deadline offset in seconds (default 5 minutes)
+    uint256 public maxDeadlineOffset;
+
     // Test mode - allows direct contract calls without XCM for local testing
     bool public testMode;
+    bool public testModeFrozen;
 
     // Config events
-    event XTokensPrecompileSet(address indexed precompile);
-    event DefaultDestWeightSet(uint64 weight);
+    event XcmPrecompileSet(address indexed precompile);
     event AssetHubParaIdSet(uint32 paraId);
     event TrustedXcmCallerSet(address indexed caller);
     event XcmConfigFrozen();
@@ -291,8 +260,7 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
 
     constructor(address initialOwner) Ownable(initialOwner) {
         // Reasonable defaults; override via admin setters per deployment
-        xTokensPrecompile = address(0);
-        defaultDestWeight = 6_000_000_000;
+        xcmPrecompile = 0x000000000000000000000000000000000000081A;
         assetHubParaId = 0; // require admin to set correct paraId
         trustedXcmCaller = address(0);
         xcmConfigFrozen = false;
@@ -300,6 +268,8 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         // Default known precompile address (can be overridden per-network)
         xcmTransactorPrecompile = address(0);
         operator = initialOwner;
+        emergencyAdmin = initialOwner;
+        maxDeadlineOffset = 300; // 5 minutes default
     }
 
     function setIntegrations(address quoter, address router) external onlyOwner {
@@ -311,16 +281,10 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         nfpmContract = nfpm;
     }
 
-    function setXTokensPrecompile(address precompile) external onlyOwner {
+    function setXcmPrecompile(address precompile) external onlyOwner {
         if (xcmConfigFrozen) revert XcmConfigAlreadyFrozen();
-        xTokensPrecompile = precompile;
-        emit XTokensPrecompileSet(precompile);
-    }
-
-    function setDefaultDestWeight(uint64 weight) external onlyOwner {
-        if (xcmConfigFrozen) revert XcmConfigAlreadyFrozen();
-        defaultDestWeight = weight;
-        emit DefaultDestWeightSet(weight);
+        xcmPrecompile = precompile;
+        emit XcmPrecompileSet(precompile);
     }
 
     function setAssetHubParaId(uint32 paraId) external onlyOwner {
@@ -345,7 +309,6 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
 
     event XcmTransactorPrecompileSet(address indexed precompile);
     event DefaultSlippageSet(uint16 bps);
-    event XcmTransferAttempt(address indexed token, bytes dest, uint256 amount, bool success, bytes errorData);
 
     modifier onlyOperator() {
         if (msg.sender != operator) revert NotOperator();
@@ -357,8 +320,41 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         emit OperatorUpdated(newOperator);
     }
 
+    event EmergencyAdminUpdated(address indexed emergencyAdmin);
+
+    function setEmergencyAdmin(address _emergencyAdmin) external onlyOwner {
+        emergencyAdmin = _emergencyAdmin;
+        emit EmergencyAdminUpdated(_emergencyAdmin);
+    }
+
+    /// @notice Emergency admin can pause in addition to owner (H-5)
+    function emergencyPause() external {
+        if (msg.sender != emergencyAdmin && msg.sender != owner()) revert NotEmergencyAdmin();
+        _pause();
+    }
+
+    function setMaxDeadlineOffset(uint256 _offset) external onlyOwner {
+        if (_offset < 30 || _offset > 3600) revert DeadlineTooFar();
+        maxDeadlineOffset = _offset;
+    }
+
+    /// @dev Returns a meaningful deadline instead of block.timestamp (M-1)
+    function _deadline() internal view returns (uint256) {
+        return block.timestamp + maxDeadlineOffset;
+    }
+
+    event TestModeFrozen();
+
     function setTestMode(bool _testMode) external onlyOwner {
+        if (testModeFrozen) revert XcmConfigAlreadyFrozen();
         testMode = _testMode;
+    }
+
+    function freezeTestMode() external onlyOwner {
+        if (testModeFrozen) revert XcmConfigAlreadyFrozen();
+        testModeFrozen = true;
+        testMode = false;
+        emit TestModeFrozen();
     }
 
     function setXcmTransactorPrecompile(address precompile) external onlyOwner {
@@ -380,7 +376,72 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         _unpause();
     }
 
-    // ===== Internal helpers: MultiLocation encoding for destination =====
+    // ===== Internal helpers: XCM precompile transfers =====
+
+    error XcmPrecompileNotSet();
+
+    /**
+     * @dev Build SCALE-encoded VersionedXcm::V4 with DepositAsset to AccountId32 (EE-padded EVM address)
+     * @param beneficiary The EVM H160 address to deposit to on Asset Hub
+     */
+    function _encodeDepositAssetXcm(address beneficiary) internal pure returns (bytes memory) {
+        // AccountId32 = H160 address + 12 bytes of 0xEE
+        bytes memory buf = new bytes(41); // 1+1+1+2+1+1+1+1+32
+        uint256 i = 0;
+        buf[i++] = 0x04; // VersionedXcm::V4
+        buf[i++] = 0x04; // compact(1) — 1 instruction
+        buf[i++] = 0x0d; // DepositAsset
+        buf[i++] = 0x01; // AssetFilter::Wild
+        buf[i++] = 0x00; // WildAsset::All
+        buf[i++] = 0x00; // parents = 0
+        buf[i++] = 0x01; // Junctions::X1
+        buf[i++] = 0x01; // AccountId32
+        buf[i++] = 0x00; // network = None
+        // Copy 20-byte address
+        bytes20 addr = bytes20(beneficiary);
+        for (uint256 j = 0; j < 20; j++) {
+            buf[i++] = addr[j];
+        }
+        // Pad remaining 12 bytes with 0xEE
+        for (uint256 j = 0; j < 12; j++) {
+            buf[i++] = 0xEE;
+        }
+        return buf;
+    }
+
+    /**
+     * @dev Transfer tokens to Asset Hub via XCM precompile using DestinationReserve
+     * @param token The ERC20 token to transfer
+     * @param amount Amount to transfer
+     * @param beneficiary The EVM address that will receive on Asset Hub (converted to AccountId32)
+     */
+    function _xcmTransferToAssetHub(address token, uint256 amount, address beneficiary) internal {
+        if (xcmPrecompile == address(0)) revert XcmPrecompileNotSet();
+
+        // Build Asset Hub destination: { parents: 1, interior: X1(Parachain(assetHubParaId)) }
+        bytes[] memory interior = new bytes[](1);
+        interior[0] = abi.encodePacked(bytes1(0x00), bytes4(uint32(assetHubParaId)));
+        IPalletXcm.Location memory dest = IPalletXcm.Location({ parents: 1, interior: interior });
+
+        IPalletXcm.AssetAddressInfo[] memory assets = new IPalletXcm.AssetAddressInfo[](1);
+        assets[0] = IPalletXcm.AssetAddressInfo({ asset: token, amount: amount });
+
+        bytes memory xcmOnDest = _encodeDepositAssetXcm(beneficiary);
+
+        // Approve token spend for the precompile
+        IERC20(token).forceApprove(xcmPrecompile, amount);
+
+        IPalletXcm(xcmPrecompile).transferAssetsUsingTypeAndThenAddress(
+            dest,
+            assets,
+            2, // DestinationReserve
+            0, // remoteFeesIdIndex
+            2, // feesTransferType = DestinationReserve
+            xcmOnDest
+        );
+
+        IERC20(token).forceApprove(xcmPrecompile, 0);
+    }
     /**
      * @dev Receive assets from XCM transfer and create pending position
      * @notice Called via XCM Transact instruction from AssetHub's dispatchInvestment
@@ -398,7 +459,8 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         uint256 amount,
         bytes memory investmentParams
     ) external whenNotPaused nonReentrant {
-        if (!(testMode || msg.sender == owner() || (trustedXcmCaller != address(0) && msg.sender == trustedXcmCaller))) {
+        // H-4: testMode no longer grants open access — owner or trustedXcmCaller required regardless
+        if (!(msg.sender == owner() || msg.sender == operator || (trustedXcmCaller != address(0) && msg.sender == trustedXcmCaller))) {
             revert UnauthorizedCaller();
         }
         if (!supportedTokens[token]) revert TokenNotSupported();
@@ -509,93 +571,17 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
             }
         }
 
-        // Verify balances
-        if (IERC20(tokenToUse).balanceOf(address(this)) < swapAmount) revert InsufficientSwappedFunding();
-        if (amount0Desired > 0) {
-            if (IERC20(token0).balanceOf(address(this)) < amount0Desired) revert InsufficientToken0();
-        }
-        if (amount1Desired > 0) {
-            if (IERC20(token1).balanceOf(address(this)) < amount1Desired) revert InsufficientToken1();
-        }
-
-        // Step 5: Mint NFPM position
-        if (nfpmContract == address(0)) revert NFPMNotSet();
-
-        // Approve tokens for NFPM
-        if (amount0Desired > 0) {
-            uint256 cur = IERC20(token0).allowance(address(this), nfpmContract);
-            if (cur != 0) IERC20(token0).forceApprove(nfpmContract, 0);
-            IERC20(token0).forceApprove(nfpmContract, amount0Desired);
-        }
-        if (amount1Desired > 0) {
-            uint256 cur1 = IERC20(token1).allowance(address(this), nfpmContract);
-            if (cur1 != 0) IERC20(token1).forceApprove(nfpmContract, 0);
-            IERC20(token1).forceApprove(nfpmContract, amount1Desired);
-        }
-
-    uint256 amount0Min = 0;
-    uint256 amount1Min = 0;
-
-        if (amount0Desired > 0 || amount1Desired > 0) {
-            // Reuse sqrtPriceX96 from Step 3 (already fetched above)
-            uint160 sqrtRatioLowerX96 = TickMath.getSqrtRatioAtTick(bottomTick);
-            uint160 sqrtRatioUpperX96 = TickMath.getSqrtRatioAtTick(topTick);
-
-            uint128 liquidityPreview = LiquidityAmounts.getLiquidityForAmounts(
-                sqrtPriceX96,
-                sqrtRatioLowerX96,
-                sqrtRatioUpperX96,
-                amount0Desired,
-                amount1Desired
-            );
-            require(liquidityPreview > 0, "zero liquidity preview");
-
-            (uint256 expected0, uint256 expected1) = LiquidityAmounts.getAmountsForLiquidity(
-                sqrtPriceX96,
-                sqrtRatioLowerX96,
-                sqrtRatioUpperX96,
-                liquidityPreview
-            );
-
-            uint256 bps = slippageBps > 0 ? slippageBps : defaultSlippageBps;
-            amount0Min = expected0 == 0 ? 0 : (expected0 * (10_000 - bps)) / 10_000;
-            amount1Min = expected1 == 0 ? 0 : (expected1 * (10_000 - bps)) / 10_000;
-        }
-
-        // Mint the position
-        (uint256 tokenId, uint128 liquidityCreated, , ) = INonfungiblePositionManager(nfpmContract).mint(
-            INonfungiblePositionManager.MintParams({
-                token0: token0,
-                token1: token1,
-                deployer: address(0),
-                tickLower: bottomTick,
-                tickUpper: topTick,
-                amount0Desired: amount0Desired,
-                amount1Desired: amount1Desired,
-                amount0Min: amount0Min,
-                amount1Min: amount1Min,
-                recipient: address(this),
-                deadline: block.timestamp
-            })
+        // Step 5: Mint via helper (reduces stack depth)
+        (uint256 tokenId, uint128 liquidityCreated) = _mintNfpmPosition(
+            token0, token1, amount0Desired, amount1Desired,
+            sqrtPriceX96, bottomTick, topTick, slippageBps
         );
-
-        // Reset allowances
-        if (amount0Desired > 0) IERC20(token0).forceApprove(nfpmContract, 0);
-        if (amount1Desired > 0) IERC20(token1).forceApprove(nfpmContract, 0);
 
         // Step 6: Create position record
         localPositionId = _createPosition(
-            assetHubPositionId,
-            poolId,
-            token0,
-            token1,
-            bottomTick,
-            topTick,
-            liquidityCreated,
-            tokenId,
-            positionOwner,
-            lowerRangePercent,
-            upperRangePercent
+            assetHubPositionId, poolId, token0, token1,
+            bottomTick, topTick, liquidityCreated, tokenId,
+            positionOwner, lowerRangePercent, upperRangePercent
         );
 
         // Step 7: Store mapping and delete pending
@@ -604,28 +590,63 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
 
         emit PositionExecuted(assetHubPositionId, localPositionId, tokenId, liquidityCreated);
         emit PositionCreated(
-            localPositionId,
-            positionOwner,
-            poolId,
-            token0,
-            token1,
-            bottomTick,
-            topTick,
-            liquidityCreated
+            localPositionId, positionOwner, poolId,
+            token0, token1, bottomTick, topTick, liquidityCreated
         );
 
         return localPositionId;
+    }
+
+    /// @dev Approve, compute slippage mins, mint NFPM position, reset allowances
+    function _mintNfpmPosition(
+        address token0, address token1,
+        uint256 amount0Desired, uint256 amount1Desired,
+        uint160 sqrtPriceX96, int24 bottomTick, int24 topTick,
+        uint16 slippageBps
+    ) internal returns (uint256 tokenId, uint128 liquidityCreated) {
+        if (nfpmContract == address(0)) revert NFPMNotSet();
+
+        if (amount0Desired > 0) IERC20(token0).forceApprove(nfpmContract, amount0Desired);
+        if (amount1Desired > 0) IERC20(token1).forceApprove(nfpmContract, amount1Desired);
+
+        uint256 amount0Min;
+        uint256 amount1Min;
+        {
+            uint160 sqrtLo = TickMath.getSqrtRatioAtTick(bottomTick);
+            uint160 sqrtHi = TickMath.getSqrtRatioAtTick(topTick);
+            uint128 liqPreview = LiquidityAmounts.getLiquidityForAmounts(
+                sqrtPriceX96, sqrtLo, sqrtHi, amount0Desired, amount1Desired
+            );
+            if (liqPreview == 0) revert ZeroLiquidityPreview();
+            (uint256 e0, uint256 e1) = LiquidityAmounts.getAmountsForLiquidity(
+                sqrtPriceX96, sqrtLo, sqrtHi, liqPreview
+            );
+            uint256 bps = slippageBps > 0 ? slippageBps : defaultSlippageBps;
+            amount0Min = e0 == 0 ? 0 : (e0 * (10_000 - bps)) / 10_000;
+            amount1Min = e1 == 0 ? 0 : (e1 * (10_000 - bps)) / 10_000;
+        }
+
+        (tokenId, liquidityCreated, , ) = INonfungiblePositionManager(nfpmContract).mint(
+            INonfungiblePositionManager.MintParams({
+                token0: token0, token1: token1, deployer: address(0),
+                tickLower: bottomTick, tickUpper: topTick,
+                amount0Desired: amount0Desired, amount1Desired: amount1Desired,
+                amount0Min: amount0Min, amount1Min: amount1Min,
+                recipient: address(this), deadline: _deadline()
+            })
+        );
+
+        if (amount0Desired > 0) IERC20(token0).forceApprove(nfpmContract, 0);
+        if (amount1Desired > 0) IERC20(token1).forceApprove(nfpmContract, 0);
     }
 
     /**
      * @dev Cancel a pending position and return assets to Asset Hub
      * @notice Used when execution fails or position needs to be cancelled
      * @param assetHubPositionId The position ID from Asset Hub
-     * @param destination XCM destination for asset return (AssetHub location)
      */
     function cancelPendingPosition(
-        bytes32 assetHubPositionId,
-        bytes calldata destination
+        bytes32 assetHubPositionId
     ) external onlyOperator whenNotPaused nonReentrant {
         PendingPosition storage pending = pendingPositions[assetHubPositionId];
         if (!pending.exists) revert PendingPositionNotFound();
@@ -639,22 +660,8 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
 
         // Return assets to Asset Hub via XCM
         if (!testMode) {
-            if (xTokensPrecompile == address(0)) revert XTokensNotSet();
-            if (destination.length == 0) revert InvalidDestination();
-
-            uint256 cur = IERC20(token).allowance(address(this), xTokensPrecompile);
-            if (cur != 0) IERC20(token).forceApprove(xTokensPrecompile, 0);
-            IERC20(token).forceApprove(xTokensPrecompile, amount);
-
-            try IXTokens(xTokensPrecompile).transfer(token, amount, destination, defaultDestWeight) {
-                // Success
-            } catch (bytes memory err) {
-                emit XcmTransferAttempt(token, destination, amount, false, err);
-                revert XcmTransferFailed();
-            }
-
-            IERC20(token).forceApprove(xTokensPrecompile, 0);
-            emit AssetsReturned(token, user, destination, amount, 0);
+            _xcmTransferToAssetHub(token, amount, user);
+            emit AssetsReturned(token, user, "", amount, 0);
         }
 
         emit PendingPositionCancelled(assetHubPositionId, user, amount);
@@ -770,7 +777,8 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         (, int24 currentTick, , , , ) = IAlgebraPool(position.pool).globalState();
         // Return tick as an unsigned value for backward compat with event
         currentPrice = uint256(int256(currentTick));
-        outOfRange = currentTick < position.bottomTick || currentTick > position.topTick;
+        // Algebra/UV3 convention: in-range means bottomTick <= currentTick < topTick
+        outOfRange = currentTick < position.bottomTick || currentTick >= position.topTick;
 
         return (outOfRange, currentPrice);
     }
@@ -803,7 +811,7 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
 
         // Check if out of range
         (, int24 currentTick, , , , ) = IAlgebraPool(position.pool).globalState();
-        bool outOfRange = currentTick < position.bottomTick || currentTick > position.topTick;
+        bool outOfRange = currentTick < position.bottomTick || currentTick >= position.topTick;
 
         if (!outOfRange) {
             return (false, 0, 0);
@@ -823,18 +831,36 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         if (position.tokenId == 0) revert PositionNotActive();
         if (nfpmContract == address(0)) revert NFPMNotSet();
 
+        // H-3: Compute minimum amounts from known liquidity and tick range for slippage protection
+        uint256 amount0Min;
+        uint256 amount1Min;
+        {
+            (uint160 sqrtPriceX96, , , , , ) = IAlgebraPool(position.pool).globalState();
+            uint160 sqrtRatioLowerX96 = TickMath.getSqrtRatioAtTick(position.bottomTick);
+            uint160 sqrtRatioUpperX96 = TickMath.getSqrtRatioAtTick(position.topTick);
+            (uint256 expected0, uint256 expected1) = LiquidityAmounts.getAmountsForLiquidity(
+                sqrtPriceX96, sqrtRatioLowerX96, sqrtRatioUpperX96, position.liquidity
+            );
+            uint256 bps = defaultSlippageBps > 0 ? defaultSlippageBps : 100; // fallback 1%
+            amount0Min = (expected0 * (10_000 - bps)) / 10_000;
+            amount1Min = (expected1 * (10_000 - bps)) / 10_000;
+        }
+
         // NFPM flow: decrease full liquidity then collect
-        (amount0, amount1) = INonfungiblePositionManager(nfpmContract).decreaseLiquidity(
+        // decreaseLiquidity marks tokens as owed but does NOT transfer them.
+        // collect() actually transfers and returns the total (decreased + fees).
+        INonfungiblePositionManager(nfpmContract).decreaseLiquidity(
             INonfungiblePositionManager.DecreaseLiquidityParams({
                 tokenId: position.tokenId,
                 liquidity: position.liquidity,
-                amount0Min: 0,
-                amount1Min: 0,
-                deadline: block.timestamp
+                amount0Min: amount0Min,
+                amount1Min: amount1Min,
+                deadline: _deadline()
             })
         );
 
-        (uint256 c0, uint256 c1) = INonfungiblePositionManager(nfpmContract).collect(
+        // collect returns the actual tokens transferred (removed liquidity + accrued fees)
+        (amount0, amount1) = INonfungiblePositionManager(nfpmContract).collect(
             INonfungiblePositionManager.CollectParams({
                 tokenId: position.tokenId,
                 recipient: address(this),
@@ -842,11 +868,6 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
                 amount1Max: type(uint128).max
             })
         );
-
-        if (c0 > 0 || c1 > 0) {
-            amount0 += c0;
-            amount1 += c1;
-        }
 
         INonfungiblePositionManager(nfpmContract).burn(position.tokenId);
 
@@ -864,41 +885,32 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
     /**
      * @dev Return arbitrary token assets to Asset Hub recipient (owner-only).
      * If amount is 0, transfers full balance. "user" is logged for reconciliation.
+     * @param beneficiary The EVM address to deposit to on Asset Hub (converted to AccountId32 with EE-padding)
      */
     function returnAssets(
         address token,
         address user,
         uint256 amount,
-        bytes calldata destination
+        address beneficiary
     ) external onlyOwner whenNotPaused nonReentrant {
-        if (destination.length == 0) revert InvalidDestination();
         if (!supportedTokens[token]) revert TokenNotSupported();
         uint256 balance = IERC20(token).balanceOf(address(this));
         uint256 sendAmount = amount == 0 ? balance : amount;
         if (sendAmount > balance) revert InsufficientToken0();
-        if (xTokensPrecompile == address(0)) revert XTokensNotSet();
-        uint256 cur = IERC20(token).allowance(address(this), xTokensPrecompile);
-        if (cur != 0) IERC20(token).forceApprove(xTokensPrecompile, 0);
-        IERC20(token).forceApprove(xTokensPrecompile, sendAmount);
-        bool success = false;
-        bytes memory err;
-        try IXTokens(xTokensPrecompile).transfer(token, sendAmount, destination, defaultDestWeight) {
-            success = true;
-        } catch (bytes memory reason) {
-            err = reason;
+
+        if (!testMode) {
+            _xcmTransferToAssetHub(token, sendAmount, beneficiary);
         }
-        emit XcmTransferAttempt(token, destination, sendAmount, success, err);
-        IERC20(token).forceApprove(xTokensPrecompile, 0);
-        emit AssetsReturned(token, user, destination, sendAmount, 0);
+
+        emit AssetsReturned(token, user, "", sendAmount, 0);
     }
 
     /**
      * @dev Liquidate a position, swap all proceeds to base asset, and return to Asset Hub
-     * @notice This sends assets via XTokens but does NOT automatically call AssetHub contract
      * @notice Operator must separately call settleLiquidation on AssetHub after assets arrive
      * @param positionId The Moonbeam position ID
      * @param baseAsset The asset to convert all proceeds to
-     * @param destination SCALE-encoded multilocation pointing to AssetHubVault contract (AccountKey20)
+     * @param beneficiary EVM address to deposit to on Asset Hub (converted to AccountId32)
      * @param minAmountOut0 Minimum output for token0 → baseAsset swap
      * @param minAmountOut1 Minimum output for token1 → baseAsset swap
      * @param limitSqrtPrice Price limit for swaps
@@ -907,13 +919,12 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
     function liquidateSwapAndReturn(
         uint256 positionId,
         address baseAsset,
-        bytes calldata destination,
+        address beneficiary,
         uint256 minAmountOut0,
         uint256 minAmountOut1,
         uint160 limitSqrtPrice,
         bytes32 assetHubPositionId
     ) external onlyOperator whenNotPaused nonReentrant {
-        if (destination.length == 0) revert InvalidDestination();
         Position storage position = positions[positionId];
         if (position.status != PositionStatus.Active) revert PositionNotActive();
         if (!supportedTokens[baseAsset]) revert BaseAssetNotSupported();
@@ -930,19 +941,20 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
                 totalBase += amount0;
             } else {
                 if (swapRouterContract == address(0)) revert SwapRouterNotSet();
-                IERC20(token0).safeIncreaseAllowance(swapRouterContract, amount0);
+                IERC20(token0).forceApprove(swapRouterContract, amount0);
                 uint256 out0 = ISwapRouter(swapRouterContract).exactInputSingle(
                     ISwapRouter.ExactInputSingleParams({
                         tokenIn: token0,
                         tokenOut: baseAsset,
                         recipient: address(this),
-                        deadline: block.timestamp,
+                        deadline: _deadline(),
                         amountIn: amount0,
                         amountOutMinimum: minAmountOut0,
                         limitSqrtPrice: limitSqrtPrice,
                         deployer: address(0)
                     })
                 );
+                IERC20(token0).forceApprove(swapRouterContract, 0);
                 totalBase += out0;
                 emit ProceedsSwapped(token0, baseAsset, amount0, out0, positionId);
             }
@@ -954,65 +966,44 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
                 totalBase += amount1;
             } else {
                 if (swapRouterContract == address(0)) revert SwapRouterNotSet();
-                IERC20(token1).safeIncreaseAllowance(swapRouterContract, amount1);
+                IERC20(token1).forceApprove(swapRouterContract, amount1);
                 uint256 out1 = ISwapRouter(swapRouterContract).exactInputSingle(
                     ISwapRouter.ExactInputSingleParams({
                         tokenIn: token1,
                         tokenOut: baseAsset,
                         recipient: address(this),
-                        deadline: block.timestamp,
+                        deadline: _deadline(),
                         amountIn: amount1,
                         amountOutMinimum: minAmountOut1,
                         limitSqrtPrice: limitSqrtPrice,
                         deployer: address(0)
                     })
                 );
+                IERC20(token1).forceApprove(swapRouterContract, 0);
                 totalBase += out1;
                 emit ProceedsSwapped(token1, baseAsset, amount1, out1, positionId);
             }
         }
 
         if (totalBase == 0) revert SwapZeroOutput();
-        
-        // Send proceeds back to Asset Hub via XTokens
-        // NOTE: This ONLY transfers assets, does NOT call handleIncomingXCM or settleLiquidation
-        // Assets will be deposited at Substrate level to the AssetHubVault contract address
-        // Operator must separately call settleLiquidation(assetHubPositionId, totalBase) on AssetHub
-        // In test mode, skip actual XCM transfer to allow local testing
+
         if (!testMode) {
-            if (xTokensPrecompile == address(0)) revert XTokensNotSet();
-            
-            uint256 cur = IERC20(baseAsset).allowance(address(this), xTokensPrecompile);
-            if (cur != 0) IERC20(baseAsset).forceApprove(xTokensPrecompile, 0);
-            IERC20(baseAsset).forceApprove(xTokensPrecompile, totalBase);
-            
-            bool success = false;
-            bytes memory err;
-            try IXTokens(xTokensPrecompile).transfer(baseAsset, totalBase, destination, defaultDestWeight) {
-                success = true;
-            } catch (bytes memory reason) {
-                err = reason;
-            }
-            
-            emit XcmTransferAttempt(baseAsset, destination, totalBase, success, err);
-            IERC20(baseAsset).forceApprove(xTokensPrecompile, 0);
+            _xcmTransferToAssetHub(baseAsset, totalBase, beneficiary);
         }
-        
+
         // Mark position as fully Returned (phase 2 complete)
         position.status = PositionStatus.Returned;
-        
-        emit AssetsReturned(baseAsset, position.owner, destination, totalBase, positionId);
+
+        emit AssetsReturned(baseAsset, position.owner, "", totalBase, positionId);
         emit LiquidationCompleted(positionId, assetHubPositionId, position.owner, baseAsset, totalBase);
     }
 
     /**
      * @dev Phase 2: Swap liquidated proceeds and return to Asset Hub
      * @notice Use this AFTER calling executeFullLiquidation() or liquidateIfOutOfRange()
-     * @notice Worker reads liquidatedAmount0/1 from position or PositionLiquidated event,
-     *         calculates slippage params, then calls this function
      * @param positionId The position ID (must be in Liquidated status)
      * @param baseAsset The asset to convert all proceeds to
-     * @param destination SCALE-encoded multilocation pointing to AssetHubVault
+     * @param beneficiary EVM address to deposit to on Asset Hub (converted to AccountId32)
      * @param minAmountOut0 Minimum output for token0 → baseAsset swap
      * @param minAmountOut1 Minimum output for token1 → baseAsset swap
      * @param limitSqrtPrice Price limit for swaps
@@ -1020,12 +1011,11 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
     function swapAndReturn(
         uint256 positionId,
         address baseAsset,
-        bytes calldata destination,
+        address beneficiary,
         uint256 minAmountOut0,
         uint256 minAmountOut1,
         uint160 limitSqrtPrice
     ) external onlyOperator whenNotPaused nonReentrant {
-        if (destination.length == 0) revert InvalidDestination();
         Position storage position = positions[positionId];
         if (position.status != PositionStatus.Liquidated) revert PositionNotLiquidated();
         if (!supportedTokens[baseAsset]) revert BaseAssetNotSupported();
@@ -1036,26 +1026,27 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         uint256 amount1 = position.liquidatedAmount1;
 
         uint256 totalBase;
-        
+
         // Handle token0 → baseAsset
         if (amount0 > 0) {
             if (token0 == baseAsset) {
                 totalBase += amount0;
             } else {
                 if (swapRouterContract == address(0)) revert SwapRouterNotSet();
-                IERC20(token0).safeIncreaseAllowance(swapRouterContract, amount0);
+                IERC20(token0).forceApprove(swapRouterContract, amount0);
                 uint256 out0 = ISwapRouter(swapRouterContract).exactInputSingle(
                     ISwapRouter.ExactInputSingleParams({
                         tokenIn: token0,
                         tokenOut: baseAsset,
                         recipient: address(this),
-                        deadline: block.timestamp,
+                        deadline: _deadline(),
                         amountIn: amount0,
                         amountOutMinimum: minAmountOut0,
                         limitSqrtPrice: limitSqrtPrice,
                         deployer: address(0)
                     })
                 );
+                IERC20(token0).forceApprove(swapRouterContract, 0);
                 totalBase += out0;
                 emit ProceedsSwapped(token0, baseAsset, amount0, out0, positionId);
             }
@@ -1067,50 +1058,35 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
                 totalBase += amount1;
             } else {
                 if (swapRouterContract == address(0)) revert SwapRouterNotSet();
-                IERC20(token1).safeIncreaseAllowance(swapRouterContract, amount1);
+                IERC20(token1).forceApprove(swapRouterContract, amount1);
                 uint256 out1 = ISwapRouter(swapRouterContract).exactInputSingle(
                     ISwapRouter.ExactInputSingleParams({
                         tokenIn: token1,
                         tokenOut: baseAsset,
                         recipient: address(this),
-                        deadline: block.timestamp,
+                        deadline: _deadline(),
                         amountIn: amount1,
                         amountOutMinimum: minAmountOut1,
                         limitSqrtPrice: limitSqrtPrice,
                         deployer: address(0)
                     })
                 );
+                IERC20(token1).forceApprove(swapRouterContract, 0);
                 totalBase += out1;
                 emit ProceedsSwapped(token1, baseAsset, amount1, out1, positionId);
             }
         }
 
         if (totalBase == 0) revert SwapZeroOutput();
-        
-        // Send proceeds back to Asset Hub via XTokens
+
         if (!testMode) {
-            if (xTokensPrecompile == address(0)) revert XTokensNotSet();
-            
-            uint256 cur = IERC20(baseAsset).allowance(address(this), xTokensPrecompile);
-            if (cur != 0) IERC20(baseAsset).forceApprove(xTokensPrecompile, 0);
-            IERC20(baseAsset).forceApprove(xTokensPrecompile, totalBase);
-            
-            bool success = false;
-            bytes memory err;
-            try IXTokens(xTokensPrecompile).transfer(baseAsset, totalBase, destination, defaultDestWeight) {
-                success = true;
-            } catch (bytes memory reason) {
-                err = reason;
-            }
-            
-            emit XcmTransferAttempt(baseAsset, destination, totalBase, success, err);
-            IERC20(baseAsset).forceApprove(xTokensPrecompile, 0);
+            _xcmTransferToAssetHub(baseAsset, totalBase, beneficiary);
         }
-        
+
         // Mark position as fully Returned
         position.status = PositionStatus.Returned;
-        
-        emit AssetsReturned(baseAsset, position.owner, destination, totalBase, positionId);
+
+        emit AssetsReturned(baseAsset, position.owner, "", totalBase, positionId);
         emit LiquidationCompleted(positionId, position.assetHubPositionId, position.owner, baseAsset, totalBase);
     }
 
@@ -1160,7 +1136,7 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
                 tokenIn: tokenIn,
                 tokenOut: tokenOut,
                 recipient: recipient,
-                deadline: block.timestamp,
+                deadline: _deadline(),
                 amountIn: amountIn,
                 amountOutMinimum: amountOutMinimum,
                 limitSqrtPrice: limitSqrtPrice,
@@ -1224,28 +1200,50 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         int24 topTick,
         uint16 slippageBps
     ) internal returns (uint256 amount0, uint256 amount1) {
-        // Calculate the ratio needed based on current price and tick range
         uint160 sqrtRatioLowerX96 = TickMath.getSqrtRatioAtTick(bottomTick);
         uint160 sqrtRatioUpperX96 = TickMath.getSqrtRatioAtTick(topTick);
-        
-        // Calculate amounts needed for reference liquidity at current price
+
         (uint256 ratio0, uint256 ratio1) = LiquidityAmounts.getAmountsForLiquidity(
             sqrtPriceX96, sqrtRatioLowerX96, sqrtRatioUpperX96, 1e18
         );
-        
-        uint256 totalRatio = ratio0 + ratio1;
-        if (totalRatio == 0) {
-            // Edge case: return all as the token we have
-            if (tokenToUse == token0) {
-                return (totalAmount, 0);
-            } else {
-                return (0, totalAmount);
-            }
+
+        if (ratio0 == 0 && ratio1 == 0) {
+            if (tokenToUse == token0) return (totalAmount, 0);
+            return (0, totalAmount);
         }
-        
+
+        // Convert ratio0 (token0 raw units) to token1-equivalent using the pool price.
+        // price(token1/token0) = (sqrtPriceX96 / 2^96)^2
+        // ratio0InToken1 = ratio0 * sqrtPriceX96^2 / 2^192
+        //
+        // Split the multiplication to avoid overflow: mulDiv twice by sqrtPriceX96 / 2^96.
+        // This is safe because FullMath handles intermediate 512-bit products.
+        uint256 Q96 = 1 << 96;
+        uint256 ratio0InToken1 = FullMath.mulDiv(
+            FullMath.mulDiv(ratio0, sqrtPriceX96, Q96),
+            sqrtPriceX96,
+            Q96
+        );
+
+        // Both values are now in token1 units — safe to add regardless of decimal mismatch
+        uint256 totalValue = ratio0InToken1 + ratio1;
+        if (totalValue == 0) {
+            if (tokenToUse == token0) return (totalAmount, 0);
+            return (0, totalAmount);
+        }
+
+        uint256 amountToSwap;
         if (tokenToUse == token0) {
-            // We have token0, need to swap some to get token1
-            uint256 amountToSwap = (totalAmount * ratio1) / totalRatio;
+            // We hold token0, swap some to get token1
+            amountToSwap = FullMath.mulDiv(totalAmount, ratio1, totalValue);
+        } else if (tokenToUse == token1) {
+            // We hold token1, swap some to get token0
+            amountToSwap = FullMath.mulDiv(totalAmount, ratio0InToken1, totalValue);
+        } else {
+            revert BaseAssetNotSupported();
+        }
+
+        if (tokenToUse == token0) {
             if (amountToSwap > 0) {
                 uint256 received1 = _swapWithSlippage(token0, token1, amountToSwap, slippageBps);
                 amount0 = totalAmount - amountToSwap;
@@ -1253,26 +1251,38 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
                 emit ProceedsSwapped(token0, token1, amountToSwap, received1, 1);
             } else {
                 amount0 = totalAmount;
-                amount1 = 0;
             }
-        } else if (tokenToUse == token1) {
-            // We have token1, need to swap some to get token0
-            uint256 amountToSwap = (totalAmount * ratio0) / totalRatio;
+        } else {
             if (amountToSwap > 0) {
                 uint256 received0 = _swapWithSlippage(token1, token0, amountToSwap, slippageBps);
                 amount0 = received0;
                 amount1 = totalAmount - amountToSwap;
                 emit ProceedsSwapped(token1, token0, amountToSwap, received0, 1);
             } else {
-                amount0 = 0;
                 amount1 = totalAmount;
             }
-        } else {
-            revert("baseAsset must be token0 or token1");
         }
     }
 
-    // Swap exact input single via Algebra router (external wrapper with reentrancy protection)
+
+    /// @dev Get user position IDs with pagination
+    function getUserPositions(address user, uint256 start, uint256 count) external view returns (uint256[] memory ids) {
+        uint256[] storage allIds = userPositions[user];
+        if (start >= allIds.length) return new uint256[](0);
+        uint256 remaining = allIds.length - start;
+        uint256 returnSize = count > remaining ? remaining : count;
+        ids = new uint256[](returnSize);
+        for (uint256 i = 0; i < returnSize; i++) {
+            ids[i] = allIds[start + i];
+        }
+    }
+
+    /// @dev Returns total number of positions for a user
+    function getUserPositionCount(address user) external view returns (uint256) {
+        return userPositions[user].length;
+    }
+
+    /// @dev Swap tokens held by this contract (e.g. collected fees, rebalancing)
     function swapExactInputSingle(
         address tokenIn,
         address tokenOut,
@@ -1282,55 +1292,9 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         uint160 limitSqrtPrice
     ) external onlyOwner whenNotPaused nonReentrant returns (uint256 amountOut) {
         if (swapRouterContract == address(0)) revert SwapRouterNotSet();
-        // Tight allowance for router
-        uint256 cur = IERC20(tokenIn).allowance(address(this), swapRouterContract);
-        if (cur != 0) IERC20(tokenIn).forceApprove(swapRouterContract, 0);
         IERC20(tokenIn).forceApprove(swapRouterContract, amountIn);
-        
         amountOut = _swapExactInputSingle(tokenIn, tokenOut, recipient, amountIn, amountOutMinimum, limitSqrtPrice);
-        
         IERC20(tokenIn).forceApprove(swapRouterContract, 0);
-    }
-
-    // Public quote helper
-    function quoteExactInputSingle(
-        address tokenIn,
-        address tokenOut,
-        uint256 amountIn,
-        uint160 limitSqrtPrice
-    ) external returns (uint256 amountOut) {
-        if (quoterContract == address(0)) revert QuoterNotSet();
-        (amountOut, ) = IQuoter(quoterContract).quoteExactInputSingle(tokenIn, tokenOut,  address(0), amountIn, limitSqrtPrice);
-    }
-
-    /**
-     * @dev Get active positions
-     */
-    function getActivePositions() external view returns (Position[] memory) {
-        uint256 activeCount = 0;
-        for (uint256 i = 1; i <= positionCounter; i++) {
-            if (positions[i].status == PositionStatus.Active) {
-                activeCount++;
-            }
-        }
-
-        Position[] memory activePositions = new Position[](activeCount);
-        uint256 index = 0;
-        for (uint256 i = 1; i <= positionCounter; i++) {
-            if (positions[i].status == PositionStatus.Active) {
-                activePositions[index] = positions[i];
-                index++;
-            }
-        }
-
-        return activePositions;
-    }
-
-    /**
-     * @dev Get user positions
-     */
-    function getUserPositions(address user) external view returns (uint256[] memory) {
-        return userPositions[user];
     }
 
     /**
@@ -1392,4 +1356,5 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
 
         return positionId;
     }
+
 }

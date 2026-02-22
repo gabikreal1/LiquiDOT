@@ -28,8 +28,8 @@ const path = require("path");
 // Moonbase Alpha XCM precompile addresses
 // See: https://docs.moonbeam.network/builders/interoperability/xcm/core-concepts/multilocations/
 const MOONBASE_PRECOMPILES = {
-  // xTokens precompile for cross-chain token transfers
-  xTokens: "0x0000000000000000000000000000000000000804",
+  // PalletXcm precompile for cross-chain token transfers
+  xcmPallet: "0x000000000000000000000000000000000000081A",
   // XCM Transactor precompile for executing XCM operations
   xcmTransactor: "0x0000000000000000000000000000000000000806",
   // Wrapped native token (WDEV on Moonbase Alpha)
@@ -113,7 +113,7 @@ async function main(options = {}) {
     quoter: algebraAddresses.quoter,
     router: algebraAddresses.router,
     nfpm: algebraAddresses.nfpm,
-    xtokensPrecompile: MOONBASE_PRECOMPILES.xTokens,
+    xcmPrecompile: MOONBASE_PRECOMPILES.xcmPallet,
     xcmTransactor: MOONBASE_PRECOMPILES.xcmTransactor,
     assetHubParaId: ASSET_HUB_PARAID,
     defaultSlippageBps: options.defaultSlippageBps || 100,
@@ -233,7 +233,7 @@ async function main(options = {}) {
   console.log("\n⚙️  Configuration:");
   console.log(`   Network: Moonbase Alpha (${network.chainId})`);
   console.log(`   Operator: ${operatorAddress}`);
-  console.log(`   xTokens Precompile: ${MOONBASE_PRECOMPILES.xTokens}`);
+  console.log(`   XCM Precompile: ${MOONBASE_PRECOMPILES.xcmPallet}`);
   console.log(`   XCM Transactor: ${MOONBASE_PRECOMPILES.xcmTransactor}`);
   console.log(`   Asset Hub ParaID: ${ASSET_HUB_PARAID}`);
   console.log(`   Default Slippage: ${options.defaultSlippageBps || 100} bps (${(options.defaultSlippageBps || 100) / 100}%)`);

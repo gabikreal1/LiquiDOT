@@ -27,13 +27,12 @@ async function main() {
     // 2. Set XCM Config
     console.log("Setting XCM config...");
     // Precompiles on Moonbeam
-    const XTOKENS = "0x0000000000000000000000000000000000000804";
+    const XCM_PALLET = "0x000000000000000000000000000000000000081A";
     const XCM_TRANSACTOR = "0x0000000000000000000000000000000000000806";
-    
-    await (await proxy.setXTokensPrecompile(XTOKENS)).wait();
+
+    await (await proxy.setXcmPrecompile(XCM_PALLET)).wait();
     await (await proxy.setXcmTransactorPrecompile(XCM_TRANSACTOR)).wait();
     await (await proxy.setAssetHubParaId(bootstrap.xcmProxy.assetHubParaId)).wait();
-    await (await proxy.setDefaultDestWeight(bootstrap.xcmProxy.defaultDestWeight)).wait();
     console.log("✓ XCM config set");
 
     // 3. Add Supported Tokens

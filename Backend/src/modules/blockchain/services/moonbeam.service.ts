@@ -12,8 +12,8 @@ export interface LiquidateParams {
   positionId: number;
   /** Base asset address to swap to */
   baseAsset: string;
-  /** XCM destination MultiLocation bytes for AssetHub */
-  destination: Uint8Array;
+  /** Beneficiary EVM address on Asset Hub (contract adds EE-padding for AccountId32) */
+  beneficiary: string;
   /** Minimum acceptable amount for token0 swap */
   minAmountOut0: bigint;
   /** Minimum acceptable amount for token1 swap */
@@ -105,7 +105,6 @@ export interface SwapResult {
  */
 export interface XcmConfig {
   assetHubParaId: number;
-  defaultDestWeight: bigint;
   defaultSlippageBps: number;
   trustedXcmCaller: string;
   xcmConfigFrozen: boolean;
@@ -173,26 +172,6 @@ export interface MoonbeamEventCallbacks {
     assetHubPositionId: string;
     user: string;
     refundAmount: string;
-    blockNumber: number;
-    transactionHash: string;
-  }) => void;
-  onXcmTransferAttempt?: (event: {
-    token: string;
-    destination: string;
-    amount: string;
-    success: boolean;
-    errorData: string;
-    blockNumber: number;
-    transactionHash: string;
-  }) => void;
-  onXcmRemoteCallAttempt?: (event: {
-    paraId: number;
-    feeLocation: number;
-    transactRequiredWeightAtMost: string;
-    feeAmount: string;
-    overallWeight: string;
-    success: boolean;
-    errorData: string;
     blockNumber: number;
     transactionHash: string;
   }) => void;
@@ -365,8 +344,36 @@ export class MoonbeamService implements OnModuleInit {
   }
 
   /**
-   * Executes a pending investment on Moonbeam
-   * Called after assets arrive via XCM
+   * Phase 2: Call receiveAssets() on Moonbeam XCMProxy to register a pending investment.
+   *
+   * In the two-phase pipeline:
+   *   Phase 1 (XCM): deposits xcDOT to XCMProxy contract via DepositReserveAsset
+   *   Phase 2 (this method): backend relayer calls receiveAssets() with investment params
+   *   Phase 3: call executePendingInvestment() to create the LP position
+   *
+   * @param calldata Pre-built EVM calldata from XcmBuilderService.buildInvestmentXcm()
+   */
+  async callReceiveAssets(calldata: `0x${string}`): Promise<void> {
+    try {
+      this.logger.log('Phase 2: calling receiveAssets() on Moonbeam XCMProxy');
+
+      const tx = await this.wallet.sendTransaction({
+        to: this.contract.target as string,
+        data: calldata,
+        gasLimit: 500000,
+      });
+
+      const receipt = await tx.wait();
+      this.logger.log(`receiveAssets() confirmed. Tx: ${receipt.hash}`);
+    } catch (error) {
+      this.logger.error(`Failed to call receiveAssets: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Executes a pending investment on Moonbeam (Phase 3).
+   * Called after receiveAssets() registers the pending position.
    * Calls: XCMProxy.executePendingInvestment()
    */
   async executePendingInvestment(assetHubPositionId: string): Promise<number> {
@@ -427,7 +434,7 @@ export class MoonbeamService implements OnModuleInit {
       const tx = await this.contract.liquidateSwapAndReturn(
         params.positionId,
         params.baseAsset,
-        params.destination,
+        params.beneficiary,
         params.minAmountOut0,
         params.minAmountOut1,
         params.limitSqrtPrice,
@@ -443,28 +450,23 @@ export class MoonbeamService implements OnModuleInit {
   }
 
   /**
-   * Gets all active positions on Moonbeam
-   * Calls: XCMProxy.getActivePositions()
+   * Gets all active positions on Moonbeam by iterating positionCounter.
+   * The unbounded getActivePositions() view was removed from the contract
+   * to stay under the EIP-170 size limit.
    */
   async getActivePositions(): Promise<MoonbeamPosition[]> {
     try {
-      const positions = await this.contract.getActivePositions();
-      return positions.map((p: any) => ({
-        assetHubPositionId: p.assetHubPositionId,
-        pool: p.pool,
-        token0: p.token0,
-        token1: p.token1,
-        bottomTick: Number(p.bottomTick),
-        topTick: Number(p.topTick),
-        liquidity: p.liquidity,
-        tokenId: Number(p.tokenId),
-        owner: p.owner,
-        lowerRangePercent: Number(p.lowerRangePercent),
-        upperRangePercent: Number(p.upperRangePercent),
-        entryPrice: p.entryPrice,
-        timestamp: p.timestamp,
-        active: p.active,
-      }));
+      const count = await this.getPositionCounter();
+      const active: MoonbeamPosition[] = [];
+
+      for (let i = 1; i <= count; i++) {
+        const pos = await this.getPosition(i);
+        if (pos && pos.active) {
+          active.push(pos);
+        }
+      }
+
+      return active;
     } catch (error) {
       this.logger.error(`Failed to get active positions: ${error.message}`);
       throw error;
@@ -472,12 +474,12 @@ export class MoonbeamService implements OnModuleInit {
   }
 
   /**
-   * Gets user positions from Moonbeam contract
-   * Calls: XCMProxy.getUserPositions()
+   * Gets user positions from Moonbeam contract (paginated).
+   * Calls: XCMProxy.getUserPositions(address, start, count)
    */
-  async getUserPositions(userAddress: string): Promise<MoonbeamPosition[]> {
+  async getUserPositions(userAddress: string, start = 0, count = 100): Promise<MoonbeamPosition[]> {
     try {
-      const positions = await this.contract.getUserPositions(userAddress);
+      const positions = await this.readOnlyContract.getUserPositions(userAddress, start, count);
       return positions.map((p: any) => ({
         assetHubPositionId: p.assetHubPositionId,
         pool: p.pool,
@@ -496,6 +498,20 @@ export class MoonbeamService implements OnModuleInit {
       }));
     } catch (error) {
       this.logger.error(`Failed to get user positions: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Gets total position count for a user
+   * Calls: XCMProxy.getUserPositionCount(address)
+   */
+  async getUserPositionCount(userAddress: string): Promise<number> {
+    try {
+      const count = await this.readOnlyContract.getUserPositionCount(userAddress);
+      return Number(count);
+    } catch (error) {
+      this.logger.error(`Failed to get user position count: ${error.message}`);
       throw error;
     }
   }
@@ -594,16 +610,16 @@ export class MoonbeamService implements OnModuleInit {
   }
 
   /**
-   * Cancels a pending position and refunds assets
-   * Calls: XCMProxy.cancelPendingPosition()
+   * Cancels a pending position and refunds assets via XCM to Asset Hub.
+   * The contract handles the XCM transfer internally using the user's address.
+   * Calls: XCMProxy.cancelPendingPosition(bytes32)
    */
   async cancelPendingPosition(
     assetHubPositionId: string,
-    destination: Uint8Array,
   ): Promise<string> {
     try {
       this.logger.log(`Cancelling pending position ${assetHubPositionId}`);
-      const tx = await this.contract.cancelPendingPosition(assetHubPositionId, destination);
+      const tx = await this.contract.cancelPendingPosition(assetHubPositionId);
       const receipt = await tx.wait();
       this.logger.log(`Pending position cancelled. Tx: ${receipt.hash}`);
       return receipt.hash;
@@ -795,8 +811,9 @@ export class MoonbeamService implements OnModuleInit {
   // ============================================================
 
   /**
-   * Gets a quote for a swap operation (simulation)
-   * Calls: XCMProxy.quoteExactInputSingle()
+   * Gets a quote for a swap operation (simulation).
+   * Calls the Algebra Quoter contract directly (quoteExactInputSingle was
+   * removed from XCMProxy to stay under EIP-170 size limit).
    */
   async quoteSwap(
     tokenIn: string,
@@ -805,13 +822,18 @@ export class MoonbeamService implements OnModuleInit {
     limitSqrtPrice: bigint = 0n,
   ): Promise<SwapQuote> {
     try {
-      const amountOut = await this.contract.quoteExactInputSingle(
+      const integrations = await this.getIntegrationAddresses();
+      const QUOTER_ABI = [
+        'function quoteExactInputSingle(address tokenIn, address tokenOut, uint256 amountIn, uint160 limitSqrtPrice) external returns (uint256 amountOut, uint16 fee)',
+      ];
+      const quoter = new ethers.Contract(integrations.quoter, QUOTER_ABI, this.provider);
+      const result = await quoter.quoteExactInputSingle.staticCall(
         tokenIn,
         tokenOut,
         amountIn,
         limitSqrtPrice,
       );
-      return { amountOut };
+      return { amountOut: result.amountOut ?? result[0] };
     } catch (error) {
       this.logger.error(`Failed to get swap quote: ${error.message}`);
       throw error;
@@ -898,7 +920,6 @@ export class MoonbeamService implements OnModuleInit {
     try {
       const [
         assetHubParaId,
-        defaultDestWeight,
         defaultSlippageBps,
         trustedXcmCaller,
         xcmConfigFrozen,
@@ -907,7 +928,6 @@ export class MoonbeamService implements OnModuleInit {
         testMode,
       ] = await Promise.all([
         this.readOnlyContract.assetHubParaId(),
-        this.readOnlyContract.defaultDestWeight(),
         this.readOnlyContract.defaultSlippageBps(),
         this.readOnlyContract.trustedXcmCaller(),
         this.readOnlyContract.xcmConfigFrozen(),
@@ -918,7 +938,6 @@ export class MoonbeamService implements OnModuleInit {
 
       return {
         assetHubParaId: Number(assetHubParaId),
-        defaultDestWeight,
         defaultSlippageBps: Number(defaultSlippageBps),
         trustedXcmCaller,
         xcmConfigFrozen,
@@ -939,15 +958,15 @@ export class MoonbeamService implements OnModuleInit {
     nfpm: string;
     quoter: string;
     swapRouter: string;
-    xTokensPrecompile: string;
+    xcmPrecompile: string;
     xcmTransactorPrecompile: string;
   }> {
     try {
-      const [nfpm, quoter, swapRouter, xTokens, xcmTransactor] = await Promise.all([
+      const [nfpm, quoter, swapRouter, xcmPrecompile, xcmTransactor] = await Promise.all([
         this.readOnlyContract.nfpmContract(),
         this.readOnlyContract.quoterContract(),
         this.readOnlyContract.swapRouterContract(),
-        this.readOnlyContract.xTokensPrecompile(),
+        this.readOnlyContract.xcmPrecompile(),
         this.readOnlyContract.xcmTransactorPrecompile(),
       ]);
 
@@ -955,7 +974,7 @@ export class MoonbeamService implements OnModuleInit {
         nfpm,
         quoter,
         swapRouter,
-        xTokensPrecompile: xTokens,
+        xcmPrecompile,
         xcmTransactorPrecompile: xcmTransactor,
       };
     } catch (error) {
@@ -1162,42 +1181,6 @@ export class MoonbeamService implements OnModuleInit {
           assetHubPositionId,
           user,
           refundAmount: refundAmount.toString(),
-          blockNumber: event.log.blockNumber,
-          transactionHash: event.log.transactionHash,
-        });
-      });
-    }
-
-    // XcmTransferAttempt event
-    if (callbacks.onXcmTransferAttempt) {
-      this.contract.on('XcmTransferAttempt', (token, dest, amount, success, errorData, event) => {
-        this.logger.log(`Event: XcmTransferAttempt success=${success}`);
-        callbacks.onXcmTransferAttempt!({
-          token,
-          destination: dest,
-          amount: amount.toString(),
-          success,
-          errorData: errorData || '',
-          blockNumber: event.log.blockNumber,
-          transactionHash: event.log.transactionHash,
-        });
-      });
-    }
-
-    // XcmRemoteCallAttempt event
-    if (callbacks.onXcmRemoteCallAttempt) {
-      this.contract.on('XcmRemoteCallAttempt', (
-        paraId, feeLocation, transactRequiredWeightAtMost, feeAmount, overallWeight, success, errorData, event
-      ) => {
-        this.logger.log(`Event: XcmRemoteCallAttempt paraId=${paraId} success=${success}`);
-        callbacks.onXcmRemoteCallAttempt!({
-          paraId: Number(paraId),
-          feeLocation: Number(feeLocation),
-          transactRequiredWeightAtMost: transactRequiredWeightAtMost.toString(),
-          feeAmount: feeAmount.toString(),
-          overallWeight: overallWeight.toString(),
-          success,
-          errorData: errorData || '',
           blockNumber: event.log.blockNumber,
           transactionHash: event.log.transactionHash,
         });

@@ -3,4 +3,5 @@
 /* eslint-disable */
 export * as assetHubVaultSol from "./AssetHubVault.sol";
 export * as xcmProxySol from "./XCMProxy.sol";
+export * as xcmExecuteAdapterSol from "./XcmExecuteAdapter.sol";
 export * as xcm from "./xcm";

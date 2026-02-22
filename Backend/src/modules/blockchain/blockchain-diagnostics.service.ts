@@ -9,7 +9,7 @@ export interface BlockchainDiagnosticsResult {
     error?: string;
   };
   moonbeam: {
-    xTokensPrecompile?: string;
+    xcmPrecompile?: string;
     xcmTransactorPrecompile?: string;
     error?: string;
   };
@@ -40,7 +40,7 @@ export class BlockchainDiagnosticsService {
 
     try {
       const integration = await this.moonbeamService.getIntegrationAddresses();
-      result.moonbeam.xTokensPrecompile = integration.xTokensPrecompile;
+      result.moonbeam.xcmPrecompile = integration.xcmPrecompile;
       result.moonbeam.xcmTransactorPrecompile = integration.xcmTransactorPrecompile;
     } catch (e) {
       result.moonbeam.error = e?.message ?? String(e);

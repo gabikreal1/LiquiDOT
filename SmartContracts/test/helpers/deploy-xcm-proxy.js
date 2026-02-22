@@ -22,8 +22,7 @@ async function deployXCMProxy(options = {}) {
     quoter: options.quoter || process.env.XCMP_QUOTER || ethers.ZeroAddress,
     router: options.router || process.env.XCMP_ROUTER || ethers.ZeroAddress,
     nfpm: options.nfpm || process.env.XCMP_NFPM || ethers.ZeroAddress,
-    xtokensPrecompile: options.xtokensPrecompile || process.env.XCMP_XTOKENS || ethers.ZeroAddress,
-    destWeight: options.destWeight || (process.env.XCMP_DEST_WEIGHT ? BigInt(process.env.XCMP_DEST_WEIGHT) : 6_000_000_000n),
+    xcmPrecompile: options.xcmPrecompile || process.env.XCMP_XCM_PRECOMPILE || "0x000000000000000000000000000000000000081A",
     assetHubParaId: options.assetHubParaId || (process.env.XCMP_ASSET_HUB_PARAID ? Number(process.env.XCMP_ASSET_HUB_PARAID) : 0),
     trustedCaller: options.trustedCaller || process.env.XCMP_TRUSTED_CALLER || ethers.ZeroAddress,
     xcmTransactor: options.xcmTransactor || process.env.XCMP_TRANSACTOR || ethers.ZeroAddress,
@@ -38,8 +37,7 @@ async function deployXCMProxy(options = {}) {
   console.log(`  Algebra Quoter: ${config.quoter}`);
   console.log(`  Algebra Router: ${config.router}`);
   console.log(`  Algebra NFPM: ${config.nfpm}`);
-  console.log(`  xTokens Precompile: ${config.xtokensPrecompile}`);
-  console.log(`  Default XCM Weight: ${config.destWeight}`);
+  console.log(`  XCM Precompile: ${config.xcmPrecompile}`);
   console.log(`  Asset Hub ParaID: ${config.assetHubParaId}`);
   console.log(`  Trusted XCM Caller: ${config.trustedCaller}`);
   console.log(`  XCM Transactor: ${config.xcmTransactor}`);
@@ -99,8 +97,7 @@ async function deployXCMProxy(options = {}) {
         quoter: await proxy.quoterContract(),
         router: await proxy.swapRouterContract(),
         nfpm: await proxy.nfpmContract(),
-        xtokensPrecompile: await proxy.xTokensPrecompile(),
-        defaultDestWeight: (await proxy.defaultDestWeight()).toString(),
+        xcmPrecompile: await proxy.xcmPrecompile(),
         assetHubParaId: Number(await proxy.assetHubParaId()),
         trustedXcmCaller: await proxy.trustedXcmCaller(),
         xcmTransactorPrecompile: await proxy.xcmTransactorPrecompile(),
@@ -170,32 +167,17 @@ async function configureXCMProxy(proxy, config) {
     configTxs.push({ action: "setNFPM", tx: tx.hash, params: { nfpm: config.nfpm } });
   }
 
-  // Set xTokens precompile (Substrate precompile for cross-chain token transfers)
-  if (config.xtokensPrecompile !== ethers.ZeroAddress) {
-    const existing = await proxy.xTokensPrecompile();
-    if (existing !== config.xtokensPrecompile) {
-      console.log(`  Setting xTokens precompile to ${config.xtokensPrecompile}...`);
-      const tx = await (await proxy.setXTokensPrecompile(config.xtokensPrecompile)).wait();
+  // Set XCM precompile (PalletXcm precompile for cross-chain transfers)
+  if (config.xcmPrecompile && config.xcmPrecompile !== ethers.ZeroAddress) {
+    const existing = await proxy.xcmPrecompile();
+    if (existing.toLowerCase() !== config.xcmPrecompile.toLowerCase()) {
+      console.log(`  Setting XCM precompile to ${config.xcmPrecompile}...`);
+      const tx = await (await proxy.setXcmPrecompile(config.xcmPrecompile)).wait();
       console.log(`    ✓ tx: ${tx.hash}`);
-      configTxs.push({ 
-        action: "setXTokensPrecompile", 
-        tx: tx.hash, 
-        params: { precompile: config.xtokensPrecompile } 
-      });
-    }
-  }
-
-  // Set default XCM destination weight (gas limit for XCM execution on destination chain)
-  if (config.destWeight) {
-    const existing = await proxy.defaultDestWeight();
-    if (existing !== config.destWeight) {
-      console.log(`  Setting default XCM destination weight to ${config.destWeight}...`);
-      const tx = await (await proxy.setDefaultDestWeight(config.destWeight)).wait();
-      console.log(`    ✓ tx: ${tx.hash}`);
-      configTxs.push({ 
-        action: "setDefaultDestWeight", 
-        tx: tx.hash, 
-        params: { weight: config.destWeight.toString() } 
+      configTxs.push({
+        action: "setXcmPrecompile",
+        tx: tx.hash,
+        params: { precompile: config.xcmPrecompile }
       });
     }
   }

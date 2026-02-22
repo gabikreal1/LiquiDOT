@@ -79,3 +79,11 @@ SmartContracts/cache-evm/
 SmartContracts/artifacts-evm/
 **/cache-evm/
 **/artifacts-evm/
+
+# Debug/output files
+**/*_output*.txt
+**/debug_output*.txt
+
+# PAPI generated
+**/.papi/
+**/polkadot-api.json

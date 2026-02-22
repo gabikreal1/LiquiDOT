@@ -54,7 +54,7 @@ describe("XCMProxy Security Checks", function () {
 
     it("should prevent unauthorized users from calling liquidateSwapAndReturn", async function () {
         const fakeId = 12345;
-        const fakeDest = "0x01";
+        const fakeBeneficiary = operator.address;
         const fakeAssetHubId = ethers.keccak256(ethers.toUtf8Bytes("fake"));
 
         // Use staticCall to test the revert without sending a transaction
@@ -62,7 +62,7 @@ describe("XCMProxy Security Checks", function () {
             proxy.connect(user).liquidateSwapAndReturn.staticCall(
                 fakeId,
                 BASE_TOKEN,
-                fakeDest,
+                fakeBeneficiary,
                 0,
                 0,
                 0,

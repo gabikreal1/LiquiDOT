@@ -52,6 +52,29 @@ export class PapiClientService implements OnModuleDestroy {
   }
 
   /**
+   * Get or create a client for Moonbeam
+   */
+  async getMoonbeamClient(): Promise<PolkadotClient> {
+    return this.getClient('Moonbeam', PAPI_ENV.MOONBEAM_ENDPOINT);
+  }
+
+  /**
+   * Get UnsafeApi for Asset Hub — needed for XCM V5 message encoding
+   */
+  async getAssetHubUnsafeApi(): Promise<UnsafeApi> {
+    const client = await this.getAssetHubClient();
+    return (client as any).getUnsafeApi() as UnsafeApi;
+  }
+
+  /**
+   * Get UnsafeApi for Moonbeam — needed for EthereumXcm.transact encoding
+   */
+  async getMoonbeamUnsafeApi(): Promise<UnsafeApi> {
+    const client = await this.getMoonbeamClient();
+    return (client as any).getUnsafeApi() as UnsafeApi;
+  }
+
+  /**
    * Get UnsafeApi for PassetHub - allows dynamic pallet access without descriptors
    *
    * This is necessary because:

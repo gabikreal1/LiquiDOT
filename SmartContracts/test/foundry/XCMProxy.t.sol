@@ -218,7 +218,7 @@ contract XCMProxyTest is TestBase {
         proxy.receiveAssets(assetHubPositionId, address(tokenA), USER, amount, investmentParams);
         proxy.executePendingInvestment(assetHubPositionId);
 
-        uint256[] memory userPositions = proxy.getUserPositions(USER);
+        uint256[] memory userPositions = proxy.getUserPositions(USER, 0, 100);
         assertTrue(userPositions.length > 0, "user has positions");
     }
 
@@ -271,7 +271,7 @@ contract XCMProxyTest is TestBase {
         assertTrue(exists, "position exists before cancel");
 
         // Cancel the position - should return tokens
-        proxy.cancelPendingPosition(assetHubPositionId, hex"0102");
+        proxy.cancelPendingPosition(assetHubPositionId);
 
         // After cancel, should not exist
         (,,,,,,,,,, bool existsAfter) = proxy.pendingPositions(assetHubPositionId);

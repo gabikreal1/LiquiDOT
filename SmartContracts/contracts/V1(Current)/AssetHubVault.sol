@@ -62,6 +62,11 @@ contract AssetHubVault is ReentrancyGuard {
     error AssetMismatch();
     error ChainNotSupported();
     error ExecutorNotAuthorized();
+    error XcmSendFailed(bytes reason);
+    error SettlementExceedsCap();
+    error PositionIdCollision();
+    error NoPendingAdminTransfer();
+    error NotPendingAdmin();
 
     modifier onlyAdmin() { if (msg.sender != admin) revert NotAdmin(); _; }
     modifier onlyOperator() { if (msg.sender != operator) revert NotOperator(); _; }
@@ -75,6 +80,7 @@ contract AssetHubVault is ReentrancyGuard {
     mapping(address => uint256) public userBalances; // user => native balance
     mapping(bytes32 => Position) public positions; // positionId => Position
 	mapping(address => bytes32[]) public userPositions; // user => positionIds
+    uint256 public positionNonce; // H-1: nonce prevents position ID collisions within same block
     
     // Chain registry for multi-chain support
     mapping(uint32 => ChainConfig) public supportedChains; // chainId => config
@@ -166,7 +172,15 @@ contract AssetHubVault is ReentrancyGuard {
     
     // Test mode - allows direct contract calls without XCM for local testing
     bool public testMode;
-    
+    bool public testModeFrozen;
+
+    // H-2: Max settlement multiplier (basis points of original position.amount)
+    // Default 1000% (10x) — generous cap to allow for LP profits while bounding damage
+    uint16 public maxSettlementMultiplierBps;
+
+    // M-7: Two-step admin transfer
+    address public pendingAdmin;
+
 
     constructor() {
         admin = msg.sender;
@@ -178,6 +192,9 @@ contract AssetHubVault is ReentrancyGuard {
         xcmSenderFrozen = false;
         paused = false;
         testMode = false;
+        testModeFrozen = false;
+        maxSettlementMultiplierBps = 10_000; // 10x default cap (10000 bps / 10000 = 1x base)
+        pendingAdmin = address(0);
 
         trustedSettlementCaller = address(0);
         trustedSettlementCallerFrozen = false;
@@ -217,7 +234,17 @@ contract AssetHubVault is ReentrancyGuard {
     }
 
     function setTestMode(bool _testMode) external onlyAdmin {
+        require(!testModeFrozen, "test mode frozen");
         testMode = _testMode;
+    }
+
+    event TestModeFrozen();
+
+    function freezeTestMode() external onlyAdmin {
+        require(!testModeFrozen, "already frozen");
+        testModeFrozen = true;
+        testMode = false;
+        emit TestModeFrozen();
     }
 
     function setTrustedSettlementCaller(address caller) external onlyAdmin {
@@ -230,6 +257,13 @@ contract AssetHubVault is ReentrancyGuard {
     function freezeTrustedSettlementCaller() external onlyAdmin {
         require(!trustedSettlementCallerFrozen, "already frozen");
         trustedSettlementCallerFrozen = true;
+    }
+
+    /// @notice Set the maximum settlement amount as a multiplier of the original position amount.
+    /// @param bps Multiplier in thousandths (1000 = 1x, 10000 = 10x)
+    function setMaxSettlementMultiplier(uint16 bps) external onlyAdmin {
+        require(bps >= 1_000, "min 1x"); // At least 1x
+        maxSettlementMultiplierBps = bps;
     }
 
     /// @notice Access control for settlement operations.
@@ -248,10 +282,21 @@ contract AssetHubVault is ReentrancyGuard {
         _;
     }
 
-    // Role management
+    // Role management — two-step admin transfer (M-7)
+    event AdminTransferStarted(address indexed currentAdmin, address indexed pendingAdmin);
+    event AdminTransferred(address indexed previousAdmin, address indexed newAdmin);
+
     function transferAdmin(address newAdmin) external onlyAdmin {
         if (newAdmin == address(0)) revert ZeroAddress();
-        admin = newAdmin;
+        pendingAdmin = newAdmin;
+        emit AdminTransferStarted(admin, newAdmin);
+    }
+
+    function acceptAdmin() external {
+        if (msg.sender != pendingAdmin) revert NotPendingAdmin();
+        emit AdminTransferred(admin, pendingAdmin);
+        admin = pendingAdmin;
+        pendingAdmin = address(0);
     }
 
     function setOperator(address account) external onlyAdmin {
@@ -377,15 +422,17 @@ contract AssetHubVault is ReentrancyGuard {
 
         if (userBalances[user] < amount) revert InsufficientBalance();
 
+        positionNonce++;
         bytes32 positionId = keccak256(
             abi.encodePacked(
                 user,
                 chainId,
                 poolId,
                 baseAsset,
-                block.timestamp
+                positionNonce
             )
         );
+        if (positions[positionId].amount != 0) revert PositionIdCollision();
 
         positions[positionId] = Position({
             user: user,
@@ -411,18 +458,18 @@ contract AssetHubVault is ReentrancyGuard {
         // In test mode, skip actual XCM send to allow local testing
         if (!testMode) {
             bytes32 messageHash = keccak256(preBuiltXcmMessage);
-            bool success = false;
-            bytes memory err;
             // Use XCM_SENDER if set, otherwise fall back to XCM_PRECOMPILE
             // Both use the same IXcm.send(destination, message) interface
             address xcmTarget = XCM_SENDER != address(0) ? XCM_SENDER : XCM_PRECOMPILE;
             try IXcm(xcmTarget).send(destination, preBuiltXcmMessage) {
-                success = true;
+                // XCM send succeeded
             } catch (bytes memory reason) {
-                err = reason;
+                // Revert the entire transaction — balance deduction and position
+                // creation are rolled back, preventing fund loss.
+                revert XcmSendFailed(reason);
             }
             emit XCMMessageSent(messageHash, destination, preBuiltXcmMessage);
-            emit XcmSendAttempt(messageHash, destination, success, err);
+            emit XcmSendAttempt(messageHash, destination, true, "");
         }
     }
 
@@ -515,12 +562,12 @@ contract AssetHubVault is ReentrancyGuard {
         Position storage position = positions[positionId];
         require(position.status == PositionStatus.Active, "Position not active");
 
-        // MVP: Check native balance as sanity check
-        // NOTE: This assumes settlements are in native tokens. For the MVP, XCM returns
-        // native assets which arrive at Substrate level. The trusted caller model ensures
-        // receivedAmount matches the Moonbeam-computed value from LiquidationCompleted event.
-        // Future: SCALE-encoded XCM will make this fully trustless.
-        if (address(this).balance < receivedAmount) revert InsufficientBalance();
+        // Sanity cap: receivedAmount must not exceed maxSettlementMultiplierBps of the
+        // original invested amount. This bounds damage from a compromised operator/relayer
+        // while still allowing LP profit (default 10x = 10000 bps, so cap = amount * 10000 / 1000).
+        // Formula: 1000 bps = 1x, 10000 bps = 10x
+        uint256 cap = (position.amount * maxSettlementMultiplierBps) / 1_000;
+        if (receivedAmount > cap) revert SettlementExceedsCap();
 
         // Mark as liquidated FIRST — prevents double-settlement (replay attack protection)
         position.status = PositionStatus.Liquidated;
@@ -534,14 +581,15 @@ contract AssetHubVault is ReentrancyGuard {
 
     
     /**
-    * @dev Emergency liquidation override
+    * @dev Emergency liquidation override for Active positions.
+    * @notice For PendingExecution positions, use emergencyCancelPending instead.
     */
     function emergencyLiquidatePosition(
         uint32 chainId,
         bytes32 positionId
     ) external payable onlyEmergency {
         Position storage position = positions[positionId];
-        require(position.status != PositionStatus.Liquidated, "Position already liquidated");
+        require(position.status == PositionStatus.Active, "Position not active");
         if (position.chainId != chainId) revert ChainIdMismatch();
 
 		position.status = PositionStatus.Liquidated;
@@ -552,6 +600,23 @@ contract AssetHubVault is ReentrancyGuard {
         }
 
         emit PositionLiquidated(positionId, position.user, msg.value);
+    }
+
+    /**
+    * @dev Emergency cancel a PendingExecution position and refund the user's balance.
+    * @notice Use when remote chain never executed and funds need to be returned to user accounting.
+    */
+    function emergencyCancelPending(
+        bytes32 positionId
+    ) external onlyEmergency {
+        Position storage position = positions[positionId];
+        require(position.status == PositionStatus.PendingExecution, "Position not pending");
+
+        position.status = PositionStatus.Liquidated;
+        // Refund the original amount back to user's vault balance
+        userBalances[position.user] += position.amount;
+
+        emit PositionLiquidated(positionId, position.user, position.amount);
     }
 
     /**

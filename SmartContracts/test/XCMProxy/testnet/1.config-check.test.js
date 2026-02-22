@@ -99,14 +99,14 @@ describe("XCMProxy Testnet - Configuration Check", function () {
   });
 
   describe("XCM Configuration", function () {
-    it("should check XTokens precompile configuration", async function () {
-      const precompile = await proxy.xTokensPrecompile();
-      
+    it("should check XCM precompile configuration", async function () {
+      const precompile = await proxy.xcmPrecompile();
+
       if (precompile === ethers.ZeroAddress) {
-        console.log("   ⚠️  WARNING: XTokens precompile not set!");
+        console.log("   ⚠️  WARNING: XCM precompile not set!");
         console.log("   This must be set before returning assets to Asset Hub");
       } else {
-        console.log(`   XTokens Precompile: ${precompile}`);
+        console.log(`   XCM Precompile: ${precompile}`);
         expect(precompile).to.be.properAddress;
       }
     });
@@ -128,15 +128,6 @@ describe("XCMProxy Testnet - Configuration Check", function () {
       
       if (paraId === 0) {
         console.log("   ⚠️  WARNING: Asset Hub Para ID not set!");
-      }
-    });
-
-    it("should check default destination weight", async function () {
-      const weight = await proxy.defaultDestWeight();
-      console.log(`   Default Dest Weight: ${weight}`);
-      
-      if (weight === 0n) {
-        console.log("   ⚠️  WARNING: Default weight is 0!");
       }
     });
 
@@ -200,7 +191,7 @@ describe("XCMProxy Testnet - Configuration Check", function () {
       const nfpm = await proxy.nfpmContract();
       const quoter = await proxy.quoterContract();
       const router = await proxy.swapRouterContract();
-      const xTokens = await proxy.xTokensPrecompile();
+      const xcmPre = await proxy.xcmPrecompile();
       const paraId = await proxy.assetHubParaId();
       const isPaused = await proxy.paused();
       const testMode = await proxy.testMode();
@@ -216,7 +207,7 @@ describe("XCMProxy Testnet - Configuration Check", function () {
       console.log(`   Quoter:         ${quoter === ethers.ZeroAddress ? '❌ Not Set' : '✅ ' + quoter}`);
       console.log(`   SwapRouter:     ${router === ethers.ZeroAddress ? '❌ Not Set' : '✅ ' + router}`);
       console.log(`   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-      console.log(`   XTokens:        ${xTokens === ethers.ZeroAddress ? '❌ Not Set' : '✅ ' + xTokens}`);
+      console.log(`   XCM Precompile: ${xcmPre === ethers.ZeroAddress ? '❌ Not Set' : '✅ ' + xcmPre}`);
       console.log(`   Asset Hub ID:   ${paraId === 0 ? '❌ Not Set' : '✅ ' + paraId}`);
       console.log(`   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
       console.log(`   Status:         ${isPaused ? '⚠️  PAUSED' : '✅ Active'}`);
@@ -226,10 +217,10 @@ describe("XCMProxy Testnet - Configuration Check", function () {
       console.log(`   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
 
       // Overall health check
-      const integrationReady = nfpm !== ethers.ZeroAddress && 
-                               quoter !== ethers.ZeroAddress && 
+      const integrationReady = nfpm !== ethers.ZeroAddress &&
+                               quoter !== ethers.ZeroAddress &&
                                router !== ethers.ZeroAddress;
-      const xcmReady = xTokens !== ethers.ZeroAddress && paraId !== 0;
+      const xcmReady = xcmPre !== ethers.ZeroAddress && paraId !== 0;
 
       if (integrationReady && xcmReady && !isPaused) {
         console.log(`   ✅ CONTRACT IS FULLY CONFIGURED AND READY\n`);

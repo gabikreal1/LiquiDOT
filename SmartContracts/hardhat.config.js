@@ -36,7 +36,7 @@ module.exports = {
       gasPrice: 1000000000
     },
     moonbeam: {
-      url: "https://rpc.api.moonbeam.network",
+      url: "https://moonbeam.api.onfinality.io/public",
       chainId: 1284,
       accounts: [MOON_PRIVATE_KEY],
     },
@@ -49,7 +49,7 @@ module.exports = {
     },
     assethub: {
       url: "https://eth-rpc.polkadot.io",
-      chainId: 1000,
+      chainId: 420420419,
       accounts: [ASSET_PRIVATE_KEY],
     }
   },

@@ -93,11 +93,11 @@ async function main() {
   // ===== XCM Precompile Configuration =====
   console.log("\n🌉 XCM PRECOMPILE CONFIGURATION:");
   
-  const xcmPrecompile = await xcmProxy.xTokensPrecompile();
-  console.log(`   XTokens Precompile: ${xcmPrecompile}`);
-  
+  const xcmPrecompile = await xcmProxy.xcmPrecompile();
+  console.log(`   XCM Precompile: ${xcmPrecompile}`);
+
   if (xcmPrecompile === hre.ethers.ZeroAddress) {
-    console.log("   ⚠️  WARNING: XTokens precompile not set!");
+    console.log("   ⚠️  WARNING: XCM precompile not set!");
     console.log("      Set this before sending XCM messages");
   }
 
@@ -181,7 +181,7 @@ async function main() {
 
   // Warnings
   if (xcmPrecompile === hre.ethers.ZeroAddress) {
-    warnings.push("XTokens precompile not set (required for production)");
+    warnings.push("XCM precompile not set (required for production)");
   }
   if (assetHubParaId === 0) {
     warnings.push("Asset Hub ParaID not set (required for production)");

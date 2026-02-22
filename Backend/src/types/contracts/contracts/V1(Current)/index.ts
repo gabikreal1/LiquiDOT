@@ -5,5 +5,7 @@ import type * as assetHubVaultSol from "./AssetHubVault.sol";
 export type { assetHubVaultSol };
 import type * as xcmProxySol from "./XCMProxy.sol";
 export type { xcmProxySol };
+import type * as xcmExecuteAdapterSol from "./XcmExecuteAdapter.sol";
+export type { xcmExecuteAdapterSol };
 import type * as xcm from "./xcm";
 export type { xcm };

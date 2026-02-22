@@ -21,11 +21,15 @@ import type {
 
 export interface AssetHubXcmSenderInterface extends Interface {
   getFunction(
-    nameOrSignature: "XCM_PRECOMPILE" | "sendXcm" | "xcm"
+    nameOrSignature: "XCM_PRECOMPILE" | "authorizedCaller" | "sendXcm" | "xcm"
   ): FunctionFragment;
 
   encodeFunctionData(
     functionFragment: "XCM_PRECOMPILE",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "authorizedCaller",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -36,6 +40,10 @@ export interface AssetHubXcmSenderInterface extends Interface {
 
   decodeFunctionResult(
     functionFragment: "XCM_PRECOMPILE",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "authorizedCaller",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "sendXcm", data: BytesLike): Result;
@@ -87,6 +95,8 @@ export interface AssetHubXcmSender extends BaseContract {
 
   XCM_PRECOMPILE: TypedContractMethod<[], [string], "view">;
 
+  authorizedCaller: TypedContractMethod<[], [string], "view">;
+
   sendXcm: TypedContractMethod<
     [destination: BytesLike, message: BytesLike],
     [void],
@@ -101,6 +111,9 @@ export interface AssetHubXcmSender extends BaseContract {
 
   getFunction(
     nameOrSignature: "XCM_PRECOMPILE"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "authorizedCaller"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
     nameOrSignature: "sendXcm"

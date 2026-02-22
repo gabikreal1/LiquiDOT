@@ -23,63 +23,6 @@ import type {
   TypedContractMethod,
 } from "../../../common";
 
-export declare namespace XCMProxy {
-  export type PositionStruct = {
-    assetHubPositionId: BytesLike;
-    pool: AddressLike;
-    token0: AddressLike;
-    token1: AddressLike;
-    bottomTick: BigNumberish;
-    topTick: BigNumberish;
-    liquidity: BigNumberish;
-    tokenId: BigNumberish;
-    owner: AddressLike;
-    lowerRangePercent: BigNumberish;
-    upperRangePercent: BigNumberish;
-    entryPrice: BigNumberish;
-    timestamp: BigNumberish;
-    status: BigNumberish;
-    liquidatedAmount0: BigNumberish;
-    liquidatedAmount1: BigNumberish;
-  };
-
-  export type PositionStructOutput = [
-    assetHubPositionId: string,
-    pool: string,
-    token0: string,
-    token1: string,
-    bottomTick: bigint,
-    topTick: bigint,
-    liquidity: bigint,
-    tokenId: bigint,
-    owner: string,
-    lowerRangePercent: bigint,
-    upperRangePercent: bigint,
-    entryPrice: bigint,
-    timestamp: bigint,
-    status: bigint,
-    liquidatedAmount0: bigint,
-    liquidatedAmount1: bigint
-  ] & {
-    assetHubPositionId: string;
-    pool: string;
-    token0: string;
-    token1: string;
-    bottomTick: bigint;
-    topTick: bigint;
-    liquidity: bigint;
-    tokenId: bigint;
-    owner: string;
-    lowerRangePercent: bigint;
-    upperRangePercent: bigint;
-    entryPrice: bigint;
-    timestamp: bigint;
-    status: bigint;
-    liquidatedAmount0: bigint;
-    liquidatedAmount1: bigint;
-  };
-}
-
 export interface XCMProxyInterface extends Interface {
   getFunction(
     nameOrSignature:
@@ -89,17 +32,20 @@ export interface XCMProxyInterface extends Interface {
       | "calculateTickRange"
       | "cancelPendingPosition"
       | "collectFees"
-      | "defaultDestWeight"
       | "defaultSlippageBps"
+      | "emergencyAdmin"
+      | "emergencyPause"
       | "executeFullLiquidation"
       | "executePendingInvestment"
+      | "freezeTestMode"
       | "freezeXcmConfig"
-      | "getActivePositions"
       | "getBalance"
+      | "getUserPositionCount"
       | "getUserPositions"
       | "isPositionOutOfRange"
       | "liquidateIfOutOfRange"
       | "liquidateSwapAndReturn"
+      | "maxDeadlineOffset"
       | "nfpmContract"
       | "onERC721Received"
       | "operator"
@@ -109,33 +55,34 @@ export interface XCMProxyInterface extends Interface {
       | "pendingPositions"
       | "positionCounter"
       | "positions"
-      | "quoteExactInputSingle"
       | "quoterContract"
       | "receiveAssets"
       | "removeSupportedToken"
       | "renounceOwnership"
       | "returnAssets"
       | "setAssetHubParaId"
-      | "setDefaultDestWeight"
       | "setDefaultSlippageBps"
+      | "setEmergencyAdmin"
       | "setIntegrations"
+      | "setMaxDeadlineOffset"
       | "setNFPM"
       | "setOperator"
       | "setTestMode"
       | "setTrustedXcmCaller"
-      | "setXTokensPrecompile"
+      | "setXcmPrecompile"
       | "setXcmTransactorPrecompile"
       | "supportedTokens"
       | "swapAndReturn"
       | "swapExactInputSingle"
       | "swapRouterContract"
       | "testMode"
+      | "testModeFrozen"
       | "transferOwnership"
       | "trustedXcmCaller"
       | "unpause"
       | "userPositions"
-      | "xTokensPrecompile"
       | "xcmConfigFrozen"
+      | "xcmPrecompile"
       | "xcmTransactorPrecompile"
   ): FunctionFragment;
 
@@ -144,8 +91,8 @@ export interface XCMProxyInterface extends Interface {
       | "AssetHubParaIdSet"
       | "AssetsReceived"
       | "AssetsReturned"
-      | "DefaultDestWeightSet"
       | "DefaultSlippageSet"
+      | "EmergencyAdminUpdated"
       | "LiquidationCompleted"
       | "LiquidityAdded"
       | "OperatorUpdated"
@@ -157,12 +104,12 @@ export interface XCMProxyInterface extends Interface {
       | "PositionExecuted"
       | "PositionLiquidated"
       | "ProceedsSwapped"
+      | "TestModeFrozen"
       | "TrustedXcmCallerSet"
       | "Unpaused"
-      | "XTokensPrecompileSet"
       | "XcmConfigFrozen"
+      | "XcmPrecompileSet"
       | "XcmTransactorPrecompileSet"
-      | "XcmTransferAttempt"
   ): EventFragment;
 
   encodeFunctionData(
@@ -183,18 +130,22 @@ export interface XCMProxyInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "cancelPendingPosition",
-    values: [BytesLike, BytesLike]
+    values: [BytesLike]
   ): string;
   encodeFunctionData(
     functionFragment: "collectFees",
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "defaultDestWeight",
+    functionFragment: "defaultSlippageBps",
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "defaultSlippageBps",
+    functionFragment: "emergencyAdmin",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "emergencyPause",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -206,11 +157,11 @@ export interface XCMProxyInterface extends Interface {
     values: [BytesLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "freezeXcmConfig",
+    functionFragment: "freezeTestMode",
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "getActivePositions",
+    functionFragment: "freezeXcmConfig",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -218,8 +169,12 @@ export interface XCMProxyInterface extends Interface {
     values: [AddressLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "getUserPositions",
+    functionFragment: "getUserPositionCount",
     values: [AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "getUserPositions",
+    values: [AddressLike, BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "isPositionOutOfRange",
@@ -234,12 +189,16 @@ export interface XCMProxyInterface extends Interface {
     values: [
       BigNumberish,
       AddressLike,
-      BytesLike,
+      AddressLike,
       BigNumberish,
       BigNumberish,
       BigNumberish,
       BytesLike
     ]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "maxDeadlineOffset",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "nfpmContract",
@@ -266,10 +225,6 @@ export interface XCMProxyInterface extends Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "quoteExactInputSingle",
-    values: [AddressLike, AddressLike, BigNumberish, BigNumberish]
-  ): string;
-  encodeFunctionData(
     functionFragment: "quoterContract",
     values?: undefined
   ): string;
@@ -287,14 +242,10 @@ export interface XCMProxyInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "returnAssets",
-    values: [AddressLike, AddressLike, BigNumberish, BytesLike]
+    values: [AddressLike, AddressLike, BigNumberish, AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "setAssetHubParaId",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "setDefaultDestWeight",
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
@@ -302,8 +253,16 @@ export interface XCMProxyInterface extends Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "setEmergencyAdmin",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "setIntegrations",
     values: [AddressLike, AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "setMaxDeadlineOffset",
+    values: [BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "setNFPM",
@@ -322,7 +281,7 @@ export interface XCMProxyInterface extends Interface {
     values: [AddressLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "setXTokensPrecompile",
+    functionFragment: "setXcmPrecompile",
     values: [AddressLike]
   ): string;
   encodeFunctionData(
@@ -338,7 +297,7 @@ export interface XCMProxyInterface extends Interface {
     values: [
       BigNumberish,
       AddressLike,
-      BytesLike,
+      AddressLike,
       BigNumberish,
       BigNumberish,
       BigNumberish
@@ -361,6 +320,10 @@ export interface XCMProxyInterface extends Interface {
   ): string;
   encodeFunctionData(functionFragment: "testMode", values?: undefined): string;
   encodeFunctionData(
+    functionFragment: "testModeFrozen",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
     functionFragment: "transferOwnership",
     values: [AddressLike]
   ): string;
@@ -374,11 +337,11 @@ export interface XCMProxyInterface extends Interface {
     values: [AddressLike, BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "xTokensPrecompile",
+    functionFragment: "xcmConfigFrozen",
     values?: undefined
   ): string;
   encodeFunctionData(
-    functionFragment: "xcmConfigFrozen",
+    functionFragment: "xcmPrecompile",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -411,11 +374,15 @@ export interface XCMProxyInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "defaultDestWeight",
+    functionFragment: "defaultSlippageBps",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "defaultSlippageBps",
+    functionFragment: "emergencyAdmin",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "emergencyPause",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -427,14 +394,18 @@ export interface XCMProxyInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "freezeXcmConfig",
+    functionFragment: "freezeTestMode",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "getActivePositions",
+    functionFragment: "freezeXcmConfig",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "getBalance", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "getUserPositionCount",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "getUserPositions",
     data: BytesLike
@@ -449,6 +420,10 @@ export interface XCMProxyInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "liquidateSwapAndReturn",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "maxDeadlineOffset",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -472,10 +447,6 @@ export interface XCMProxyInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "positions", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "quoteExactInputSingle",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(
     functionFragment: "quoterContract",
     data: BytesLike
@@ -501,15 +472,19 @@ export interface XCMProxyInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "setDefaultDestWeight",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(
     functionFragment: "setDefaultSlippageBps",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "setEmergencyAdmin",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "setIntegrations",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "setMaxDeadlineOffset",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "setNFPM", data: BytesLike): Result;
@@ -526,7 +501,7 @@ export interface XCMProxyInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "setXTokensPrecompile",
+    functionFragment: "setXcmPrecompile",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -551,6 +526,10 @@ export interface XCMProxyInterface extends Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "testMode", data: BytesLike): Result;
   decodeFunctionResult(
+    functionFragment: "testModeFrozen",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "transferOwnership",
     data: BytesLike
   ): Result;
@@ -564,11 +543,11 @@ export interface XCMProxyInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "xTokensPrecompile",
+    functionFragment: "xcmConfigFrozen",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "xcmConfigFrozen",
+    functionFragment: "xcmPrecompile",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -642,11 +621,11 @@ export namespace AssetsReturnedEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
-export namespace DefaultDestWeightSetEvent {
-  export type InputTuple = [weight: BigNumberish];
-  export type OutputTuple = [weight: bigint];
+export namespace DefaultSlippageSetEvent {
+  export type InputTuple = [bps: BigNumberish];
+  export type OutputTuple = [bps: bigint];
   export interface OutputObject {
-    weight: bigint;
+    bps: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -654,11 +633,11 @@ export namespace DefaultDestWeightSetEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
-export namespace DefaultSlippageSetEvent {
-  export type InputTuple = [bps: BigNumberish];
-  export type OutputTuple = [bps: bigint];
+export namespace EmergencyAdminUpdatedEvent {
+  export type InputTuple = [emergencyAdmin: AddressLike];
+  export type OutputTuple = [emergencyAdmin: string];
   export interface OutputObject {
-    bps: bigint;
+    emergencyAdmin: string;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -930,6 +909,16 @@ export namespace ProceedsSwappedEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
+export namespace TestModeFrozenEvent {
+  export type InputTuple = [];
+  export type OutputTuple = [];
+  export interface OutputObject {}
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
 export namespace TrustedXcmCallerSetEvent {
   export type InputTuple = [caller: AddressLike];
   export type OutputTuple = [caller: string];
@@ -954,22 +943,22 @@ export namespace UnpausedEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
-export namespace XTokensPrecompileSetEvent {
-  export type InputTuple = [precompile: AddressLike];
-  export type OutputTuple = [precompile: string];
-  export interface OutputObject {
-    precompile: string;
-  }
+export namespace XcmConfigFrozenEvent {
+  export type InputTuple = [];
+  export type OutputTuple = [];
+  export interface OutputObject {}
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
   export type Log = TypedEventLog<Event>;
   export type LogDescription = TypedLogDescription<Event>;
 }
 
-export namespace XcmConfigFrozenEvent {
-  export type InputTuple = [];
-  export type OutputTuple = [];
-  export interface OutputObject {}
+export namespace XcmPrecompileSetEvent {
+  export type InputTuple = [precompile: AddressLike];
+  export type OutputTuple = [precompile: string];
+  export interface OutputObject {
+    precompile: string;
+  }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
   export type Log = TypedEventLog<Event>;
@@ -981,34 +970,6 @@ export namespace XcmTransactorPrecompileSetEvent {
   export type OutputTuple = [precompile: string];
   export interface OutputObject {
     precompile: string;
-  }
-  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
-  export type Filter = TypedDeferredTopicFilter<Event>;
-  export type Log = TypedEventLog<Event>;
-  export type LogDescription = TypedLogDescription<Event>;
-}
-
-export namespace XcmTransferAttemptEvent {
-  export type InputTuple = [
-    token: AddressLike,
-    dest: BytesLike,
-    amount: BigNumberish,
-    success: boolean,
-    errorData: BytesLike
-  ];
-  export type OutputTuple = [
-    token: string,
-    dest: string,
-    amount: bigint,
-    success: boolean,
-    errorData: string
-  ];
-  export interface OutputObject {
-    token: string;
-    dest: string;
-    amount: bigint;
-    success: boolean;
-    errorData: string;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -1084,7 +1045,7 @@ export interface XCMProxy extends BaseContract {
   >;
 
   cancelPendingPosition: TypedContractMethod<
-    [assetHubPositionId: BytesLike, destination: BytesLike],
+    [assetHubPositionId: BytesLike],
     [void],
     "nonpayable"
   >;
@@ -1095,9 +1056,11 @@ export interface XCMProxy extends BaseContract {
     "nonpayable"
   >;
 
-  defaultDestWeight: TypedContractMethod<[], [bigint], "view">;
-
   defaultSlippageBps: TypedContractMethod<[], [bigint], "view">;
+
+  emergencyAdmin: TypedContractMethod<[], [string], "view">;
+
+  emergencyPause: TypedContractMethod<[], [void], "nonpayable">;
 
   executeFullLiquidation: TypedContractMethod<
     [positionId: BigNumberish],
@@ -1111,18 +1074,20 @@ export interface XCMProxy extends BaseContract {
     "nonpayable"
   >;
 
-  freezeXcmConfig: TypedContractMethod<[], [void], "nonpayable">;
+  freezeTestMode: TypedContractMethod<[], [void], "nonpayable">;
 
-  getActivePositions: TypedContractMethod<
-    [],
-    [XCMProxy.PositionStructOutput[]],
-    "view"
-  >;
+  freezeXcmConfig: TypedContractMethod<[], [void], "nonpayable">;
 
   getBalance: TypedContractMethod<[token: AddressLike], [bigint], "view">;
 
-  getUserPositions: TypedContractMethod<
+  getUserPositionCount: TypedContractMethod<
     [user: AddressLike],
+    [bigint],
+    "view"
+  >;
+
+  getUserPositions: TypedContractMethod<
+    [user: AddressLike, start: BigNumberish, count: BigNumberish],
     [bigint[]],
     "view"
   >;
@@ -1149,7 +1114,7 @@ export interface XCMProxy extends BaseContract {
     [
       positionId: BigNumberish,
       baseAsset: AddressLike,
-      destination: BytesLike,
+      beneficiary: AddressLike,
       minAmountOut0: BigNumberish,
       minAmountOut1: BigNumberish,
       limitSqrtPrice: BigNumberish,
@@ -1158,6 +1123,8 @@ export interface XCMProxy extends BaseContract {
     [void],
     "nonpayable"
   >;
+
+  maxDeadlineOffset: TypedContractMethod<[], [bigint], "view">;
 
   nfpmContract: TypedContractMethod<[], [string], "view">;
 
@@ -1251,17 +1218,6 @@ export interface XCMProxy extends BaseContract {
     "view"
   >;
 
-  quoteExactInputSingle: TypedContractMethod<
-    [
-      tokenIn: AddressLike,
-      tokenOut: AddressLike,
-      amountIn: BigNumberish,
-      limitSqrtPrice: BigNumberish
-    ],
-    [bigint],
-    "nonpayable"
-  >;
-
   quoterContract: TypedContractMethod<[], [string], "view">;
 
   receiveAssets: TypedContractMethod<
@@ -1289,7 +1245,7 @@ export interface XCMProxy extends BaseContract {
       token: AddressLike,
       user: AddressLike,
       amount: BigNumberish,
-      destination: BytesLike
+      beneficiary: AddressLike
     ],
     [void],
     "nonpayable"
@@ -1301,20 +1257,26 @@ export interface XCMProxy extends BaseContract {
     "nonpayable"
   >;
 
-  setDefaultDestWeight: TypedContractMethod<
-    [weight: BigNumberish],
-    [void],
-    "nonpayable"
-  >;
-
   setDefaultSlippageBps: TypedContractMethod<
     [bps: BigNumberish],
     [void],
     "nonpayable"
   >;
 
+  setEmergencyAdmin: TypedContractMethod<
+    [_emergencyAdmin: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
   setIntegrations: TypedContractMethod<
     [quoter: AddressLike, router: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
+  setMaxDeadlineOffset: TypedContractMethod<
+    [_offset: BigNumberish],
     [void],
     "nonpayable"
   >;
@@ -1335,7 +1297,7 @@ export interface XCMProxy extends BaseContract {
     "nonpayable"
   >;
 
-  setXTokensPrecompile: TypedContractMethod<
+  setXcmPrecompile: TypedContractMethod<
     [precompile: AddressLike],
     [void],
     "nonpayable"
@@ -1353,7 +1315,7 @@ export interface XCMProxy extends BaseContract {
     [
       positionId: BigNumberish,
       baseAsset: AddressLike,
-      destination: BytesLike,
+      beneficiary: AddressLike,
       minAmountOut0: BigNumberish,
       minAmountOut1: BigNumberish,
       limitSqrtPrice: BigNumberish
@@ -1379,6 +1341,8 @@ export interface XCMProxy extends BaseContract {
 
   testMode: TypedContractMethod<[], [boolean], "view">;
 
+  testModeFrozen: TypedContractMethod<[], [boolean], "view">;
+
   transferOwnership: TypedContractMethod<
     [newOwner: AddressLike],
     [void],
@@ -1395,9 +1359,9 @@ export interface XCMProxy extends BaseContract {
     "view"
   >;
 
-  xTokensPrecompile: TypedContractMethod<[], [string], "view">;
-
   xcmConfigFrozen: TypedContractMethod<[], [boolean], "view">;
+
+  xcmPrecompile: TypedContractMethod<[], [string], "view">;
 
   xcmTransactorPrecompile: TypedContractMethod<[], [string], "view">;
 
@@ -1427,11 +1391,7 @@ export interface XCMProxy extends BaseContract {
   >;
   getFunction(
     nameOrSignature: "cancelPendingPosition"
-  ): TypedContractMethod<
-    [assetHubPositionId: BytesLike, destination: BytesLike],
-    [void],
-    "nonpayable"
-  >;
+  ): TypedContractMethod<[assetHubPositionId: BytesLike], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "collectFees"
   ): TypedContractMethod<
@@ -1440,11 +1400,14 @@ export interface XCMProxy extends BaseContract {
     "nonpayable"
   >;
   getFunction(
-    nameOrSignature: "defaultDestWeight"
-  ): TypedContractMethod<[], [bigint], "view">;
-  getFunction(
     nameOrSignature: "defaultSlippageBps"
   ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
+    nameOrSignature: "emergencyAdmin"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "emergencyPause"
+  ): TypedContractMethod<[], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "executeFullLiquidation"
   ): TypedContractMethod<
@@ -1460,17 +1423,24 @@ export interface XCMProxy extends BaseContract {
     "nonpayable"
   >;
   getFunction(
-    nameOrSignature: "freezeXcmConfig"
+    nameOrSignature: "freezeTestMode"
   ): TypedContractMethod<[], [void], "nonpayable">;
   getFunction(
-    nameOrSignature: "getActivePositions"
-  ): TypedContractMethod<[], [XCMProxy.PositionStructOutput[]], "view">;
+    nameOrSignature: "freezeXcmConfig"
+  ): TypedContractMethod<[], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "getBalance"
   ): TypedContractMethod<[token: AddressLike], [bigint], "view">;
   getFunction(
+    nameOrSignature: "getUserPositionCount"
+  ): TypedContractMethod<[user: AddressLike], [bigint], "view">;
+  getFunction(
     nameOrSignature: "getUserPositions"
-  ): TypedContractMethod<[user: AddressLike], [bigint[]], "view">;
+  ): TypedContractMethod<
+    [user: AddressLike, start: BigNumberish, count: BigNumberish],
+    [bigint[]],
+    "view"
+  >;
   getFunction(
     nameOrSignature: "isPositionOutOfRange"
   ): TypedContractMethod<
@@ -1497,7 +1467,7 @@ export interface XCMProxy extends BaseContract {
     [
       positionId: BigNumberish,
       baseAsset: AddressLike,
-      destination: BytesLike,
+      beneficiary: AddressLike,
       minAmountOut0: BigNumberish,
       minAmountOut1: BigNumberish,
       limitSqrtPrice: BigNumberish,
@@ -1506,6 +1476,9 @@ export interface XCMProxy extends BaseContract {
     [void],
     "nonpayable"
   >;
+  getFunction(
+    nameOrSignature: "maxDeadlineOffset"
+  ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
     nameOrSignature: "nfpmContract"
   ): TypedContractMethod<[], [string], "view">;
@@ -1608,18 +1581,6 @@ export interface XCMProxy extends BaseContract {
     "view"
   >;
   getFunction(
-    nameOrSignature: "quoteExactInputSingle"
-  ): TypedContractMethod<
-    [
-      tokenIn: AddressLike,
-      tokenOut: AddressLike,
-      amountIn: BigNumberish,
-      limitSqrtPrice: BigNumberish
-    ],
-    [bigint],
-    "nonpayable"
-  >;
-  getFunction(
     nameOrSignature: "quoterContract"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
@@ -1648,7 +1609,7 @@ export interface XCMProxy extends BaseContract {
       token: AddressLike,
       user: AddressLike,
       amount: BigNumberish,
-      destination: BytesLike
+      beneficiary: AddressLike
     ],
     [void],
     "nonpayable"
@@ -1657,11 +1618,11 @@ export interface XCMProxy extends BaseContract {
     nameOrSignature: "setAssetHubParaId"
   ): TypedContractMethod<[paraId: BigNumberish], [void], "nonpayable">;
   getFunction(
-    nameOrSignature: "setDefaultDestWeight"
-  ): TypedContractMethod<[weight: BigNumberish], [void], "nonpayable">;
-  getFunction(
     nameOrSignature: "setDefaultSlippageBps"
   ): TypedContractMethod<[bps: BigNumberish], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "setEmergencyAdmin"
+  ): TypedContractMethod<[_emergencyAdmin: AddressLike], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "setIntegrations"
   ): TypedContractMethod<
@@ -1669,6 +1630,9 @@ export interface XCMProxy extends BaseContract {
     [void],
     "nonpayable"
   >;
+  getFunction(
+    nameOrSignature: "setMaxDeadlineOffset"
+  ): TypedContractMethod<[_offset: BigNumberish], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "setNFPM"
   ): TypedContractMethod<[nfpm: AddressLike], [void], "nonpayable">;
@@ -1682,7 +1646,7 @@ export interface XCMProxy extends BaseContract {
     nameOrSignature: "setTrustedXcmCaller"
   ): TypedContractMethod<[caller: AddressLike], [void], "nonpayable">;
   getFunction(
-    nameOrSignature: "setXTokensPrecompile"
+    nameOrSignature: "setXcmPrecompile"
   ): TypedContractMethod<[precompile: AddressLike], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "setXcmTransactorPrecompile"
@@ -1696,7 +1660,7 @@ export interface XCMProxy extends BaseContract {
     [
       positionId: BigNumberish,
       baseAsset: AddressLike,
-      destination: BytesLike,
+      beneficiary: AddressLike,
       minAmountOut0: BigNumberish,
       minAmountOut1: BigNumberish,
       limitSqrtPrice: BigNumberish
@@ -1725,6 +1689,9 @@ export interface XCMProxy extends BaseContract {
     nameOrSignature: "testMode"
   ): TypedContractMethod<[], [boolean], "view">;
   getFunction(
+    nameOrSignature: "testModeFrozen"
+  ): TypedContractMethod<[], [boolean], "view">;
+  getFunction(
     nameOrSignature: "transferOwnership"
   ): TypedContractMethod<[newOwner: AddressLike], [void], "nonpayable">;
   getFunction(
@@ -1741,11 +1708,11 @@ export interface XCMProxy extends BaseContract {
     "view"
   >;
   getFunction(
-    nameOrSignature: "xTokensPrecompile"
-  ): TypedContractMethod<[], [string], "view">;
-  getFunction(
     nameOrSignature: "xcmConfigFrozen"
   ): TypedContractMethod<[], [boolean], "view">;
+  getFunction(
+    nameOrSignature: "xcmPrecompile"
+  ): TypedContractMethod<[], [string], "view">;
   getFunction(
     nameOrSignature: "xcmTransactorPrecompile"
   ): TypedContractMethod<[], [string], "view">;
@@ -1772,18 +1739,18 @@ export interface XCMProxy extends BaseContract {
     AssetsReturnedEvent.OutputObject
   >;
   getEvent(
-    key: "DefaultDestWeightSet"
-  ): TypedContractEvent<
-    DefaultDestWeightSetEvent.InputTuple,
-    DefaultDestWeightSetEvent.OutputTuple,
-    DefaultDestWeightSetEvent.OutputObject
-  >;
-  getEvent(
     key: "DefaultSlippageSet"
   ): TypedContractEvent<
     DefaultSlippageSetEvent.InputTuple,
     DefaultSlippageSetEvent.OutputTuple,
     DefaultSlippageSetEvent.OutputObject
+  >;
+  getEvent(
+    key: "EmergencyAdminUpdated"
+  ): TypedContractEvent<
+    EmergencyAdminUpdatedEvent.InputTuple,
+    EmergencyAdminUpdatedEvent.OutputTuple,
+    EmergencyAdminUpdatedEvent.OutputObject
   >;
   getEvent(
     key: "LiquidationCompleted"
@@ -1863,6 +1830,13 @@ export interface XCMProxy extends BaseContract {
     ProceedsSwappedEvent.OutputObject
   >;
   getEvent(
+    key: "TestModeFrozen"
+  ): TypedContractEvent<
+    TestModeFrozenEvent.InputTuple,
+    TestModeFrozenEvent.OutputTuple,
+    TestModeFrozenEvent.OutputObject
+  >;
+  getEvent(
     key: "TrustedXcmCallerSet"
   ): TypedContractEvent<
     TrustedXcmCallerSetEvent.InputTuple,
@@ -1877,13 +1851,6 @@ export interface XCMProxy extends BaseContract {
     UnpausedEvent.OutputObject
   >;
   getEvent(
-    key: "XTokensPrecompileSet"
-  ): TypedContractEvent<
-    XTokensPrecompileSetEvent.InputTuple,
-    XTokensPrecompileSetEvent.OutputTuple,
-    XTokensPrecompileSetEvent.OutputObject
-  >;
-  getEvent(
     key: "XcmConfigFrozen"
   ): TypedContractEvent<
     XcmConfigFrozenEvent.InputTuple,
@@ -1891,18 +1858,18 @@ export interface XCMProxy extends BaseContract {
     XcmConfigFrozenEvent.OutputObject
   >;
   getEvent(
+    key: "XcmPrecompileSet"
+  ): TypedContractEvent<
+    XcmPrecompileSetEvent.InputTuple,
+    XcmPrecompileSetEvent.OutputTuple,
+    XcmPrecompileSetEvent.OutputObject
+  >;
+  getEvent(
     key: "XcmTransactorPrecompileSet"
   ): TypedContractEvent<
     XcmTransactorPrecompileSetEvent.InputTuple,
     XcmTransactorPrecompileSetEvent.OutputTuple,
     XcmTransactorPrecompileSetEvent.OutputObject
-  >;
-  getEvent(
-    key: "XcmTransferAttempt"
-  ): TypedContractEvent<
-    XcmTransferAttemptEvent.InputTuple,
-    XcmTransferAttemptEvent.OutputTuple,
-    XcmTransferAttemptEvent.OutputObject
   >;
 
   filters: {
@@ -1939,17 +1906,6 @@ export interface XCMProxy extends BaseContract {
       AssetsReturnedEvent.OutputObject
     >;
 
-    "DefaultDestWeightSet(uint64)": TypedContractEvent<
-      DefaultDestWeightSetEvent.InputTuple,
-      DefaultDestWeightSetEvent.OutputTuple,
-      DefaultDestWeightSetEvent.OutputObject
-    >;
-    DefaultDestWeightSet: TypedContractEvent<
-      DefaultDestWeightSetEvent.InputTuple,
-      DefaultDestWeightSetEvent.OutputTuple,
-      DefaultDestWeightSetEvent.OutputObject
-    >;
-
     "DefaultSlippageSet(uint16)": TypedContractEvent<
       DefaultSlippageSetEvent.InputTuple,
       DefaultSlippageSetEvent.OutputTuple,
@@ -1959,6 +1915,17 @@ export interface XCMProxy extends BaseContract {
       DefaultSlippageSetEvent.InputTuple,
       DefaultSlippageSetEvent.OutputTuple,
       DefaultSlippageSetEvent.OutputObject
+    >;
+
+    "EmergencyAdminUpdated(address)": TypedContractEvent<
+      EmergencyAdminUpdatedEvent.InputTuple,
+      EmergencyAdminUpdatedEvent.OutputTuple,
+      EmergencyAdminUpdatedEvent.OutputObject
+    >;
+    EmergencyAdminUpdated: TypedContractEvent<
+      EmergencyAdminUpdatedEvent.InputTuple,
+      EmergencyAdminUpdatedEvent.OutputTuple,
+      EmergencyAdminUpdatedEvent.OutputObject
     >;
 
     "LiquidationCompleted(uint256,bytes32,address,address,uint256)": TypedContractEvent<
@@ -2082,6 +2049,17 @@ export interface XCMProxy extends BaseContract {
       ProceedsSwappedEvent.OutputObject
     >;
 
+    "TestModeFrozen()": TypedContractEvent<
+      TestModeFrozenEvent.InputTuple,
+      TestModeFrozenEvent.OutputTuple,
+      TestModeFrozenEvent.OutputObject
+    >;
+    TestModeFrozen: TypedContractEvent<
+      TestModeFrozenEvent.InputTuple,
+      TestModeFrozenEvent.OutputTuple,
+      TestModeFrozenEvent.OutputObject
+    >;
+
     "TrustedXcmCallerSet(address)": TypedContractEvent<
       TrustedXcmCallerSetEvent.InputTuple,
       TrustedXcmCallerSetEvent.OutputTuple,
@@ -2104,17 +2082,6 @@ export interface XCMProxy extends BaseContract {
       UnpausedEvent.OutputObject
     >;
 
-    "XTokensPrecompileSet(address)": TypedContractEvent<
-      XTokensPrecompileSetEvent.InputTuple,
-      XTokensPrecompileSetEvent.OutputTuple,
-      XTokensPrecompileSetEvent.OutputObject
-    >;
-    XTokensPrecompileSet: TypedContractEvent<
-      XTokensPrecompileSetEvent.InputTuple,
-      XTokensPrecompileSetEvent.OutputTuple,
-      XTokensPrecompileSetEvent.OutputObject
-    >;
-
     "XcmConfigFrozen()": TypedContractEvent<
       XcmConfigFrozenEvent.InputTuple,
       XcmConfigFrozenEvent.OutputTuple,
@@ -2126,6 +2093,17 @@ export interface XCMProxy extends BaseContract {
       XcmConfigFrozenEvent.OutputObject
     >;
 
+    "XcmPrecompileSet(address)": TypedContractEvent<
+      XcmPrecompileSetEvent.InputTuple,
+      XcmPrecompileSetEvent.OutputTuple,
+      XcmPrecompileSetEvent.OutputObject
+    >;
+    XcmPrecompileSet: TypedContractEvent<
+      XcmPrecompileSetEvent.InputTuple,
+      XcmPrecompileSetEvent.OutputTuple,
+      XcmPrecompileSetEvent.OutputObject
+    >;
+
     "XcmTransactorPrecompileSet(address)": TypedContractEvent<
       XcmTransactorPrecompileSetEvent.InputTuple,
       XcmTransactorPrecompileSetEvent.OutputTuple,
@@ -2135,17 +2113,6 @@ export interface XCMProxy extends BaseContract {
       XcmTransactorPrecompileSetEvent.InputTuple,
       XcmTransactorPrecompileSetEvent.OutputTuple,
       XcmTransactorPrecompileSetEvent.OutputObject
-    >;
-
-    "XcmTransferAttempt(address,bytes,uint256,bool,bytes)": TypedContractEvent<
-      XcmTransferAttemptEvent.InputTuple,
-      XcmTransferAttemptEvent.OutputTuple,
-      XcmTransferAttemptEvent.OutputObject
-    >;
-    XcmTransferAttempt: TypedContractEvent<
-      XcmTransferAttemptEvent.InputTuple,
-      XcmTransferAttemptEvent.OutputTuple,
-      XcmTransferAttemptEvent.OutputObject
     >;
   };
 }

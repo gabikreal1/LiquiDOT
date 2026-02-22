@@ -1,0 +1,32 @@
+const { ethers } = require("hardhat");
+
+const PRECOMPILE_ADDR = "0x0000000000000000000000000000000000000804";
+const XCM_MESSAGE_HEX = "0x040800040100000700f2052a010e0100010100511f0c1301000002286bee000d010204000103000cfb7ce7d66c7cdae5827074c5f5a62223a0c23006010700f2052a0142420f0011083e4fba36bdc204a50b4c0f2475708e5ec2f07a1d2ec633ebae99f3505f24bdfc6693a6d1000000000000000000000000ffffffff1fcacbd218edc0eba20fc2308c778080000000000000000000000000741ae17d47d479e878adfb3c78b02db583c63d5800000000000000000000000000000000000000000000000000000000ee6b280000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000ffffffff1fcacbd218edc0eba20fc2308c77808000000000000000000000000000000000000000000000000000000000000000e0fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff3cb0000000000000000000000000000000000000000000000000000000000000c3500000000000000000000000000741ae17d47d479e878adfb3c78b02db583c63d5800000000000000000000000000000000000000000000000000000000000001f4000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+
+async function main() {
+    console.log("Testing Direct XCM Execution (Weight First)...");
+    const [deployer] = await ethers.getSigners();
+
+    // Interface with Weight First
+    // "function execute(tuple(uint64 refTime, uint64 proofSize) maxWeight, bytes message)"
+    const iface = new ethers.Interface([
+        "function execute(tuple(uint64 refTime, uint64 proofSize) maxWeight, bytes message)"
+    ]);
+
+    const precompile = new ethers.Contract(PRECOMPILE_ADDR, iface, deployer);
+
+    const weight = { refTime: 10_000_000_000n, proofSize: 500_000n }; // Generous
+
+    console.log("Sending...");
+    try {
+        // Swap arguments: (weight, message)
+        const tx = await precompile.execute(weight, XCM_MESSAGE_HEX, { gasLimit: 500000 });
+        console.log("TX Signed:", tx.hash);
+        await tx.wait();
+        console.log("✅ Executed Successfully (Weight First)!");
+    } catch (e) {
+        console.log("❌ Failed:", e.message || e);
+    }
+}
+
+main().catch(console.error);

@@ -1,10 +1,9 @@
-<<<<<<< Updated upstream
 /**
  * Users Service
- * 
+ *
  * CRUD operations for User entity.
  * Handles user registration on wallet connect and balance management.
- * 
+ *
  * Decision: Users are registered when frontend calls POST /users on wallet connect.
  */
 
@@ -85,6 +84,13 @@ export class UsersService {
   }
 
   /**
+   * Find user by ID (alias for auth module compatibility)
+   */
+  async findOneById(id: string): Promise<User | null> {
+    return this.userRepository.findOne({ where: { id } });
+  }
+
+  /**
    * Find user by wallet address
    */
   async findByWallet(walletAddress: string): Promise<User | null> {
@@ -92,6 +98,13 @@ export class UsersService {
       where: { walletAddress: walletAddress.toLowerCase() },
       relations: ['positions', 'preferences'],
     });
+  }
+
+  /**
+   * Find user by wallet address (alias for auth module compatibility)
+   */
+  async findOneByAddress(walletAddress: string): Promise<User | null> {
+    return this.findByWallet(walletAddress);
   }
 
   /**
@@ -218,30 +231,4 @@ export class UsersService {
       return 0;
     }
   }
-=======
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { User } from './entities/user.entity';
-
-@Injectable()
-export class UsersService {
-    constructor(
-        @InjectRepository(User)
-        private usersRepository: Repository<User>,
-    ) { }
-
-    async findOneByAddress(walletAddress: string): Promise<User | null> {
-        return this.usersRepository.findOne({ where: { walletAddress } });
-    }
-
-    async findOneById(id: string): Promise<User | null> {
-        return this.usersRepository.findOne({ where: { id } });
-    }
-
-    async create(userData: Partial<User>): Promise<User> {
-        const user = this.usersRepository.create(userData);
-        return this.usersRepository.save(user);
-    }
->>>>>>> Stashed changes
 }

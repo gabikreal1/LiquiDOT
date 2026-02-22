@@ -42,15 +42,14 @@
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^10.0.0",
     "@nestjs/schedule": "^4.0.0",
-<<<<<<< Updated upstream
-    "@nestjs/swagger": "^7.1.0",
-=======
     "@nestjs/swagger": "^11.2.6",
->>>>>>> Stashed changes
     "@nestjs/typeorm": "^10.0.0",
     "@paraspell/sdk": "^11.0.0",
     "@polkadot/api": "^10.11.2",
     "@polkadot/api-contract": "^10.11.2",
+    "@polkadot/keyring": "^14.0.1",
+    "@polkadot/util": "^14.0.1",
+    "@polkadot/util-crypto": "^14.0.1",
     "@types/passport-jwt": "^4.0.1",
     "axios": "^1.6.2",
     "class-transformer": "^0.5.1",

@@ -65,7 +65,7 @@ contract IntegrationTest is TestBase {
         assertTrue(localId > 0, "position created");
 
         // Now simulate liquidation
-        uint256[] memory userPositions = proxy.getUserPositions(USER);
+        uint256[] memory userPositions = proxy.getUserPositions(USER, 0, 100);
         assertTrue(userPositions.length >= 1, "user has positions");
     }
 
@@ -117,8 +117,8 @@ contract IntegrationTest is TestBase {
         assertTrue(localId2 > 0, "user2 position created");
 
         // Verify positions
-        uint256[] memory userPositions1 = proxy.getUserPositions(USER);
-        uint256[] memory userPositions2 = proxy.getUserPositions(user2);
+        uint256[] memory userPositions1 = proxy.getUserPositions(USER, 0, 100);
+        uint256[] memory userPositions2 = proxy.getUserPositions(user2, 0, 100);
         assertEq(userPositions1.length, 1, "user1 has 1 position");
         assertEq(userPositions2.length, 1, "user2 has 1 position");
     }
@@ -182,7 +182,7 @@ contract IntegrationTest is TestBase {
             proxy.executePendingInvestment(posId);
         }
 
-        uint256[] memory userPositions = proxy.getUserPositions(USER);
+        uint256[] memory userPositions = proxy.getUserPositions(USER, 0, 100);
         assertEq(userPositions.length, 3, "3 positions created with different ranges");
     }
 
@@ -319,7 +319,7 @@ contract IntegrationTest is TestBase {
         assertEq(vault.userBalances(USER), 0, "vault balance deducted");
 
         // Verify proxy shows user has position
-        uint256[] memory userPositions = proxy.getUserPositions(USER);
+        uint256[] memory userPositions = proxy.getUserPositions(USER, 0, 100);
         assertEq(userPositions.length, 1, "user has position on proxy");
     }
 }

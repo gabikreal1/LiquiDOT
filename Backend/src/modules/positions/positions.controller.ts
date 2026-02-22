@@ -4,10 +4,12 @@
  * REST API endpoints for position management.
  */
 
-import { Controller, Get, Post, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Param, Query, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { PositionsService, PositionFilterDto, PositionPnL } from './positions.service';
 import { Position, PositionStatus } from './entities/position.entity';
 
+@ApiTags('positions')
 @Controller('positions')
 export class PositionsController {
   constructor(private readonly positionsService: PositionsService) {}
@@ -78,6 +80,20 @@ export class PositionsController {
   async getPositionPnL(@Param('id') id: string): Promise<PositionPnL> {
     const position = await this.positionsService.findOne(id);
     return this.positionsService.calculatePnL(position);
+  }
+
+  /**
+   * Liquidate a position: remove LP, swap to base asset, return to Asset Hub.
+   * POST /positions/:id/liquidate
+   */
+  @ApiOperation({ summary: 'Liquidate position and return assets to Asset Hub' })
+  @Post(':id/liquidate')
+  @HttpCode(HttpStatus.OK)
+  async liquidatePosition(
+    @Param('id') id: string,
+    @Body() body?: { baseAsset?: string; recipientAddress?: string },
+  ): Promise<Position> {
+    return this.positionsService.liquidate(id, body);
   }
 
   /**

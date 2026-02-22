@@ -18,6 +18,7 @@ import { User } from '../users/entities/user.entity';
 import { UserPreference } from '../preferences/entities/user-preference.entity';
 import { MoonbeamService } from '../blockchain/services/moonbeam.service';
 import { AssetHubService } from '../blockchain/services/asset-hub.service';
+import { XcmBuilderService } from '../blockchain/services/xcm-builder.service';
 import { RebalanceDecision } from './types/investment.types';
 
 @Injectable()
@@ -34,6 +35,7 @@ export class InvestmentDecisionWorker implements OnModuleInit {
     private investmentDecisionService: InvestmentDecisionService,
     private moonbeamService: MoonbeamService,
     private assetHubService: AssetHubService,
+    private xcmBuilderService: XcmBuilderService,
     private configService: ConfigService,
   ) {
     this.enabled = this.configService.get<boolean>('ENABLE_INVESTMENT_WORKER', true);
@@ -174,47 +176,80 @@ export class InvestmentDecisionWorker implements OnModuleInit {
   private async executeRebalance(userId: string, decision: RebalanceDecision): Promise<void> {
     this.logger.log(`Executing rebalance for user ${userId}`);
 
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      this.logger.error(`User ${userId} not found, cannot rebalance`);
+      return;
+    }
+
+    const preferences = await this.preferenceRepository.findOne({ where: { userId } });
+
     // 1. First withdraw positions that are no longer needed
     for (const action of decision.toWithdraw) {
       try {
         this.logger.log(`Withdrawing from pool ${action.poolId}, amount: $${Math.abs(action.differenceUsd).toFixed(2)}`);
-        
+
         if (action.positionId) {
-          // Call MoonbeamService to liquidate position
-          // This would trigger XCM back to AssetHub
-          // Note: positionId needs to be converted to number for the contract
+          // Look up the Moonbeam position to get baseAsset and local ID
+          const localId = await this.moonbeamService.getLocalPositionId(action.positionId);
+          const moonbeamPos = await this.moonbeamService.getPosition(localId);
+
+          if (!moonbeamPos) {
+            this.logger.warn(`Moonbeam position for ${action.positionId} not found, skipping`);
+            continue;
+          }
+
           await this.moonbeamService.liquidateSwapAndReturn({
-            positionId: parseInt(action.positionId),
-            baseAsset: '', // Would need to be fetched from position
-            destination: new Uint8Array(), // Would need XCM builder
-            minAmountOut0: BigInt(0),
-            minAmountOut1: BigInt(0),
-            limitSqrtPrice: BigInt(0),
+            positionId: localId,
+            baseAsset: moonbeamPos.token0, // Return in token0 (base)
+            beneficiary: user.walletAddress,
+            minAmountOut0: 0n, // Contract applies default slippage
+            minAmountOut1: 0n,
+            limitSqrtPrice: 0n,
             assetHubPositionId: action.positionId,
           });
         }
       } catch (error) {
         this.logger.error(`Failed to withdraw position ${action.positionId}:`, error);
-        // Continue with other actions
       }
     }
 
-    // 2. Add new positions
+    // 2. Add new positions — two-phase: XCM transfer (AH) + EVM call (Moonbeam)
+    const chainId = this.configService.get<number>('MOONBEAM_EVM_CHAIN_ID', 1284);
+
     for (const action of decision.toAdd) {
       try {
         this.logger.log(`Adding to pool ${action.poolId}, amount: $${action.differenceUsd.toFixed(2)}`);
-        
-        // This would need to:
-        // 1. Call AssetHubVault.createPendingPosition()
-        // 2. Wait for XCM to Moonbeam
-        // 3. Position gets executed on Moonbeam
-        
-        // For now, we just log - actual implementation would integrate with blockchain services
-        // await this.assetHubService.createPendingPosition({
-        //   poolId: action.poolId,
-        //   amount: this.usdToWei(action.differenceUsd),
-        //   // ... other params
-        // });
+
+        const amount = BigInt(Math.floor(action.differenceUsd)) * BigInt(10 ** 18);
+        const baseAsset = this.configService.get<string>('DEFAULT_BASE_ASSET', '');
+
+        // Phase 1: XCM transfer — deposits xcDOT to XCMProxy on Moonbeam
+        const { positionId, moonbeamCalldata } = await this.assetHubService.dispatchInvestmentWithXcm({
+          user: user.walletAddress,
+          chainId,
+          poolId: action.poolId,
+          baseAsset,
+          amount,
+          lowerRangePercent: preferences?.defaultLowerRangePercent ?? -5,
+          upperRangePercent: preferences?.defaultUpperRangePercent ?? 10,
+        });
+
+        this.logger.log(`Phase 1 done for pool ${action.poolId}, position: ${positionId}`);
+
+        // Wait for XCM to settle on Moonbeam (~30s for XCMP relay)
+        await this.sleep(30000);
+
+        // Phase 2: Backend calls receiveAssets() on Moonbeam
+        try {
+          await this.moonbeamService.callReceiveAssets(moonbeamCalldata);
+          this.logger.log(`Phase 2 done: receiveAssets() called for ${positionId}`);
+        } catch (phase2Error) {
+          this.logger.error(
+            `Phase 2 failed for ${positionId} (xcDOT at XCMProxy, retry manually):`,
+            phase2Error,
+          );
+        }
       } catch (error) {
         this.logger.error(`Failed to add position to pool ${action.poolId}:`, error);
       }

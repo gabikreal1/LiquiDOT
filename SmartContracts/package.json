@@ -49,8 +49,10 @@
     "ts-node": "^10.9.2"
   },
   "dependencies": {
+    "@polkadot-api/descriptors": "file:.papi/descriptors",
     "@polkadot/api-contract": "^16.4.9",
     "dotenv": "^16.3.1",
+    "polkadot-api": "^1.23.3",
     "solc": "^0.8.30"
   }
 }

@@ -86,6 +86,7 @@ export interface AssetHubVaultInterface extends Interface {
     nameOrSignature:
       | "XCM_PRECOMPILE"
       | "XCM_SENDER"
+      | "acceptAdmin"
       | "addChain"
       | "admin"
       | "chainExecutors"
@@ -93,7 +94,9 @@ export interface AssetHubVaultInterface extends Interface {
       | "deposit"
       | "dispatchInvestment"
       | "emergency"
+      | "emergencyCancelPending"
       | "emergencyLiquidatePosition"
+      | "freezeTestMode"
       | "freezeTrustedSettlementCaller"
       | "freezeXcmPrecompile"
       | "freezeXcmSender"
@@ -107,12 +110,16 @@ export interface AssetHubVaultInterface extends Interface {
       | "getUserPositionsPage"
       | "isChainSupported"
       | "isPositionActive"
+      | "maxSettlementMultiplierBps"
       | "operator"
       | "pause"
       | "paused"
+      | "pendingAdmin"
+      | "positionNonce"
       | "positions"
       | "removeChain"
       | "setEmergency"
+      | "setMaxSettlementMultiplier"
       | "setOperator"
       | "setTestMode"
       | "setTrustedSettlementCaller"
@@ -121,6 +128,7 @@ export interface AssetHubVaultInterface extends Interface {
       | "settleLiquidation"
       | "supportedChains"
       | "testMode"
+      | "testModeFrozen"
       | "transferAdmin"
       | "trustedSettlementCaller"
       | "trustedSettlementCallerFrozen"
@@ -135,6 +143,8 @@ export interface AssetHubVaultInterface extends Interface {
 
   getEvent(
     nameOrSignatureOrTopic:
+      | "AdminTransferStarted"
+      | "AdminTransferred"
       | "ChainAdded"
       | "ChainRemoved"
       | "Deposit"
@@ -143,6 +153,7 @@ export interface AssetHubVaultInterface extends Interface {
       | "LiquidationSettled"
       | "PositionExecutionConfirmed"
       | "PositionLiquidated"
+      | "TestModeFrozen"
       | "TrustedSettlementCallerSet"
       | "Withdrawal"
       | "XCMMessageSent"
@@ -157,6 +168,10 @@ export interface AssetHubVaultInterface extends Interface {
   ): string;
   encodeFunctionData(
     functionFragment: "XCM_SENDER",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "acceptAdmin",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -189,8 +204,16 @@ export interface AssetHubVaultInterface extends Interface {
   ): string;
   encodeFunctionData(functionFragment: "emergency", values?: undefined): string;
   encodeFunctionData(
+    functionFragment: "emergencyCancelPending",
+    values: [BytesLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "emergencyLiquidatePosition",
     values: [BigNumberish, BytesLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "freezeTestMode",
+    values?: undefined
   ): string;
   encodeFunctionData(
     functionFragment: "freezeTrustedSettlementCaller",
@@ -244,9 +267,21 @@ export interface AssetHubVaultInterface extends Interface {
     functionFragment: "isPositionActive",
     values: [AddressLike, BytesLike]
   ): string;
+  encodeFunctionData(
+    functionFragment: "maxSettlementMultiplierBps",
+    values?: undefined
+  ): string;
   encodeFunctionData(functionFragment: "operator", values?: undefined): string;
   encodeFunctionData(functionFragment: "pause", values?: undefined): string;
   encodeFunctionData(functionFragment: "paused", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "pendingAdmin",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "positionNonce",
+    values?: undefined
+  ): string;
   encodeFunctionData(
     functionFragment: "positions",
     values: [BytesLike]
@@ -258,6 +293,10 @@ export interface AssetHubVaultInterface extends Interface {
   encodeFunctionData(
     functionFragment: "setEmergency",
     values: [AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "setMaxSettlementMultiplier",
+    values: [BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "setOperator",
@@ -288,6 +327,10 @@ export interface AssetHubVaultInterface extends Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "testMode", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "testModeFrozen",
+    values?: undefined
+  ): string;
   encodeFunctionData(
     functionFragment: "transferAdmin",
     values: [AddressLike]
@@ -331,6 +374,10 @@ export interface AssetHubVaultInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "XCM_SENDER", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "acceptAdmin",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "addChain", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "admin", data: BytesLike): Result;
   decodeFunctionResult(
@@ -348,7 +395,15 @@ export interface AssetHubVaultInterface extends Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "emergency", data: BytesLike): Result;
   decodeFunctionResult(
+    functionFragment: "emergencyCancelPending",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "emergencyLiquidatePosition",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "freezeTestMode",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -403,9 +458,21 @@ export interface AssetHubVaultInterface extends Interface {
     functionFragment: "isPositionActive",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "maxSettlementMultiplierBps",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "operator", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "pause", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "paused", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "pendingAdmin",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "positionNonce",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "positions", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "removeChain",
@@ -413,6 +480,10 @@ export interface AssetHubVaultInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "setEmergency",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "setMaxSettlementMultiplier",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -444,6 +515,10 @@ export interface AssetHubVaultInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "testMode", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "testModeFrozen",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "transferAdmin",
     data: BytesLike
@@ -478,6 +553,35 @@ export interface AssetHubVaultInterface extends Interface {
     functionFragment: "xcmSenderFrozen",
     data: BytesLike
   ): Result;
+}
+
+export namespace AdminTransferStartedEvent {
+  export type InputTuple = [
+    currentAdmin: AddressLike,
+    pendingAdmin: AddressLike
+  ];
+  export type OutputTuple = [currentAdmin: string, pendingAdmin: string];
+  export interface OutputObject {
+    currentAdmin: string;
+    pendingAdmin: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace AdminTransferredEvent {
+  export type InputTuple = [previousAdmin: AddressLike, newAdmin: AddressLike];
+  export type OutputTuple = [previousAdmin: string, newAdmin: string];
+  export interface OutputObject {
+    previousAdmin: string;
+    newAdmin: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
 }
 
 export namespace ChainAddedEvent {
@@ -640,6 +744,16 @@ export namespace PositionLiquidatedEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
+export namespace TestModeFrozenEvent {
+  export type InputTuple = [];
+  export type OutputTuple = [];
+  export interface OutputObject {}
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
 export namespace TrustedSettlementCallerSetEvent {
   export type InputTuple = [caller: AddressLike];
   export type OutputTuple = [caller: string];
@@ -783,6 +897,8 @@ export interface AssetHubVault extends BaseContract {
 
   XCM_SENDER: TypedContractMethod<[], [string], "view">;
 
+  acceptAdmin: TypedContractMethod<[], [void], "nonpayable">;
+
   addChain: TypedContractMethod<
     [
       chainId: BigNumberish,
@@ -828,11 +944,19 @@ export interface AssetHubVault extends BaseContract {
 
   emergency: TypedContractMethod<[], [string], "view">;
 
+  emergencyCancelPending: TypedContractMethod<
+    [positionId: BytesLike],
+    [void],
+    "nonpayable"
+  >;
+
   emergencyLiquidatePosition: TypedContractMethod<
     [chainId: BigNumberish, positionId: BytesLike],
     [void],
     "payable"
   >;
+
+  freezeTestMode: TypedContractMethod<[], [void], "nonpayable">;
 
   freezeTrustedSettlementCaller: TypedContractMethod<[], [void], "nonpayable">;
 
@@ -903,11 +1027,17 @@ export interface AssetHubVault extends BaseContract {
     "view"
   >;
 
+  maxSettlementMultiplierBps: TypedContractMethod<[], [bigint], "view">;
+
   operator: TypedContractMethod<[], [string], "view">;
 
   pause: TypedContractMethod<[], [void], "nonpayable">;
 
   paused: TypedContractMethod<[], [boolean], "view">;
+
+  pendingAdmin: TypedContractMethod<[], [string], "view">;
+
+  positionNonce: TypedContractMethod<[], [bigint], "view">;
 
   positions: TypedContractMethod<
     [arg0: BytesLike],
@@ -947,6 +1077,12 @@ export interface AssetHubVault extends BaseContract {
 
   setEmergency: TypedContractMethod<
     [account: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
+  setMaxSettlementMultiplier: TypedContractMethod<
+    [bps: BigNumberish],
     [void],
     "nonpayable"
   >;
@@ -998,6 +1134,8 @@ export interface AssetHubVault extends BaseContract {
 
   testMode: TypedContractMethod<[], [boolean], "view">;
 
+  testModeFrozen: TypedContractMethod<[], [boolean], "view">;
+
   transferAdmin: TypedContractMethod<
     [newAdmin: AddressLike],
     [void],
@@ -1040,6 +1178,9 @@ export interface AssetHubVault extends BaseContract {
   getFunction(
     nameOrSignature: "XCM_SENDER"
   ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "acceptAdmin"
+  ): TypedContractMethod<[], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "addChain"
   ): TypedContractMethod<
@@ -1093,12 +1234,18 @@ export interface AssetHubVault extends BaseContract {
     nameOrSignature: "emergency"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
+    nameOrSignature: "emergencyCancelPending"
+  ): TypedContractMethod<[positionId: BytesLike], [void], "nonpayable">;
+  getFunction(
     nameOrSignature: "emergencyLiquidatePosition"
   ): TypedContractMethod<
     [chainId: BigNumberish, positionId: BytesLike],
     [void],
     "payable"
   >;
+  getFunction(
+    nameOrSignature: "freezeTestMode"
+  ): TypedContractMethod<[], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "freezeTrustedSettlementCaller"
   ): TypedContractMethod<[], [void], "nonpayable">;
@@ -1174,6 +1321,9 @@ export interface AssetHubVault extends BaseContract {
     "view"
   >;
   getFunction(
+    nameOrSignature: "maxSettlementMultiplierBps"
+  ): TypedContractMethod<[], [bigint], "view">;
+  getFunction(
     nameOrSignature: "operator"
   ): TypedContractMethod<[], [string], "view">;
   getFunction(
@@ -1182,6 +1332,12 @@ export interface AssetHubVault extends BaseContract {
   getFunction(
     nameOrSignature: "paused"
   ): TypedContractMethod<[], [boolean], "view">;
+  getFunction(
+    nameOrSignature: "pendingAdmin"
+  ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "positionNonce"
+  ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
     nameOrSignature: "positions"
   ): TypedContractMethod<
@@ -1219,6 +1375,9 @@ export interface AssetHubVault extends BaseContract {
   getFunction(
     nameOrSignature: "setEmergency"
   ): TypedContractMethod<[account: AddressLike], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "setMaxSettlementMultiplier"
+  ): TypedContractMethod<[bps: BigNumberish], [void], "nonpayable">;
   getFunction(
     nameOrSignature: "setOperator"
   ): TypedContractMethod<[account: AddressLike], [void], "nonpayable">;
@@ -1259,6 +1418,9 @@ export interface AssetHubVault extends BaseContract {
     nameOrSignature: "testMode"
   ): TypedContractMethod<[], [boolean], "view">;
   getFunction(
+    nameOrSignature: "testModeFrozen"
+  ): TypedContractMethod<[], [boolean], "view">;
+  getFunction(
     nameOrSignature: "transferAdmin"
   ): TypedContractMethod<[newAdmin: AddressLike], [void], "nonpayable">;
   getFunction(
@@ -1297,6 +1459,20 @@ export interface AssetHubVault extends BaseContract {
     nameOrSignature: "xcmSenderFrozen"
   ): TypedContractMethod<[], [boolean], "view">;
 
+  getEvent(
+    key: "AdminTransferStarted"
+  ): TypedContractEvent<
+    AdminTransferStartedEvent.InputTuple,
+    AdminTransferStartedEvent.OutputTuple,
+    AdminTransferStartedEvent.OutputObject
+  >;
+  getEvent(
+    key: "AdminTransferred"
+  ): TypedContractEvent<
+    AdminTransferredEvent.InputTuple,
+    AdminTransferredEvent.OutputTuple,
+    AdminTransferredEvent.OutputObject
+  >;
   getEvent(
     key: "ChainAdded"
   ): TypedContractEvent<
@@ -1354,6 +1530,13 @@ export interface AssetHubVault extends BaseContract {
     PositionLiquidatedEvent.OutputObject
   >;
   getEvent(
+    key: "TestModeFrozen"
+  ): TypedContractEvent<
+    TestModeFrozenEvent.InputTuple,
+    TestModeFrozenEvent.OutputTuple,
+    TestModeFrozenEvent.OutputObject
+  >;
+  getEvent(
     key: "TrustedSettlementCallerSet"
   ): TypedContractEvent<
     TrustedSettlementCallerSetEvent.InputTuple,
@@ -1397,6 +1580,28 @@ export interface AssetHubVault extends BaseContract {
   >;
 
   filters: {
+    "AdminTransferStarted(address,address)": TypedContractEvent<
+      AdminTransferStartedEvent.InputTuple,
+      AdminTransferStartedEvent.OutputTuple,
+      AdminTransferStartedEvent.OutputObject
+    >;
+    AdminTransferStarted: TypedContractEvent<
+      AdminTransferStartedEvent.InputTuple,
+      AdminTransferStartedEvent.OutputTuple,
+      AdminTransferStartedEvent.OutputObject
+    >;
+
+    "AdminTransferred(address,address)": TypedContractEvent<
+      AdminTransferredEvent.InputTuple,
+      AdminTransferredEvent.OutputTuple,
+      AdminTransferredEvent.OutputObject
+    >;
+    AdminTransferred: TypedContractEvent<
+      AdminTransferredEvent.InputTuple,
+      AdminTransferredEvent.OutputTuple,
+      AdminTransferredEvent.OutputObject
+    >;
+
     "ChainAdded(uint32,bytes,address)": TypedContractEvent<
       ChainAddedEvent.InputTuple,
       ChainAddedEvent.OutputTuple,
@@ -1483,6 +1688,17 @@ export interface AssetHubVault extends BaseContract {
       PositionLiquidatedEvent.InputTuple,
       PositionLiquidatedEvent.OutputTuple,
       PositionLiquidatedEvent.OutputObject
+    >;
+
+    "TestModeFrozen()": TypedContractEvent<
+      TestModeFrozenEvent.InputTuple,
+      TestModeFrozenEvent.OutputTuple,
+      TestModeFrozenEvent.OutputObject
+    >;
+    TestModeFrozen: TypedContractEvent<
+      TestModeFrozenEvent.InputTuple,
+      TestModeFrozenEvent.OutputTuple,
+      TestModeFrozenEvent.OutputObject
     >;
 
     "TrustedSettlementCallerSet(address)": TypedContractEvent<

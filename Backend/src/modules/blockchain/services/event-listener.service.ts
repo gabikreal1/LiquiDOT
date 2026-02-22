@@ -28,10 +28,6 @@ export interface EventStats {
     liquidationsCompleted: number;
     assetsReturned: number;
     pendingPositionsCancelled: number;
-    xcmTransferAttempts: number;
-    xcmTransferFailures: number;
-    xcmRemoteCallAttempts: number;
-    xcmRemoteCallFailures: number;
   };
   lastEventTime: Date | null;
   isListening: boolean;
@@ -86,10 +82,6 @@ export class BlockchainEventListenerService implements OnModuleInit, OnModuleDes
       liquidationsCompleted: 0,
       assetsReturned: 0,
       pendingPositionsCancelled: 0,
-      xcmTransferAttempts: 0,
-      xcmTransferFailures: 0,
-      xcmRemoteCallAttempts: 0,
-      xcmRemoteCallFailures: 0,
     },
     lastEventTime: null,
     isListening: false,
@@ -208,10 +200,6 @@ export class BlockchainEventListenerService implements OnModuleInit, OnModuleDes
         liquidationsCompleted: 0,
         assetsReturned: 0,
         pendingPositionsCancelled: 0,
-        xcmTransferAttempts: 0,
-        xcmTransferFailures: 0,
-        xcmRemoteCallAttempts: 0,
-        xcmRemoteCallFailures: 0,
       },
       lastEventTime: null,
       isListening: this.isListening,
@@ -295,8 +283,17 @@ export class BlockchainEventListenerService implements OnModuleInit, OnModuleDes
 
       onPendingPositionCreated: (event) => {
         this.stats.lastEventTime = new Date();
-        this.logger.debug(`Moonbeam Pending Position: ${event.assetHubPositionId}`);
+        this.logger.log(`Moonbeam Pending Position: ${event.assetHubPositionId} — auto-executing`);
         this.callbacks.moonbeam?.onPendingPositionCreated?.(event);
+
+        // Orchestration: auto-execute the pending investment on Moonbeam
+        this.moonbeamService.executePendingInvestment(event.assetHubPositionId)
+          .then((localId) => {
+            this.logger.log(`Auto-executed pending position ${event.assetHubPositionId} → local ID ${localId}`);
+          })
+          .catch((err) => {
+            this.logger.error(`Failed to auto-execute pending position ${event.assetHubPositionId}: ${err.message}`);
+          });
       },
 
       onPositionExecuted: (event) => {
@@ -304,6 +301,19 @@ export class BlockchainEventListenerService implements OnModuleInit, OnModuleDes
         this.stats.lastEventTime = new Date();
         this.logger.log(`Moonbeam Position Executed: ${event.localPositionId} (AH: ${event.assetHubPositionId})`);
         this.callbacks.moonbeam?.onPositionExecuted?.(event);
+
+        // Orchestration: confirm execution on AssetHub so position moves PENDING → ACTIVE
+        this.assetHubService.confirmExecution(
+          event.assetHubPositionId,
+          event.localPositionId.toString(),
+          BigInt(event.liquidity),
+        )
+          .then(() => {
+            this.logger.log(`Confirmed execution on AssetHub for position ${event.assetHubPositionId}`);
+          })
+          .catch((err) => {
+            this.logger.error(`Failed to confirm execution on AssetHub for ${event.assetHubPositionId}: ${err.message}`);
+          });
       },
 
       onPositionLiquidated: (event) => {
@@ -324,6 +334,26 @@ export class BlockchainEventListenerService implements OnModuleInit, OnModuleDes
         this.stats.lastEventTime = new Date();
         this.logger.log(`Moonbeam Assets Returned: ${event.amount} for position ${event.positionId}`);
         this.callbacks.moonbeam?.onAssetsReturned?.(event);
+
+        // Orchestration: settle liquidation on AssetHub
+        // Look up the AssetHub position ID from the Moonbeam position
+        this.moonbeamService.getPosition(event.positionId)
+          .then((pos) => {
+            if (!pos) {
+              this.logger.warn(`Cannot settle: Moonbeam position ${event.positionId} not found`);
+              return;
+            }
+            return this.assetHubService.settleLiquidation(
+              pos.assetHubPositionId,
+              BigInt(event.amount),
+            );
+          })
+          .then(() => {
+            this.logger.log(`Settled liquidation on AssetHub for Moonbeam position ${event.positionId}`);
+          })
+          .catch((err) => {
+            this.logger.error(`Failed to settle liquidation for position ${event.positionId}: ${err.message}`);
+          });
       },
 
       onPendingPositionCancelled: (event) => {
@@ -331,30 +361,6 @@ export class BlockchainEventListenerService implements OnModuleInit, OnModuleDes
         this.stats.lastEventTime = new Date();
         this.logger.log(`Moonbeam Pending Position Cancelled: ${event.assetHubPositionId} refund=${event.refundAmount}`);
         this.callbacks.moonbeam?.onPendingPositionCancelled?.(event);
-      },
-
-      onXcmTransferAttempt: (event) => {
-        this.stats.moonbeam.xcmTransferAttempts++;
-        if (!event.success) {
-          this.stats.moonbeam.xcmTransferFailures++;
-          this.logger.warn(`Moonbeam XCM Transfer FAILED: ${event.token} amount=${event.amount} error=${event.errorData}`);
-        } else {
-          this.logger.debug(`Moonbeam XCM Transfer: ${event.token} amount=${event.amount} success`);
-        }
-        this.stats.lastEventTime = new Date();
-        this.callbacks.moonbeam?.onXcmTransferAttempt?.(event);
-      },
-
-      onXcmRemoteCallAttempt: (event) => {
-        this.stats.moonbeam.xcmRemoteCallAttempts++;
-        if (!event.success) {
-          this.stats.moonbeam.xcmRemoteCallFailures++;
-          this.logger.warn(`Moonbeam XCM Remote Call FAILED: paraId=${event.paraId} error=${event.errorData}`);
-        } else {
-          this.logger.debug(`Moonbeam XCM Remote Call: paraId=${event.paraId} success`);
-        }
-        this.stats.lastEventTime = new Date();
-        this.callbacks.moonbeam?.onXcmRemoteCallAttempt?.(event);
       },
     };
 

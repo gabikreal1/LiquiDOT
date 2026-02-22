@@ -2,7 +2,7 @@ const { ethers } = require("hardhat");
 
 // ==================== MAINNET CONFIGURATION ====================
 // TODO: Enter the deployed AssetHubVault address here
-const VAULT_ADDRESS = "0x...";
+const VAULT_ADDRESS = "0x0cfb7CE7D66C7CdAe5827074C5f5A62223a0c230";
 
 // Official Polkadot XCM Precompile address (Same for AssetHub)
 // https://docs.polkadot.com/develop/smart-contracts/precompiles/xcm-precompile/
@@ -13,16 +13,16 @@ const MOONBEAM_PARA_ID = 2004;
 
 // TODO: Enter the correct XCM MultiLocation for Moonbeam (Parent: 1, Parachain: 2004)
 // This must be the SCALE-encoded bytes of the MultiLocation.
-const MOONBEAM_XCM_DESTINATION = "0x0100000000000000000000000000000000000000000000000000000000000000"; // Placeholder - REPLACE THIS
+const MOONBEAM_XCM_DESTINATION = "0x03010100d4070000"; // V3 MultiLocation: Parents=1, Interior=X1(Parachain(2004))
 
 // TODO: Enter the deployed XCMProxy address on Moonbeam
-const MOONBEAM_XCMPROXY = "0x...";
+const MOONBEAM_XCMPROXY = "0x0cfb7CE7D66C7CdAe5827074C5f5A62223a0c230";
 
 // TODO: Enter the Sovereign Account of Moonbeam on AssetHub
 // This is the address that AssetHub sees when Moonbeam sends an XCM message.
 // It is usually calculated from the Parachain ID.
 // For Parachain 2004, it is likely: 0x7369626C04080000000000000000000000000000
-const MOONBEAM_SOVEREIGN_ACCOUNT = "0x7369626C04080000000000000000000000000000"; // Check this!
+const MOONBEAM_SOVEREIGN_ACCOUNT = "0x7acad6908e02bbc1c77539b82772756696503698";
 
 // Helper to wait for block confirmation
 async function waitForBlock(ms = 12000) {

@@ -246,7 +246,19 @@ export class AssetHubService implements OnModuleInit {
    * @param params Investment request parameters
    * @returns Position ID from the contract event
    */
-  async dispatchInvestmentWithXcm(params: DispatchInvestmentRequest): Promise<string> {
+  /**
+   * Dispatches Phase 1 (XCM asset transfer) and returns info for Phase 2.
+   *
+   * Two-phase investment pipeline:
+   *   Phase 1: XCM transfers DOT from AH to Moonbeam, depositing xcDOT at XCMProxy.
+   *   Phase 2: Backend calls receiveAssets() on Moonbeam (returned as moonbeamCalldata).
+   *
+   * @returns positionId from AH contract + moonbeamCalldata for Phase 2
+   */
+  async dispatchInvestmentWithXcm(params: DispatchInvestmentRequest): Promise<{
+    positionId: string;
+    moonbeamCalldata: `0x${string}`;
+  }> {
     try {
       this.logger.log(
         `Preparing investment dispatch for user ${params.user} to pool ${params.poolId}`,
@@ -254,20 +266,16 @@ export class AssetHubService implements OnModuleInit {
 
       // [LOG] Create PENDING log
       const log = await this.logsService.createLog({
-        userId: params.user, // Note: Assuming user ID is address for now, or need lookup. 
-        // Ideally we pass userId. userAddress is what we have. 
-        // For now, storing user address in userId field or we need to look up.
-        // Given schema, userId is uuid. params.user is address.
-        // WE NEED TO FETCH USER ID FIRST.
+        userId: params.user,
         type: ActivityType.INVESTMENT,
         status: ActivityStatus.PENDING,
         details: {
           poolId: params.poolId,
           amount: params.amount.toString(),
-          chainId: params.chainId
-        }
+          chainId: params.chainId,
+        },
       });
-      // Updating to use XcmBuilderService
+
       const xcmParams: XcmInvestmentParams = {
         amount: params.amount,
         moonbeamProxyAddress: this.xcmProxyAddress,
@@ -279,17 +287,18 @@ export class AssetHubService implements OnModuleInit {
         upperRangePercent: params.upperRangePercent,
       };
 
-      // Optional: Dry run to verify XCM will succeed
+      // Dry run to verify XCM will succeed
       const dryRunResult = await this.xcmBuilderService.dryRunXcm(xcmParams);
       if (!dryRunResult.success) {
         throw new Error(`XCM dry run failed: ${dryRunResult.error}`);
       }
       this.logger.log(`XCM dry run passed, estimated fees: ${dryRunResult.estimatedFees}`);
 
-      // Build the actual XCM message
-      const { destination, xcmMessage } = await this.xcmBuilderService.buildInvestmentXcm(xcmParams);
+      // Build XCM (Phase 1) + EVM calldata (Phase 2)
+      const { destination, xcmMessage, assetHubPositionId, moonbeamCalldata } =
+        await this.xcmBuilderService.buildInvestmentXcm(xcmParams);
 
-      // Call the contract with built XCM
+      // Execute Phase 1: AH contract dispatches XCM asset transfer
       const positionId = await this.dispatchInvestment({
         ...params,
         destination,
@@ -299,19 +308,18 @@ export class AssetHubService implements OnModuleInit {
       // [LOG] Update to SUBMITTED
       if (log && log.id) {
         await this.logsService.updateStatus(log.id, ActivityStatus.SUBMITTED, {
-          positionId: positionId,
-          // txHash: receipt.hash - we don't have receipt here easily unless dispatchInvestment returns it.
-          // For now, just mark submitted.
+          positionId,
         });
       }
 
-      return positionId;
+      this.logger.log(
+        `Phase 1 complete: XCM transfer dispatched. positionId=${positionId}. ` +
+        `Phase 2 moonbeamCalldata ready (${moonbeamCalldata.length / 2} bytes)`,
+      );
+
+      return { positionId, moonbeamCalldata };
     } catch (error) {
       this.logger.error(`Failed to dispatch investment with XCM: ${error.message}`);
-      // [LOG] Update to FAILED
-      // Accessing log variable might be tricky if it's block-scoped above. 
-      // Ideally we use a try/catch block where 'log' is accessible.
-      // For MVP, if dispatch fails, the log remains PENDING or we need to wrap differently.
       throw error;
     }
   }

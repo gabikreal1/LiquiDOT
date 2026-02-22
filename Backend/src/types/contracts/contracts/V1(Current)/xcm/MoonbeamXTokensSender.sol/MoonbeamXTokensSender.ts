@@ -21,9 +21,18 @@ import type {
 
 export interface MoonbeamXTokensSenderInterface extends Interface {
   getFunction(
-    nameOrSignature: "destWeight" | "sendXcm" | "token" | "xtokens"
+    nameOrSignature:
+      | "authorizedCaller"
+      | "destWeight"
+      | "sendXcm"
+      | "token"
+      | "xtokens"
   ): FunctionFragment;
 
+  encodeFunctionData(
+    functionFragment: "authorizedCaller",
+    values?: undefined
+  ): string;
   encodeFunctionData(
     functionFragment: "destWeight",
     values?: undefined
@@ -35,6 +44,10 @@ export interface MoonbeamXTokensSenderInterface extends Interface {
   encodeFunctionData(functionFragment: "token", values?: undefined): string;
   encodeFunctionData(functionFragment: "xtokens", values?: undefined): string;
 
+  decodeFunctionResult(
+    functionFragment: "authorizedCaller",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "destWeight", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "sendXcm", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "token", data: BytesLike): Result;
@@ -84,6 +97,8 @@ export interface MoonbeamXTokensSender extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
+  authorizedCaller: TypedContractMethod<[], [string], "view">;
+
   destWeight: TypedContractMethod<[], [bigint], "view">;
 
   sendXcm: TypedContractMethod<
@@ -100,6 +115,9 @@ export interface MoonbeamXTokensSender extends BaseContract {
     key: string | FunctionFragment
   ): T;
 
+  getFunction(
+    nameOrSignature: "authorizedCaller"
+  ): TypedContractMethod<[], [string], "view">;
   getFunction(
     nameOrSignature: "destWeight"
   ): TypedContractMethod<[], [bigint], "view">;

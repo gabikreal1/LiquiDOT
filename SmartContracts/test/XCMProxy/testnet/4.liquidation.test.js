@@ -311,7 +311,7 @@ describe("XCMProxy Testnet - Liquidation", function () {
       const tx = await proxy.liquidateSwapAndReturn(
         fullFlowPositionId,
         BASE_TOKEN,
-        MOCK_ASSET_HUB_DEST,
+        operator.address,
         0,
         0,
         0,
@@ -380,8 +380,7 @@ describe("XCMProxy Testnet - Liquidation", function () {
 
       // Cancel it
       const tx = await proxy.cancelPendingPosition(
-        assetHubPositionId,
-        MOCK_ASSET_HUB_DEST
+        assetHubPositionId
       );
 
       const receipt = await tx.wait();
@@ -412,7 +411,7 @@ describe("XCMProxy Testnet - Liquidation", function () {
       );
 
       await expect(
-        proxy.cancelPendingPosition(fakePositionId, MOCK_ASSET_HUB_DEST)
+        proxy.cancelPendingPosition(fakePositionId)
       ).to.be.revertedWithCustomError(proxy, "PendingPositionNotFound");
     });
   });
@@ -468,13 +467,13 @@ describe("XCMProxy Testnet - Liquidation", function () {
         console.log(`   ✓ Proxy funded with BASE_TOKEN`);
       }
 
-      // returnAssets signature: (address token, address user, uint256 amount, bytes destination)
+      // returnAssets signature: (address token, address user, uint256 amount, address beneficiary)
       // In test mode, XCM transfer is skipped
       const tx = await proxy.returnAssets(
         BASE_TOKEN,
         operator.address,
         ethers.parseEther("0.1"),
-        MOCK_ASSET_HUB_DEST
+        operator.address
       );
       const receipt = await tx.wait();
       

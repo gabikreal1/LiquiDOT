@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { UsersService } from './users.service';
-<<<<<<< Updated upstream
 import { UsersController } from './users.controller';
 import { BlockchainModule } from '../blockchain/blockchain.module';
 
@@ -13,13 +12,6 @@ import { BlockchainModule } from '../blockchain/blockchain.module';
   ],
   controllers: [UsersController],
   providers: [UsersService],
-  exports: [TypeOrmModule, UsersService],
-=======
-
-@Module({
-  imports: [TypeOrmModule.forFeature([User])],
-  providers: [UsersService],
-  exports: [UsersService], // Export so AuthModule can use it
->>>>>>> Stashed changes
+  exports: [TypeOrmModule, UsersService], // UsersService exported so AuthModule can use it
 })
 export class UsersModule { }

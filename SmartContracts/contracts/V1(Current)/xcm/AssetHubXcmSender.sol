@@ -34,20 +34,27 @@ interface IXcm {
 /// @notice Adapter that forwards XCM sends to the official Polkadot XCM precompile
 /// @dev Address: 0x00000000000000000000000000000000000a0000
 /// @dev Messages must be SCALE-encoded XCM programs
+/// @notice Only the authorized caller (AssetHubVault) may invoke sendXcm.
 contract AssetHubXcmSender is IXcmSender {
     error ZeroAddress();
+    error UnauthorizedCaller();
 
     /// @dev Default XCM precompile address on Asset Hub
     address public constant XCM_PRECOMPILE = 0x00000000000000000000000000000000000a0000;
 
     IXcm public immutable xcm;
+    address public immutable authorizedCaller;
 
     /// @param xcmAddress Optional custom XCM precompile address, or address(0) to use default
-    constructor(address xcmAddress) {
+    /// @param _authorizedCaller The only address allowed to call sendXcm (e.g. AssetHubVault)
+    constructor(address xcmAddress, address _authorizedCaller) {
+        if (_authorizedCaller == address(0)) revert ZeroAddress();
         xcm = IXcm(xcmAddress == address(0) ? XCM_PRECOMPILE : xcmAddress);
+        authorizedCaller = _authorizedCaller;
     }
 
     function sendXcm(bytes calldata destination, bytes calldata message) external override {
+        if (msg.sender != authorizedCaller) revert UnauthorizedCaller();
         xcm.send(destination, message);
     }
 }

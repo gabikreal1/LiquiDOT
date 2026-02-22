@@ -1,9 +1,10 @@
-<<<<<<< Updated upstream
-Automated Liquidity Management System for Polkadot Asset Hub & Moonbeam
+# LiquiDOT Backend
+
+**Automated Liquidity Management System for Polkadot Asset Hub & Moonbeam**
 
 LiquiDOT is a decentralized application that automates liquidity provision and liquidation protection on the Polkadot network. It leverages **XCM (Cross-Consensus Messaging)** to orchestrate assets between **Asset Hub** (where assets live) and **Moonbeam** (where DeFi logic executes).
 
-## � Documentation
+## Documentation
 
 | Document | Description |
 |----------|-------------|
@@ -12,7 +13,7 @@ LiquiDOT is a decentralized application that automates liquidity provision and l
 | [**Investment Algorithm**](./docs/INVESTMENT_ALGORITHM.md) | How the optimization math works |
 | [**Architecture**](./docs/ARCHITECTURE.md) | System design and data flows |
 
-## 🚀 Features
+## Features
 
 - **Automated Investment**: Users initiate intent on Asset Hub; backend orchestrates XCM to move funds to Moonbeam and provide liquidity.
 - **Stop-Loss Protection**: Background workers monitor positions 24/7 and automatically liquidate them if prices fall out of range.
@@ -20,99 +21,42 @@ LiquiDOT is a decentralized application that automates liquidity provision and l
 - **Activity Tracking**: Real-time transparency into cross-chain operation status.
 - **Portfolio Optimization**: Utility-maximizing allocation algorithm.
 
-## 🔗 Blockchain & XCM Operations
+## Blockchain & XCM Operations
 
-LiquiDOT's core innovation is its cross-chain liquidity orchestration. 
+LiquiDOT's core innovation is its cross-chain liquidity orchestration.
 
-### Architecture
-1.  **Asset Hub (Source)**:
-    - **Custody**: Users deposit funds into the `AssetHubVault` contract.
-    - **Orchestration**: The backend triggers `dispatchInvestment`, which constructs an XCM message.
-    - **XCM Message**: Contains `WithdrawAsset` -> `BuyExecution` -> `DepositAsset` (to Proxy) -> `Transact` (call `receiveAssets` on Moonbeam).
-    - **Tooling**: We use **ParaSpell** SDK to construct safe, chemically-correct XCM V3/V4 messages.
+### Architecture — Two-Phase Investment Pipeline
 
-2.  **Moonbeam (Destination)**:
-    - **Execution**: The `XCMProxy` contract receives the assets and the "Investment Intent" (Pool ID, Amounts, etc.).
-    - **DeFi Logic**: It executes swaps (via Algebra DEX), mints LP positions, and monitors health.
-    - **Settlement**: Upon liquidation, assets are swapped back to base currency and returned to Asset Hub via **XTokens** or raw XCM.
+Single-message XCM with asset transfer + Transact is impossible on Moonbeam (ClearOrigin is always injected, causing BadOrigin). LiquiDOT uses a two-phase approach:
+
+1.  **Phase 1 — XCM Asset Transfer** (Asset Hub → Moonbeam):
+    - **Custody**: Users deposit DOT into the `AssetHubVault` contract on Asset Hub.
+    - **Orchestration**: The backend triggers `dispatchInvestment`, which constructs an XCM V5 message.
+    - **XCM Message**: `WithdrawAsset` → `BuyExecution` → `DepositReserveAsset(Wild(All), dest: Moonbeam)`. Inner XCM: `BuyExecution` → `DepositAsset(XCMProxy)`.
+    - **Tooling**: `polkadot-api` (P-API) for SCALE encoding and XCM construction.
+    - **Cost**: ~0.03 DOT (AH) + ~0.02 DOT (Moonbeam) XCM fees.
+
+2.  **Phase 2 — EVM Execution** (Moonbeam):
+    - **Trigger**: Backend relayer calls `receiveAssets()` on XCMProxy via ethers.js.
+    - **DeFi Logic**: XCMProxy executes swaps (Algebra DEX), mints LP positions.
+    - **Settlement**: Upon liquidation, XCMProxy calls `IPalletXcm.transferAssetsUsingTypeAndThenAddress()` to return DOT to user on Asset Hub. Backend passes `address beneficiary` — contract handles EE-padding and XCM construction internally.
 
 ### Verification & Testing
-- **Production Mode**: Uses real `ParaSpell` construction and RPC calls.
+- **Production Mode**: Uses real P-API construction and RPC calls.
 - **Test Mode**: Set `XCM_TEST_MODE=true` to use internal mocks (stubs) for XCM messages. This allows testing the backend logic without a live parachain connection.
 
-## 🏗️ Technology Stack
+## Technology Stack
 
 - **Framework**: NestJS 10 (TypeScript)
 - **Database**: PostgreSQL (TypeORM)
 - **Blockchain**:
     - `ethers.js` v6: Moonbeam (EVM) interactions.
-    - `@polkadot/api` / `polkadot-api`: Asset Hub (Substrate) interactions.
-    - `@paraspell/sdk`: XCM message construction.
-    - `TypeChain`: Type-safe contract bindings.
+    - `polkadot-api` (P-API): Asset Hub (Substrate) interactions and XCM V5 construction.
+    - `@polkadot/api`: Legacy Substrate client (being phased out).
+    - `TypeChain`: Type-safe contract bindings (auto-generated from SmartContracts ABI).
 - **Infrastructure**: Docker, Terraform (Digital Ocean).
 
-## � Quick Start
-
-1.  **Install dependencies**:
-    ```bash
-    npm install
-    ```
-2.  **Configure Environment**:
-    Copy `.env.example` to `.env` and fill in required values.
-    ```bash
-    cp .env.example .env
-    ```
-3.  **Run Database**:
-    ```bash
-    docker-compose up -d db
-    npm run migration:run
-    ```
-4.  **Start Backend**:
-=======
-# LiquiDOT Backend
-
-**Automated Liquidity Management System for Polkadot Acid Hub & Moonbeam**
-
-LiquiDOT is a decentralized application that automates liquidity provision and liquidation protection on the Polkadot network. It leverages **XCM (Cross-Consensus Messaging)** to orchestrate assets between **Asset Hub** (where assets live) and **Moonbeam** (where DeFi logic executes).
-
-## 🚀 Features
-
-- **Automated Investment**: Users initiate intent on Asset Hub; backend orchestrates XCM to move funds to Moonbeam and provide liquidity.
-- **Stop-Loss Protection**: Background workers monitor positions 24/7 and automatically liquidate them if prices fall out of range.
-- **Dual-Stack Auth**: Secure login with both **Ethereum (SIWE)** and **Polkadot (SIWS)** wallets.
-- **Activity Tracking**: Real-time transparency into cross-chain operation status.
-
-## � Blockchain & XCM Operations
-
-LiquiDOT's core innovation is its cross-chain liquidity orchestration. 
-
-### Architecture
-1.  **Asset Hub (Source)**:
-    - **Custody**: Users deposit funds into the `AssetHubVault` contract.
-    - **Orchestration**: The backend triggers `dispatchInvestment`, which constructs an XCM message.
-    - **XCM Message**: Contains `WithdrawAsset` -> `BuyExecution` -> `DepositAsset` (to Proxy) -> `Transact` (call `receiveAssets` on Moonbeam).
-    - **Tooling**: We use **ParaSpell** SDK to construct safe, chemically-correct XCM V3/V4 messages.
-
-2.  **Moonbeam (Destination)**:
-    - **Execution**: The `XCMProxy` contract receives the assets and the "Investment Intent" (Pool ID, Amounts, etc.).
-    - **DeFi Logic**: It executes swaps (via Algebra DEX), mints LP positions, and monitors health.
-    - **Settlement**: Upon liquidation, assets are swapped back to base currency and returned to Asset Hub via **XTokens** or raw XCM.
-
-### Verification & Testing
-- **Production Mode**: Uses real `ParaSpell` construction and RPC calls.
-- **Test Mode**: Set `XCM_TEST_MODE=true` to use internal mocks (stubs) for XCM messages. This allows testing the backend logic without a live parachain connection.
-
-## �🛠️ Technology Stack
-
-- **Framework**: NestJS (TypeScript)
-- **Database**: PostgreSQL (TypeORM)
-- **Blockchain**:
-    - `ethers.js`: Moonbeam (EVM) interactions.
-    - `@polkadot/api`: Asset Hub (Substrate) interactions.
-    - `@paraspell/sdk`: XCM message construction.
-- **Infrastructure**: Docker, Terraform (Digital Ocean).
-
-## 📦 Installation
+## Installation
 
 ### Prerequisites
 - Node.js v18+
@@ -127,22 +71,24 @@ LiquiDOT's core innovation is its cross-chain liquidity orchestration.
     ```
 2.  Install dependencies:
     ```bash
-    npm install
+    pnpm install
     ```
 3.  Configure Environment:
     Copy `.env.example` to `.env` and fill in the required values (see Environment Variables below).
+    ```bash
+    cp .env.example .env
+    ```
 4.  Run Database:
     ```bash
     docker-compose up -d db
+    pnpm run migration:run
     ```
 5.  Start Backend:
->>>>>>> Stashed changes
     ```bash
-    npm run start:dev
+    pnpm run start:dev
     ```
 
-<<<<<<< Updated upstream
-## 🧠 How It Works
+## How It Works
 
 1. **Data Aggregation** - Pools synced from DEX subgraphs
 2. **Opportunity Detection** - Algorithm ranks pools by risk-adjusted returns
@@ -152,7 +98,7 @@ LiquiDOT's core innovation is its cross-chain liquidity orchestration.
 
 See [Investment Algorithm](./docs/INVESTMENT_ALGORITHM.md) for the math.
 
-## � Environment Variables
+## Environment Variables
 
 See [`.env.example`](.env.example) for all configuration options. Key variables:
 
@@ -170,7 +116,7 @@ See [`.env.example`](.env.example) for all configuration options. Key variables:
 | `MOONBEAM_XCM_PROXY_ADDRESS` | Contract Address on Moonbeam | Yes |
 | `STOP_LOSS_CHECK_INTERVAL_MS` | Position monitoring interval | No |
 
-## � API Endpoints
+## API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -184,7 +130,7 @@ See [`.env.example`](.env.example) for all configuration options. Key variables:
 
 Full API documentation: [docs/API_REFERENCE.md](./docs/API_REFERENCE.md) or `/api/docs` (Swagger).
 
-## � Deposits & Position Limits
+## Deposits & Position Limits
 
 **Deposits accept DOT only** (native asset on Asset Hub). The system uses USD internally for calculations but all user deposits are in DOT.
 
@@ -198,52 +144,18 @@ Full API documentation: [docs/API_REFERENCE.md](./docs/API_REFERENCE.md) or `/ap
 | Min Pool TVL | $1,000,000 | Only consider pools with sufficient liquidity |
 | Min Pool Age | 14 days | Filter out new/unproven pools |
 
-## � Deployment & CI/CD
-
-- **Infrastructure**: Provisioned via **Terraform** on Digital Ocean.
-- **CI/CD**: GitHub Actions triggers `terraform apply` on push to `main`.
-- **Secrets**: Requires `DIGITALOCEAN_TOKEN` in GitHub Secrets.
-
----
-**LiquiDOT Team** © 2026
-=======
-## 🔑 Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `PORT` | API Port (default 3001) | No |
-| `DATABASE_URL` | Postgres Connection String | Yes |
-| `JWT_SECRET` | Secret for signing auth tokens | Yes |
-| `ASSETHUB_RPC_URL` | Asset Hub Node RPC | Yes |
-| `MOONBEAM_RPC_URL` | Moonbeam Node RPC | Yes |
-| `ASSETHUB_VAULT_ADDRESS` | Contract Address on Asset Hub | Yes |
-| `RELAYER_PRIVATE_KEY` | Private Key for transaction execution | Yes |
-| `ENABLED_DECISION_EXECUTION`| Set to `true` to enable scheduled jobs | No |
-| `XCM_TEST_MODE` | Set `true` to mock XCM message construction | No |
-| `MOONBEAM_XCM_PROXY_ADDRESS` | Contract Address on Moonbeam | Yes |
-
-## 📚 API Documentation
-
-The API includes full Swagger documentation.
-- **Local**: `http://localhost:3001/api/docs`
-- **Static Reference**: See [docs/API_REFERENCE.md](docs/API_REFERENCE.md)
-
-## 🚢 Deployment
-
-Infrastructure is provisioned via **Terraform** on Digital Ocean.
-See [terrafrom-do/README.md](terrafrom-do/README.md) for details.
-
-### CI/CD
-This repository uses GitHub Actions to automate deployment.
-- **Push to Main**: Triggers `terraform apply` (Auto-Deploy).
-- **Secrets**: Requires `DIGITALOCEAN_TOKEN` in GitHub Secrets.
-
-## 🔐 Security
+## Security
 
 - **Authentication**: All user endpoints require a valid JWT via `Authorization: Bearer <token>`.
 - **Validation**: All inputs are validated using `class-validator`.
 - **Throttling**: (Planned) Rate limiting on public endpoints.
 
+## Deployment & CI/CD
+
+- **Infrastructure**: Provisioned via **Terraform** on Digital Ocean.
+  See [terraform-do/README.md](terraform-do/README.md) for details.
+- **CI/CD**: GitHub Actions triggers `terraform apply` on push to `main`.
+- **Secrets**: Requires `DIGITALOCEAN_TOKEN` in GitHub Secrets.
+
 ---
-**LiquiDOT Team** © 2026
->>>>>>> Stashed changes
+**LiquiDOT Team** &copy; 2026

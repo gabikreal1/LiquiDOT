@@ -7,6 +7,9 @@ import { Position, PositionStatus } from '../positions/entities/position.entity'
 import { User } from '../users/entities/user.entity';
 import { UserPreference } from '../preferences/entities/user-preference.entity';
 import { RebalanceDecision } from './types/investment.types';
+import { AssetHubService } from '../blockchain/services/asset-hub.service';
+import { MoonbeamService } from '../blockchain/services/moonbeam.service';
+import { XcmBuilderService } from '../blockchain/services/xcm-builder.service';
 
 describe('InvestmentDecisionService', () => {
   let service: InvestmentDecisionService;
@@ -155,6 +158,18 @@ describe('InvestmentDecisionService', () => {
         {
           provide: getRepositoryToken(UserPreference),
           useValue: mockPreferenceRepository,
+        },
+        {
+          provide: AssetHubService,
+          useValue: { isInitialized: jest.fn().mockReturnValue(false) },
+        },
+        {
+          provide: MoonbeamService,
+          useValue: { isInitialized: jest.fn().mockReturnValue(false) },
+        },
+        {
+          provide: XcmBuilderService,
+          useValue: {},
         },
       ],
     }).compile();

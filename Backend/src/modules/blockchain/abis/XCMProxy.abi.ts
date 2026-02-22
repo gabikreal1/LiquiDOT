@@ -1,5 +1,5 @@
 // Auto-generated from SmartContracts/contracts/V1(Current)/XCMProxy.sol
-// Generated: 2025-11-11T21:39:59.091Z
+// Generated: 2026-02-22T20:11:19.445Z
 
 export const XCMProxyABI = [
   {
@@ -15,12 +15,72 @@ export const XCMProxyABI = [
   },
   {
     "inputs": [],
+    "name": "AmountZero",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "BaseAssetNotSupported",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "BpsTooHigh",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "DeadlineTooFar",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "EnforcedPause",
     "type": "error"
   },
   {
     "inputs": [],
     "name": "ExpectedPause",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InsufficientSwappedFunding",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InsufficientToken0",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InsufficientToken1",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidPercent",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidUser",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NFPMNotSet",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotEmergencyAdmin",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotOperator",
     "type": "error"
   },
   {
@@ -47,6 +107,36 @@ export const XCMProxyABI = [
   },
   {
     "inputs": [],
+    "name": "PendingPositionNotFound",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "PositionAlreadyPending",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "PositionNotActive",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "PositionNotLiquidated",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "QuoterNotSet",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "RangeOutOfBounds",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "ReentrancyGuardReentrantCall",
     "type": "error"
   },
@@ -59,6 +149,46 @@ export const XCMProxyABI = [
       }
     ],
     "name": "SafeERC20FailedOperation",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "SwapRouterNotSet",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "SwapZeroOutput",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "TokenNotSupported",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "UnauthorizedCaller",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "XcmConfigAlreadyFrozen",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "XcmPrecompileNotSet",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "XcmTransferFailed",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ZeroLiquidityPreview",
     "type": "error"
   },
   {
@@ -157,25 +287,25 @@ export const XCMProxyABI = [
     "inputs": [
       {
         "indexed": false,
-        "internalType": "uint64",
-        "name": "weight",
-        "type": "uint64"
-      }
-    ],
-    "name": "DefaultDestWeightSet",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
         "internalType": "uint16",
         "name": "bps",
         "type": "uint16"
       }
     ],
     "name": "DefaultSlippageSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "emergencyAdmin",
+        "type": "address"
+      }
+    ],
+    "name": "EmergencyAdminUpdated",
     "type": "event"
   },
   {
@@ -527,6 +657,12 @@ export const XCMProxyABI = [
   },
   {
     "anonymous": false,
+    "inputs": [],
+    "name": "TestModeFrozen",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
     "inputs": [
       {
         "indexed": true,
@@ -553,19 +689,6 @@ export const XCMProxyABI = [
   },
   {
     "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "precompile",
-        "type": "address"
-      }
-    ],
-    "name": "XTokensPrecompileSet",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
     "inputs": [],
     "name": "XcmConfigFrozen",
     "type": "event"
@@ -574,49 +697,13 @@ export const XCMProxyABI = [
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
-        "internalType": "uint32",
-        "name": "paraId",
-        "type": "uint32"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint16",
-        "name": "feeLocation",
-        "type": "uint16"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint64",
-        "name": "transactRequiredWeightAtMost",
-        "type": "uint64"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "feeAmount",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint64",
-        "name": "overallWeight",
-        "type": "uint64"
-      },
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "success",
-        "type": "bool"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes",
-        "name": "errorData",
-        "type": "bytes"
+        "indexed": true,
+        "internalType": "address",
+        "name": "precompile",
+        "type": "address"
       }
     ],
-    "name": "XcmRemoteCallAttempt",
+    "name": "XcmPrecompileSet",
     "type": "event"
   },
   {
@@ -630,43 +717,6 @@ export const XCMProxyABI = [
       }
     ],
     "name": "XcmTransactorPrecompileSet",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes",
-        "name": "dest",
-        "type": "bytes"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "success",
-        "type": "bool"
-      },
-      {
-        "indexed": false,
-        "internalType": "bytes",
-        "name": "errorData",
-        "type": "bytes"
-      }
-    ],
-    "name": "XcmTransferAttempt",
     "type": "event"
   },
   {
@@ -717,35 +767,6 @@ export const XCMProxyABI = [
   {
     "inputs": [
       {
-        "internalType": "uint8",
-        "name": "palletIndex",
-        "type": "uint8"
-      },
-      {
-        "internalType": "uint8",
-        "name": "callIndex",
-        "type": "uint8"
-      },
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
-    "name": "buildPalletCallBytes",
-    "outputs": [
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
-    "stateMutability": "pure",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "pool",
         "type": "address"
@@ -783,11 +804,6 @@ export const XCMProxyABI = [
         "internalType": "bytes32",
         "name": "assetHubPositionId",
         "type": "bytes32"
-      },
-      {
-        "internalType": "bytes",
-        "name": "destination",
-        "type": "bytes"
       }
     ],
     "name": "cancelPendingPosition",
@@ -821,19 +837,6 @@ export const XCMProxyABI = [
   },
   {
     "inputs": [],
-    "name": "defaultDestWeight",
-    "outputs": [
-      {
-        "internalType": "uint64",
-        "name": "",
-        "type": "uint64"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "defaultSlippageBps",
     "outputs": [
       {
@@ -843,6 +846,26 @@ export const XCMProxyABI = [
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "emergencyAdmin",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "emergencyPause",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -890,94 +913,16 @@ export const XCMProxyABI = [
   },
   {
     "inputs": [],
-    "name": "freezeXcmConfig",
+    "name": "freezeTestMode",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [],
-    "name": "getActivePositions",
-    "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "bytes32",
-            "name": "assetHubPositionId",
-            "type": "bytes32"
-          },
-          {
-            "internalType": "address",
-            "name": "pool",
-            "type": "address"
-          },
-          {
-            "internalType": "address",
-            "name": "token0",
-            "type": "address"
-          },
-          {
-            "internalType": "address",
-            "name": "token1",
-            "type": "address"
-          },
-          {
-            "internalType": "int24",
-            "name": "bottomTick",
-            "type": "int24"
-          },
-          {
-            "internalType": "int24",
-            "name": "topTick",
-            "type": "int24"
-          },
-          {
-            "internalType": "uint128",
-            "name": "liquidity",
-            "type": "uint128"
-          },
-          {
-            "internalType": "uint256",
-            "name": "tokenId",
-            "type": "uint256"
-          },
-          {
-            "internalType": "address",
-            "name": "owner",
-            "type": "address"
-          },
-          {
-            "internalType": "int24",
-            "name": "lowerRangePercent",
-            "type": "int24"
-          },
-          {
-            "internalType": "int24",
-            "name": "upperRangePercent",
-            "type": "int24"
-          },
-          {
-            "internalType": "uint256",
-            "name": "entryPrice",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "timestamp",
-            "type": "uint256"
-          },
-          {
-            "internalType": "bool",
-            "name": "active",
-            "type": "bool"
-          }
-        ],
-        "internalType": "struct XCMProxy.Position[]",
-        "name": "",
-        "type": "tuple[]"
-      }
-    ],
-    "stateMutability": "view",
+    "name": "freezeXcmConfig",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -1007,11 +952,40 @@ export const XCMProxyABI = [
         "type": "address"
       }
     ],
+    "name": "getUserPositionCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "start",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "count",
+        "type": "uint256"
+      }
+    ],
     "name": "getUserPositions",
     "outputs": [
       {
         "internalType": "uint256[]",
-        "name": "",
+        "name": "ids",
         "type": "uint256[]"
       }
     ],
@@ -1048,6 +1022,35 @@ export const XCMProxyABI = [
         "internalType": "uint256",
         "name": "positionId",
         "type": "uint256"
+      }
+    ],
+    "name": "liquidateIfOutOfRange",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "liquidated",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount0",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount1",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "positionId",
+        "type": "uint256"
       },
       {
         "internalType": "address",
@@ -1055,9 +1058,9 @@ export const XCMProxyABI = [
         "type": "address"
       },
       {
-        "internalType": "bytes",
-        "name": "destination",
-        "type": "bytes"
+        "internalType": "address",
+        "name": "beneficiary",
+        "type": "address"
       },
       {
         "internalType": "uint256",
@@ -1083,6 +1086,19 @@ export const XCMProxyABI = [
     "name": "liquidateSwapAndReturn",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "maxDeadlineOffset",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -1336,46 +1352,22 @@ export const XCMProxyABI = [
         "type": "uint256"
       },
       {
-        "internalType": "bool",
-        "name": "active",
-        "type": "bool"
+        "internalType": "enum XCMProxy.PositionStatus",
+        "name": "status",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint256",
+        "name": "liquidatedAmount0",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "liquidatedAmount1",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "tokenIn",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "tokenOut",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amountIn",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint160",
-        "name": "limitSqrtPrice",
-        "type": "uint160"
-      }
-    ],
-    "name": "quoteExactInputSingle",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "amountOut",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -1427,39 +1419,6 @@ export const XCMProxyABI = [
   {
     "inputs": [
       {
-        "internalType": "uint16",
-        "name": "feeLocation",
-        "type": "uint16"
-      },
-      {
-        "internalType": "uint64",
-        "name": "transactRequiredWeightAtMost",
-        "type": "uint64"
-      },
-      {
-        "internalType": "bytes",
-        "name": "call",
-        "type": "bytes"
-      },
-      {
-        "internalType": "uint256",
-        "name": "feeAmount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint64",
-        "name": "overallWeight",
-        "type": "uint64"
-      }
-    ],
-    "name": "remoteCallAssetHub",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "address",
         "name": "token",
         "type": "address"
@@ -1495,9 +1454,9 @@ export const XCMProxyABI = [
         "type": "uint256"
       },
       {
-        "internalType": "bytes",
-        "name": "destination",
-        "type": "bytes"
+        "internalType": "address",
+        "name": "beneficiary",
+        "type": "address"
       }
     ],
     "name": "returnAssets",
@@ -1521,12 +1480,12 @@ export const XCMProxyABI = [
   {
     "inputs": [
       {
-        "internalType": "uint64",
-        "name": "weight",
-        "type": "uint64"
+        "internalType": "uint16",
+        "name": "bps",
+        "type": "uint16"
       }
     ],
-    "name": "setDefaultDestWeight",
+    "name": "setDefaultSlippageBps",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1534,12 +1493,12 @@ export const XCMProxyABI = [
   {
     "inputs": [
       {
-        "internalType": "uint16",
-        "name": "bps",
-        "type": "uint16"
+        "internalType": "address",
+        "name": "_emergencyAdmin",
+        "type": "address"
       }
     ],
-    "name": "setDefaultSlippageBps",
+    "name": "setEmergencyAdmin",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1558,6 +1517,19 @@ export const XCMProxyABI = [
       }
     ],
     "name": "setIntegrations",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_offset",
+        "type": "uint256"
+      }
+    ],
+    "name": "setMaxDeadlineOffset",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1622,7 +1594,7 @@ export const XCMProxyABI = [
         "type": "address"
       }
     ],
-    "name": "setXTokensPrecompile",
+    "name": "setXcmPrecompile",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1657,6 +1629,44 @@ export const XCMProxyABI = [
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "positionId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "baseAsset",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "beneficiary",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minAmountOut0",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "minAmountOut1",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint160",
+        "name": "limitSqrtPrice",
+        "type": "uint160"
+      }
+    ],
+    "name": "swapAndReturn",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -1730,6 +1740,19 @@ export const XCMProxyABI = [
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "testModeFrozen",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -1788,12 +1811,12 @@ export const XCMProxyABI = [
   },
   {
     "inputs": [],
-    "name": "xTokensPrecompile",
+    "name": "xcmConfigFrozen",
     "outputs": [
       {
-        "internalType": "address",
+        "internalType": "bool",
         "name": "",
-        "type": "address"
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -1801,12 +1824,12 @@ export const XCMProxyABI = [
   },
   {
     "inputs": [],
-    "name": "xcmConfigFrozen",
+    "name": "xcmPrecompile",
     "outputs": [
       {
-        "internalType": "bool",
+        "internalType": "address",
         "name": "",
-        "type": "bool"
+        "type": "address"
       }
     ],
     "stateMutability": "view",

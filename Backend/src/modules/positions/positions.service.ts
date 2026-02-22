@@ -5,7 +5,7 @@
  * Syncs position status with on-chain state.
  */
 
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Position, PositionStatus } from './entities/position.entity';
@@ -228,6 +228,77 @@ export class PositionsService {
 
     this.logger.log(`Position ${id} marked as LIQUIDATED, returned: ${returnedAmount}`);
     return this.findOne(id);
+  }
+
+  /**
+   * Liquidate position: remove LP, swap to base asset, return to Asset Hub.
+   * Orchestrates moonbeamService calls.
+   */
+  async liquidate(
+    positionId: string,
+    opts?: { baseAsset?: string; recipientAddress?: string },
+  ): Promise<Position> {
+    const position = await this.findOne(positionId);
+
+    const liquidatable = [PositionStatus.ACTIVE, PositionStatus.OUT_OF_RANGE];
+    if (!liquidatable.includes(position.status)) {
+      throw new BadRequestException(
+        `Position ${positionId} is ${position.status}, must be ACTIVE or OUT_OF_RANGE`,
+      );
+    }
+
+    if (!position.moonbeamPositionId) {
+      throw new BadRequestException(`Position ${positionId} has no Moonbeam ID`);
+    }
+
+    // Determine base asset: caller override > position's stored baseAsset
+    const baseAsset = opts?.baseAsset || position.baseAsset;
+    if (!baseAsset) {
+      throw new BadRequestException('No base asset specified');
+    }
+
+    // Beneficiary address for XCM return (contract handles EE-padding for AccountId32)
+    const beneficiary = opts?.recipientAddress || position.userId;
+
+    // Lock status to prevent double-liquidation
+    const result = await this.positionRepository.update(
+      { id: positionId, status: In(liquidatable) },
+      { status: PositionStatus.LIQUIDATION_PENDING },
+    );
+    if (result.affected === 0) {
+      throw new BadRequestException('Position status changed concurrently');
+    }
+
+    try {
+      this.logger.log(
+        `Liquidating position ${positionId} (moonbeam #${position.moonbeamPositionId})`,
+      );
+
+      await this.moonbeamService.liquidateSwapAndReturn({
+        positionId: parseInt(position.moonbeamPositionId),
+        baseAsset,
+        beneficiary,
+        minAmountOut0: 0n,
+        minAmountOut1: 0n,
+        limitSqrtPrice: 0n,
+        assetHubPositionId: position.assetHubPositionId,
+      });
+
+      await this.positionRepository.update(positionId, {
+        status: PositionStatus.LIQUIDATED,
+        liquidatedAt: new Date(),
+      });
+
+      this.logger.log(`Position ${positionId} liquidated successfully`);
+      return this.findOne(positionId);
+    } catch (error) {
+      this.logger.error(`Liquidation failed for ${positionId}: ${error.message}`);
+      // Revert to previous status so operator can retry
+      await this.positionRepository.update(positionId, {
+        status: PositionStatus.OUT_OF_RANGE,
+      });
+      throw error;
+    }
   }
 
   /**

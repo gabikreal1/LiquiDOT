@@ -421,24 +421,17 @@ describe("XCMProxy Testnet - Emergency & Admin Functions", function () {
   });
 
   describe("Position Queries", function () {
-    it("should get active positions", async function () {
-      const activePositions = await proxy.getActivePositions();
-      
-      console.log(`   ✓ Active positions: ${activePositions.length}`);
-      
-      if (activePositions.length > 0) {
-        const first = activePositions[0];
-        console.log(`   First position pool: ${first.pool}`);
-        console.log(`   First position owner: ${first.owner}`);
-        console.log(`   First position liquidity: ${first.liquidity}`);
-      }
+    it("should get user position count", async function () {
+      const count = await proxy.getUserPositionCount(owner.address);
+      console.log(`   ✓ User position count: ${count}`);
     });
 
-    it("should get user positions", async function () {
-      const userPositionIds = await proxy.getUserPositions(owner.address);
-      
+    it("should get user positions (paginated)", async function () {
+      const count = await proxy.getUserPositionCount(owner.address);
+      const userPositionIds = await proxy.getUserPositions(owner.address, 0, count > 0 ? count : 10);
+
       console.log(`   ✓ User positions: ${userPositionIds.length}`);
-      
+
       if (userPositionIds.length > 0) {
         console.log(`   First position ID: ${userPositionIds[0]}`);
       }
@@ -454,12 +447,11 @@ describe("XCMProxy Testnet - Emergency & Admin Functions", function () {
       const nfpm = await proxy.nfpmContract();
       const quoter = await proxy.quoterContract();
       const router = await proxy.swapRouterContract();
-      const xTokens = await proxy.xTokensPrecompile();
+      const xcmPre = await proxy.xcmPrecompile();
       const paraId = await proxy.assetHubParaId();
       const frozen = await proxy.xcmConfigFrozen();
       const slippage = await proxy.defaultSlippageBps();
       const positions = await proxy.positionCounter();
-      const activePositions = await proxy.getActivePositions();
 
       console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
       console.log(`       XCMProxy Health Check Summary`);
@@ -479,7 +471,7 @@ describe("XCMProxy Testnet - Emergency & Admin Functions", function () {
       console.log(`   Router:          ${router === ethers.ZeroAddress ? '❌' : '✅'} ${router}`);
       
       console.log(`\n🌉 XCM Configuration:`);
-      console.log(`   XTokens:         ${xTokens === ethers.ZeroAddress ? '❌' : '✅'} ${xTokens}`);
+      console.log(`   XCM Precompile:  ${xcmPre === ethers.ZeroAddress ? '❌' : '✅'} ${xcmPre}`);
       console.log(`   Asset Hub ID:    ${paraId === 0 ? '❌ Not Set' : '✅ ' + paraId}`);
       
       console.log(`\n⚙️  Operating Parameters:`);
@@ -487,7 +479,6 @@ describe("XCMProxy Testnet - Emergency & Admin Functions", function () {
       
       console.log(`\n📊 Position Statistics:`);
       console.log(`   Total Created:    ${positions}`);
-      console.log(`   Currently Active: ${activePositions.length}`);
       
       console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
 
@@ -495,7 +486,7 @@ describe("XCMProxy Testnet - Emergency & Admin Functions", function () {
       const integrationReady = nfpm !== ethers.ZeroAddress && 
                                quoter !== ethers.ZeroAddress && 
                                router !== ethers.ZeroAddress;
-      const xcmReady = xTokens !== ethers.ZeroAddress && paraId !== 0;
+      const xcmReady = xcmPre !== ethers.ZeroAddress && paraId !== 0;
 
       if (!isPaused && testMode && integrationReady) {
         console.log(`✅ CONTRACT READY FOR TESTNET OPERATIONS\n`);
