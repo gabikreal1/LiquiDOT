@@ -8,10 +8,14 @@ import { BlockchainEventListenerService } from './services/event-listener.servic
 import { TestModeService } from './services/test-mode.service';
 import { XcmRetryService } from './services/xcm-retry.service';
 import { EventPersistenceService } from './services/event-persistence.service';
+import { PriceService } from './services/price.service';
+import { TokenMathService } from './services/token-math.service';
 import { PapiModule } from './papi/papi.module';
 import { User } from '../users/entities/user.entity';
 import { Position } from '../positions/entities/position.entity';
 import { Pool } from '../pools/entities/pool.entity';
+import { ActivityLog } from '../activity-logs/entities/activity-log.entity';
+import { PositionEventBusService } from '../positions/position-event-bus.service';
 import { BlockchainController } from './blockchain.controller';
 import { BlockchainDiagnosticsController } from './blockchain-diagnostics.controller';
 import { BlockchainDiagnosticsService } from './blockchain-diagnostics.service';
@@ -54,7 +58,7 @@ import { ActivityLogsModule } from '../activity-logs/activity-logs.module';
 @Module({
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([User, Position, Pool]),
+    TypeOrmModule.forFeature([User, Position, Pool, ActivityLog]),
     PapiModule,
     ActivityLogsModule,
   ],
@@ -75,7 +79,12 @@ import { ActivityLogsModule } from '../activity-logs/activity-logs.module';
     // Diagnostics
     BlockchainDiagnosticsService,
 
+    // Pricing & math
+    PriceService,
+    TokenMathService,
+
     // Event handling
+    PositionEventBusService,
     BlockchainEventListenerService,
     EventPersistenceService,
   ],
@@ -87,6 +96,9 @@ import { ActivityLogsModule } from '../activity-logs/activity-logs.module';
     TestModeService,
     XcmRetryService,
     BlockchainDiagnosticsService,
+    PriceService,
+    TokenMathService,
+    PositionEventBusService,
   ],
 })
 export class BlockchainModule { }

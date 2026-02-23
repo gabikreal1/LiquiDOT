@@ -5,6 +5,8 @@ import { BlockchainEventListenerService } from './event-listener.service';
 import { User } from '../../users/entities/user.entity';
 import { Position, PositionStatus } from '../../positions/entities/position.entity';
 import { Pool } from '../../pools/entities/pool.entity';
+import { ActivityLog, ActivityType, ActivityStatus } from '../../activity-logs/entities/activity-log.entity';
+import { PositionEventBusService } from '../../positions/position-event-bus.service';
 
 /**
  * EventPersistenceService
@@ -31,6 +33,9 @@ export class EventPersistenceService implements OnModuleInit {
     private positionRepository: Repository<Position>,
     @InjectRepository(Pool)
     private poolRepository: Repository<Pool>,
+    @InjectRepository(ActivityLog)
+    private activityLogRepository: Repository<ActivityLog>,
+    private positionEventBus: PositionEventBusService,
   ) {}
 
   /**
@@ -146,8 +151,15 @@ export class EventPersistenceService implements OnModuleInit {
         this.logger.log(`Created user from deposit event: ${event.user}`);
       }
 
-      // Note: Actual balance is tracked on-chain via AssetHubService
-      // This event is for logging/analytics purposes
+      // Create activity log with txHash
+      await this.activityLogRepository.save(this.activityLogRepository.create({
+        userId: user.id,
+        type: ActivityType.INVESTMENT,
+        status: ActivityStatus.CONFIRMED,
+        txHash: event.transactionHash,
+        details: { action: 'deposit', amount: event.amount, blockNumber: event.blockNumber },
+      }));
+
       this.logger.log(`Deposit recorded: ${event.user} deposited ${event.amount} (tx: ${event.transactionHash})`);
     } catch (error) {
       this.logger.error(`Failed to handle deposit: ${error.message}`, error.stack);
@@ -164,9 +176,23 @@ export class EventPersistenceService implements OnModuleInit {
     transactionHash: string;
   }): Promise<void> {
     this.logger.log(`Processing withdrawal: ${event.user} withdrew ${event.amount}`);
-    
-    // Withdrawal tracking for analytics
-    // Actual balance updates come from blockchain queries
+
+    try {
+      const user = await this.userRepository.findOne({
+        where: { walletAddress: event.user.toLowerCase() },
+      });
+      if (user) {
+        await this.activityLogRepository.save(this.activityLogRepository.create({
+          userId: user.id,
+          type: ActivityType.WITHDRAWAL,
+          status: ActivityStatus.CONFIRMED,
+          txHash: event.transactionHash,
+          details: { action: 'withdrawal', amount: event.amount, blockNumber: event.blockNumber },
+        }));
+      }
+    } catch (error) {
+      this.logger.error(`Failed to handle withdrawal: ${error.message}`, error.stack);
+    }
   }
 
   /**
@@ -212,14 +238,24 @@ export class EventPersistenceService implements OnModuleInit {
           amount: event.amount,
           chainId: event.chainId,
           status: PositionStatus.PENDING_EXECUTION,
+          assetHubTxHash: event.transactionHash,
           createdAt: new Date(),
         });
       } else {
         position.status = PositionStatus.PENDING_EXECUTION;
+        position.assetHubTxHash = event.transactionHash;
       }
 
       await this.positionRepository.save(position);
       this.logger.log(`Position created/updated: ${event.positionId} - PENDING_EXECUTION`);
+
+      this.positionEventBus.emit(position.userId, {
+        type: 'CREATED',
+        positionId: event.positionId,
+        status: 'PENDING_EXECUTION',
+        txHash: event.transactionHash,
+        timestamp: new Date(),
+      });
     } catch (error) {
       this.logger.error(`Failed to handle investment initiated: ${error.message}`, error.stack);
     }
@@ -255,6 +291,14 @@ export class EventPersistenceService implements OnModuleInit {
 
       await this.positionRepository.save(position);
       this.logger.log(`Position updated: ${event.positionId} - ACTIVE (remote: ${event.remotePositionId})`);
+
+      this.positionEventBus.emit(position.userId, {
+        type: 'EXECUTED',
+        positionId: event.positionId,
+        status: 'ACTIVE',
+        txHash: event.transactionHash,
+        timestamp: new Date(),
+      });
     } catch (error) {
       this.logger.error(`Failed to handle execution confirmed: ${error.message}`, error.stack);
     }
@@ -288,6 +332,14 @@ export class EventPersistenceService implements OnModuleInit {
 
       await this.positionRepository.save(position);
       this.logger.log(`Position updated: ${event.positionId} - LIQUIDATED (returned: ${event.finalAmount})`);
+
+      this.positionEventBus.emit(position.userId, {
+        type: 'LIQUIDATED',
+        positionId: event.positionId,
+        status: 'LIQUIDATED',
+        txHash: event.transactionHash,
+        timestamp: new Date(),
+      });
     } catch (error) {
       this.logger.error(`Failed to handle position liquidated: ${error.message}`, error.stack);
     }
@@ -305,13 +357,37 @@ export class EventPersistenceService implements OnModuleInit {
     transactionHash: string;
   }): Promise<void> {
     this.logger.log(`Liquidation settled: ${event.positionId} - received: ${event.receivedAmount}, expected: ${event.expectedAmount}`);
-    
+
     // Log any slippage for analytics
     const received = BigInt(event.receivedAmount);
     const expected = BigInt(event.expectedAmount);
     if (received < expected) {
       const slippage = ((expected - received) * 10000n) / expected;
       this.logger.warn(`Slippage detected: ${Number(slippage) / 100}% on position ${event.positionId}`);
+    }
+
+    // Create activity log with txHash
+    try {
+      const position = await this.positionRepository.findOne({
+        where: { assetHubPositionId: event.positionId },
+      });
+      if (position) {
+        await this.activityLogRepository.save(this.activityLogRepository.create({
+          userId: position.userId,
+          type: ActivityType.LIQUIDATION,
+          status: ActivityStatus.CONFIRMED,
+          txHash: event.transactionHash,
+          positionId: event.positionId,
+          details: {
+            action: 'liquidation_settled',
+            receivedAmount: event.receivedAmount,
+            expectedAmount: event.expectedAmount,
+            slippageBps: expected > 0n ? Number(((expected - received) * 10000n) / expected) : 0,
+          },
+        }));
+      }
+    } catch (error) {
+      this.logger.error(`Failed to log liquidation settlement: ${error.message}`);
     }
   }
 
@@ -359,6 +435,7 @@ export class EventPersistenceService implements OnModuleInit {
         // Update with Moonbeam-specific data
         position.moonbeamPositionId = String(event.localPositionId);
         position.liquidity = event.liquidity;
+        position.moonbeamTxHash = event.transactionHash;
         await this.positionRepository.save(position);
       }
     } catch (error) {
@@ -404,6 +481,14 @@ export class EventPersistenceService implements OnModuleInit {
         position.status = PositionStatus.FAILED;
         await this.positionRepository.save(position);
         this.logger.log(`Position marked as FAILED: ${event.assetHubPositionId}`);
+
+        this.positionEventBus.emit(position.userId, {
+          type: 'FAILED',
+          positionId: event.assetHubPositionId,
+          status: 'FAILED',
+          txHash: event.transactionHash,
+          timestamp: new Date(),
+        });
       }
     } catch (error) {
       this.logger.error(`Failed to handle cancelled position: ${error.message}`);

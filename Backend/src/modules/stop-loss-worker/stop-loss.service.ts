@@ -29,12 +29,20 @@ import {
   MonitoredPositionStatus
 } from './types/stop-loss.types';
 
+/** Cached pool state for batch tick lookups */
+interface PoolStateCache {
+  currentTick: number;
+  cachedAt: number;
+}
+
 @Injectable()
 export class StopLossService implements OnModuleInit {
   private readonly logger = new Logger(StopLossService.name);
   private readonly config: StopLossConfig;
   private isProcessing = false;
   private readonly enabled: boolean;
+  private readonly poolStateCache = new Map<string, PoolStateCache>();
+  private readonly POOL_CACHE_TTL_MS = 15_000; // 15 seconds
 
   constructor(
     @InjectRepository(Position)
@@ -85,13 +93,15 @@ export class StopLossService implements OnModuleInit {
   }
 
   /**
-   * Check all active positions for stop-loss/take-profit conditions
+   * Check all active positions for stop-loss/take-profit conditions.
+   * Also picks up positions that are ACTIVE with retryCount > 0 (scheduled for retry),
+   * applying exponential backoff before re-attempting liquidation.
    */
   private async checkActivePositions(): Promise<void> {
     // Get active positions that are not already being liquidated
     const positions = await this.positionRepository.find({
-      where: { 
-        status: In([PositionStatus.ACTIVE]) 
+      where: {
+        status: In([PositionStatus.ACTIVE])
       },
       take: this.config.batchSize,
       relations: ['pool', 'user'],
@@ -104,11 +114,66 @@ export class StopLossService implements OnModuleInit {
 
     this.logger.debug(`Checking ${positions.length} active positions`);
 
+    // Batch: group positions by pool and pre-fetch pool state
+    const poolIds = [...new Set(positions.map((p) => p.pool?.poolAddress).filter(Boolean))];
+    await this.prefetchPoolStates(poolIds as string[]);
+
     for (const position of positions) {
       try {
+        // Exponential backoff: skip if too soon since last failure
+        if (position.retryCount > 0 && position.lastFailedAt) {
+          const backoffMs = Math.pow(2, position.retryCount) * this.config.checkIntervalMs;
+          const nextRetryAt = new Date(position.lastFailedAt.getTime() + backoffMs);
+          if (new Date() < nextRetryAt) {
+            this.logger.debug(
+              `Skipping position ${position.id} (retry ${position.retryCount}, next attempt at ${nextRetryAt.toISOString()})`,
+            );
+            continue;
+          }
+        }
+
+        // Try local tick comparison first using cached pool state
+        if (position.lowerTick != null && position.upperTick != null && position.pool?.poolAddress) {
+          const cachedState = this.poolStateCache.get(position.pool.poolAddress);
+          if (cachedState) {
+            const outOfRange = cachedState.currentTick < position.lowerTick || cachedState.currentTick >= position.upperTick;
+            if (!outOfRange) {
+              // Position is in range, skip expensive RPC call
+              continue;
+            }
+            // Out of range locally — fall through to full check for liquidation
+          }
+        }
+
         await this.checkPosition(position);
       } catch (error) {
         this.logger.error(`Error checking position ${position.id}:`, error);
+      }
+    }
+  }
+
+  /**
+   * Pre-fetch pool states for batch processing.
+   * Uses a 15s TTL cache to avoid redundant RPC calls.
+   */
+  private async prefetchPoolStates(poolAddresses: string[]): Promise<void> {
+    const now = Date.now();
+    const toFetch = poolAddresses.filter((addr) => {
+      const cached = this.poolStateCache.get(addr);
+      return !cached || (now - cached.cachedAt > this.POOL_CACHE_TTL_MS);
+    });
+
+    for (const addr of toFetch) {
+      try {
+        const state = await this.moonbeamService.getPoolState(addr);
+        if (state) {
+          this.poolStateCache.set(addr, {
+            currentTick: state.currentTick,
+            cachedAt: now,
+          });
+        }
+      } catch (error) {
+        this.logger.debug(`Could not fetch pool state for ${addr}: ${error.message}`);
       }
     }
   }
@@ -246,15 +311,35 @@ export class StopLossService implements OnModuleInit {
       this.logger.error(`Failed to liquidate position ${position.id}:`, error);
       result.error = error instanceof Error ? error.message : 'Unknown error';
 
-      // Mark as FAILED and alert
-      await this.positionRepository.update(
-        { id: position.id },
-        { status: PositionStatus.FAILED }
-      );
+      const newRetryCount = (position.retryCount || 0) + 1;
 
-      // Alert for manual intervention
-      if (this.config.alertOnFailure) {
-        await this.sendAlert(position, error);
+      if (newRetryCount < this.config.maxRetries) {
+        // Retry: set back to ACTIVE with incremented retryCount
+        await this.positionRepository.update(
+          { id: position.id },
+          {
+            status: PositionStatus.ACTIVE,
+            retryCount: newRetryCount,
+            lastFailedAt: new Date(),
+          },
+        );
+        this.logger.warn(
+          `Position ${position.id} liquidation failed (attempt ${newRetryCount}/${this.config.maxRetries}), will retry`,
+        );
+      } else {
+        // Retries exhausted: mark as FAILED and alert
+        await this.positionRepository.update(
+          { id: position.id },
+          {
+            status: PositionStatus.FAILED,
+            retryCount: newRetryCount,
+            lastFailedAt: new Date(),
+          },
+        );
+
+        if (this.config.alertOnFailure) {
+          await this.sendAlert(position, error);
+        }
       }
     }
 

@@ -10,6 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Position, PositionStatus } from './entities/position.entity';
 import { MoonbeamService } from '../blockchain/services/moonbeam.service';
+import * as TokenMath from '../../common/token-math';
 
 export interface CreatePositionDto {
   userId: string;
@@ -305,7 +306,7 @@ export class PositionsService {
    * Calculate P&L for a position
    */
   async calculatePnL(position: Position): Promise<PositionPnL> {
-    const entryAmount = parseFloat(position.amount) / 1e18;
+    const entryAmount = TokenMath.planckToDot(position.amount);
     let currentValue = entryAmount;
     let feesEarned = 0;
 
@@ -315,8 +316,9 @@ export class PositionsService {
         const fees = await this.moonbeamService.collectFees(
           parseInt(position.moonbeamPositionId)
         );
-        feesEarned = Number(fees.amount0 + fees.amount1) / 1e18;
-        // TODO: Calculate current position value based on liquidity
+        // Fees are in pool token units — use DOT decimals as approximation
+        // TODO: Convert each fee token separately when multi-token pricing is available
+        feesEarned = TokenMath.smallestUnitToDecimal(fees.amount0 + fees.amount1, TokenMath.DOT_DECIMALS);
       } catch (error) {
         this.logger.warn(`Could not fetch fees for position ${position.id}`);
       }
@@ -324,7 +326,7 @@ export class PositionsService {
 
     // If liquidated, use returned amount
     if (position.status === PositionStatus.LIQUIDATED && position.returnedAmount) {
-      currentValue = parseFloat(position.returnedAmount) / 1e18;
+      currentValue = TokenMath.planckToDot(position.returnedAmount);
     }
 
     // Simplified IL calculation (would need actual price data)

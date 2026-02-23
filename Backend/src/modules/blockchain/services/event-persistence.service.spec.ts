@@ -6,6 +6,8 @@ import { BlockchainEventListenerService } from './event-listener.service';
 import { User } from '../../users/entities/user.entity';
 import { Position, PositionStatus } from '../../positions/entities/position.entity';
 import { Pool } from '../../pools/entities/pool.entity';
+import { ActivityLog } from '../../activity-logs/entities/activity-log.entity';
+import { PositionEventBusService } from '../../positions/position-event-bus.service';
 
 describe('EventPersistenceService', () => {
   let service: EventPersistenceService;
@@ -33,6 +35,11 @@ describe('EventPersistenceService', () => {
       findOne: jest.fn(),
     };
 
+    const mockActivityLogRepository = {
+      create: jest.fn((data) => data),
+      save: jest.fn().mockResolvedValue({}),
+    };
+
     // Create mock event listener that captures registered callbacks
     const mockEventListener = {
       registerCallbacks: jest.fn((callbacks) => {
@@ -58,6 +65,14 @@ describe('EventPersistenceService', () => {
         {
           provide: getRepositoryToken(Pool),
           useValue: mockPoolRepository,
+        },
+        {
+          provide: getRepositoryToken(ActivityLog),
+          useValue: mockActivityLogRepository,
+        },
+        {
+          provide: PositionEventBusService,
+          useValue: { emit: jest.fn() },
         },
       ],
     }).compile();

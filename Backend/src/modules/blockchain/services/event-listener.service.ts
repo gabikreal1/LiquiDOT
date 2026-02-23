@@ -1,7 +1,12 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { AssetHubService, AssetHubEventCallbacks } from './asset-hub.service';
 import { MoonbeamService, MoonbeamEventCallbacks } from './moonbeam.service';
+import { XcmRetryService } from './xcm-retry.service';
+import { Position, PositionStatus } from '../../positions/entities/position.entity';
+import { ActivityLog, ActivityType, ActivityStatus } from '../../activity-logs/entities/activity-log.entity';
 
 /**
  * Combined event callbacks for both chains
@@ -67,6 +72,9 @@ export class BlockchainEventListenerService implements OnModuleInit, OnModuleDes
   private readonly logger = new Logger(BlockchainEventListenerService.name);
   private isListening = false;
   private callbacks: BlockchainEventCallbacks = {};
+  private reconnectAttempt = 0;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly maxReconnectDelay = 60_000; // 1 minute max backoff
   
   private stats: EventStats = {
     assetHub: {
@@ -91,6 +99,11 @@ export class BlockchainEventListenerService implements OnModuleInit, OnModuleDes
     private configService: ConfigService,
     private assetHubService: AssetHubService,
     private moonbeamService: MoonbeamService,
+    private xcmRetryService: XcmRetryService,
+    @InjectRepository(Position)
+    private positionRepository: Repository<Position>,
+    @InjectRepository(ActivityLog)
+    private activityLogRepository: Repository<ActivityLog>,
   ) {}
 
   /**
@@ -154,6 +167,7 @@ export class BlockchainEventListenerService implements OnModuleInit, OnModuleDes
 
     this.isListening = true;
     this.stats.isListening = true;
+    this.reconnectAttempt = 0;
     this.logger.log('Blockchain event listeners started');
   }
 
@@ -161,18 +175,53 @@ export class BlockchainEventListenerService implements OnModuleInit, OnModuleDes
    * Stop listening to blockchain events
    */
   async stopListening(): Promise<void> {
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+
     if (!this.isListening) {
       return;
     }
 
     this.logger.log('Stopping blockchain event listeners...');
-    
+
     this.assetHubService.removeAllListeners();
     this.moonbeamService.removeAllListeners();
-    
+
     this.isListening = false;
     this.stats.isListening = false;
     this.logger.log('Blockchain event listeners stopped');
+  }
+
+  /**
+   * Attempt to reconnect with exponential backoff.
+   * Called when a WebSocket disconnect or provider error is detected.
+   */
+  private scheduleReconnect(): void {
+    if (this.reconnectTimer) return; // Already scheduled
+
+    this.reconnectAttempt++;
+    const delay = Math.min(
+      1000 * Math.pow(2, this.reconnectAttempt),
+      this.maxReconnectDelay,
+    );
+
+    this.logger.warn(`Scheduling reconnection attempt ${this.reconnectAttempt} in ${delay}ms`);
+
+    this.reconnectTimer = setTimeout(async () => {
+      this.reconnectTimer = null;
+      try {
+        this.isListening = false;
+        this.stats.isListening = false;
+        await this.startListening();
+        this.reconnectAttempt = 0; // Reset on success
+        this.logger.log('Reconnection successful');
+      } catch (err) {
+        this.logger.error(`Reconnection failed: ${err instanceof Error ? err.message : String(err)}`);
+        this.scheduleReconnect(); // Try again with further backoff
+      }
+    }, delay);
   }
 
   /**
@@ -266,6 +315,20 @@ export class BlockchainEventListenerService implements OnModuleInit, OnModuleDes
     };
 
     this.assetHubService.setupEventListeners(assetHubCallbacks);
+
+    // Monitor for provider errors to trigger reconnection
+    try {
+      const provider = (this.assetHubService as any).provider;
+      if (provider?.on) {
+        provider.on('error', (err: Error) => {
+          this.logger.error(`AssetHub provider error: ${err.message}`);
+          this.scheduleReconnect();
+        });
+      }
+    } catch {
+      // Provider access not available — skip
+    }
+
     this.logger.log('AssetHub event listeners configured');
   }
 
@@ -286,14 +349,27 @@ export class BlockchainEventListenerService implements OnModuleInit, OnModuleDes
         this.logger.log(`Moonbeam Pending Position: ${event.assetHubPositionId} — auto-executing`);
         this.callbacks.moonbeam?.onPendingPositionCreated?.(event);
 
-        // Orchestration: auto-execute the pending investment on Moonbeam
-        this.moonbeamService.executePendingInvestment(event.assetHubPositionId)
-          .then((localId) => {
-            this.logger.log(`Auto-executed pending position ${event.assetHubPositionId} → local ID ${localId}`);
-          })
-          .catch((err) => {
-            this.logger.error(`Failed to auto-execute pending position ${event.assetHubPositionId}: ${err.message}`);
-          });
+        // Orchestration: auto-execute the pending investment on Moonbeam (with retry)
+        this.xcmRetryService.executeWithRetry(
+          () => this.moonbeamService.executePendingInvestment(event.assetHubPositionId),
+        ).then(async (attempt) => {
+          if (attempt.success) {
+            this.logger.log(`Auto-executed pending position ${event.assetHubPositionId} → local ID ${attempt.result} (${attempt.attempts} attempt(s))`);
+          } else {
+            this.logger.error(`Failed to auto-execute pending position ${event.assetHubPositionId} after ${attempt.attempts} attempts: ${attempt.error?.message}`);
+            // Mark position as FAILED after exhausting retries
+            try {
+              await this.positionRepository.update(
+                { assetHubPositionId: event.assetHubPositionId },
+                { status: PositionStatus.FAILED, lastFailedAt: new Date() },
+              );
+            } catch (dbErr) {
+              this.logger.error(`Failed to update position status: ${dbErr}`);
+            }
+          }
+        }).catch((err) => {
+          this.logger.error(`Unexpected error in executePendingInvestment retry: ${err.message}`);
+        });
       },
 
       onPositionExecuted: (event) => {
@@ -302,18 +378,34 @@ export class BlockchainEventListenerService implements OnModuleInit, OnModuleDes
         this.logger.log(`Moonbeam Position Executed: ${event.localPositionId} (AH: ${event.assetHubPositionId})`);
         this.callbacks.moonbeam?.onPositionExecuted?.(event);
 
-        // Orchestration: confirm execution on AssetHub so position moves PENDING → ACTIVE
-        this.assetHubService.confirmExecution(
-          event.assetHubPositionId,
-          event.localPositionId.toString(),
-          BigInt(event.liquidity),
-        )
-          .then(() => {
-            this.logger.log(`Confirmed execution on AssetHub for position ${event.assetHubPositionId}`);
-          })
-          .catch((err) => {
-            this.logger.error(`Failed to confirm execution on AssetHub for ${event.assetHubPositionId}: ${err.message}`);
-          });
+        // Orchestration: confirm execution on AssetHub so position moves PENDING → ACTIVE (with retry)
+        this.xcmRetryService.executeWithRetry(
+          () => this.assetHubService.confirmExecution(
+            event.assetHubPositionId,
+            event.localPositionId.toString(),
+            BigInt(event.liquidity),
+          ),
+        ).then(async (attempt) => {
+          if (attempt.success) {
+            this.logger.log(`Confirmed execution on AssetHub for position ${event.assetHubPositionId} (${attempt.attempts} attempt(s))`);
+          } else {
+            this.logger.error(`Failed to confirm execution on AssetHub for ${event.assetHubPositionId} after ${attempt.attempts} attempts: ${attempt.error?.message}`);
+            // Log the failure for manual recovery
+            try {
+              await this.activityLogRepository.save(this.activityLogRepository.create({
+                userId: (await this.positionRepository.findOne({ where: { assetHubPositionId: event.assetHubPositionId } }))?.userId,
+                type: ActivityType.ERROR,
+                status: ActivityStatus.FAILED,
+                positionId: event.assetHubPositionId,
+                details: { error: attempt.error?.message, operation: 'confirmExecution', attempts: attempt.attempts },
+              }));
+            } catch (dbErr) {
+              this.logger.error(`Failed to create error activity log: ${dbErr}`);
+            }
+          }
+        }).catch((err) => {
+          this.logger.error(`Unexpected error in confirmExecution retry: ${err.message}`);
+        });
       },
 
       onPositionLiquidated: (event) => {
@@ -335,21 +427,41 @@ export class BlockchainEventListenerService implements OnModuleInit, OnModuleDes
         this.logger.log(`Moonbeam Assets Returned: ${event.amount} for position ${event.positionId}`);
         this.callbacks.moonbeam?.onAssetsReturned?.(event);
 
-        // Orchestration: settle liquidation on AssetHub
-        // Look up the AssetHub position ID from the Moonbeam position
+        // Orchestration: settle liquidation on AssetHub (with retry)
         this.moonbeamService.getPosition(event.positionId)
-          .then((pos) => {
+          .then(async (pos) => {
             if (!pos) {
               this.logger.warn(`Cannot settle: Moonbeam position ${event.positionId} not found`);
               return;
             }
-            return this.assetHubService.settleLiquidation(
-              pos.assetHubPositionId,
-              BigInt(event.amount),
+
+            const attempt = await this.xcmRetryService.executeWithRetry(
+              () => this.assetHubService.settleLiquidation(
+                pos.assetHubPositionId,
+                BigInt(event.amount),
+              ),
             );
-          })
-          .then(() => {
-            this.logger.log(`Settled liquidation on AssetHub for Moonbeam position ${event.positionId}`);
+
+            if (attempt.success) {
+              this.logger.log(`Settled liquidation on AssetHub for Moonbeam position ${event.positionId} (${attempt.attempts} attempt(s))`);
+            } else {
+              this.logger.error(`Failed to settle liquidation for position ${event.positionId} after ${attempt.attempts} attempts: ${attempt.error?.message}`);
+              // Log the failure for manual recovery
+              try {
+                const dbPos = await this.positionRepository.findOne({ where: { assetHubPositionId: pos.assetHubPositionId } });
+                if (dbPos) {
+                  await this.activityLogRepository.save(this.activityLogRepository.create({
+                    userId: dbPos.userId,
+                    type: ActivityType.ERROR,
+                    status: ActivityStatus.FAILED,
+                    positionId: pos.assetHubPositionId,
+                    details: { error: attempt.error?.message, operation: 'settleLiquidation', attempts: attempt.attempts, amount: event.amount },
+                  }));
+                }
+              } catch (dbErr) {
+                this.logger.error(`Failed to create error activity log: ${dbErr}`);
+              }
+            }
           })
           .catch((err) => {
             this.logger.error(`Failed to settle liquidation for position ${event.positionId}: ${err.message}`);
@@ -365,6 +477,20 @@ export class BlockchainEventListenerService implements OnModuleInit, OnModuleDes
     };
 
     this.moonbeamService.setupEventListeners(moonbeamCallbacks);
+
+    // Monitor for provider errors to trigger reconnection
+    try {
+      const provider = (this.moonbeamService as any).provider;
+      if (provider?.on) {
+        provider.on('error', (err: Error) => {
+          this.logger.error(`Moonbeam provider error: ${err.message}`);
+          this.scheduleReconnect();
+        });
+      }
+    } catch {
+      // Provider access not available — skip
+    }
+
     this.logger.log('Moonbeam event listeners configured');
   }
 }

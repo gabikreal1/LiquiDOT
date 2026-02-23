@@ -16,9 +16,13 @@ LiquiDOT is a decentralized application that automates liquidity provision and l
 ## Features
 
 - **Automated Investment**: Users initiate intent on Asset Hub; backend orchestrates XCM to move funds to Moonbeam and provide liquidity.
-- **Stop-Loss Protection**: Background workers monitor positions 24/7 and automatically liquidate them if prices fall out of range.
+- **Stop-Loss Protection**: Background workers monitor positions 24/7 with batch pool state optimization and automatically liquidate them if prices fall out of range.
+- **XCM Retry & Tracking**: All cross-chain operations use exponential backoff retry with error classification. Transaction hashes (`assetHubTxHash`, `moonbeamTxHash`) tracked on every position.
+- **Dashboard API**: Pre-aggregated endpoint (`GET /dashboard/:userId`) returns balance, positions with P&L, recent activity, pool allocations, and portfolio summary.
+- **Real-Time SSE**: Server-Sent Events stream (`GET /positions/user/:userId/events`) pushes position status changes to the frontend instantly.
+- **RPC Rate Limiting**: Semaphore-based concurrency limiter prevents RPC burst scenarios on both Asset Hub and Moonbeam services.
 - **Dual-Stack Auth**: Secure login with both **Ethereum (SIWE)** and **Polkadot (SIWS)** wallets.
-- **Activity Tracking**: Real-time transparency into cross-chain operation status.
+- **Activity Tracking**: Real-time transparency into cross-chain operation status with tx hash linking.
 - **Portfolio Optimization**: Utility-maximizing allocation algorithm.
 
 ## Blockchain & XCM Operations
@@ -125,8 +129,10 @@ See [`.env.example`](.env.example) for all configuration options. Key variables:
 | `POST` | `/auth/login/substrate` | Login with Substrate wallet |
 | `GET` | `/users/:id/balance` | Get user balance |
 | `GET` | `/positions` | List positions |
+| `GET` | `/positions/user/:userId/events` | SSE stream of position status changes |
 | `POST` | `/preferences/:userId` | Set preferences |
 | `POST` | `/investmentDecisions` | Calculate allocation |
+| `GET` | `/dashboard/:userId` | Aggregated dashboard (balance, positions, P&L, activity, pools) |
 
 Full API documentation: [docs/API_REFERENCE.md](./docs/API_REFERENCE.md) or `/api/docs` (Swagger).
 
@@ -152,10 +158,12 @@ Full API documentation: [docs/API_REFERENCE.md](./docs/API_REFERENCE.md) or `/ap
 
 ## Deployment & CI/CD
 
-- **Infrastructure**: Provisioned via **Terraform** on Digital Ocean.
-  See [terraform-do/README.md](terraform-do/README.md) for details.
-- **CI/CD**: GitHub Actions triggers `terraform apply` on push to `main`.
-- **Secrets**: Requires `DIGITALOCEAN_TOKEN` in GitHub Secrets.
+- **Infrastructure**: Provisioned via **Terraform** on DigitalOcean App Platform + Managed PostgreSQL.
+  Config in `terraform-do/main.tf`. Both backend and frontend deploy as services in one DO App with path-based routing (`/api` → backend, `/` → frontend).
+- **CI**: `.github/workflows/ci.yml` — lint, build, and test on every PR and push to main.
+- **CD**: `.github/workflows/deploy.yml` — Terraform plan on PRs, auto-apply on merge to main. Application code deploys automatically via DO `deploy_on_push: true`.
+- **DB Migrations**: Auto-run on production startup (`migrationsRun: true`).
+- **Secrets**: `DIGITALOCEAN_TOKEN`, `JWT_SECRET`, `RELAYER_PRIVATE_KEY`, and other env vars configured as GitHub Secrets (passed via `TF_VAR_*`).
 
 ---
 **LiquiDOT Team** &copy; 2026

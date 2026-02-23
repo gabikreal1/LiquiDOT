@@ -28,6 +28,10 @@ export class PositionSyncService {
     @InjectRepository(Position) private readonly posRepo: Repository<Position>,
   ) {}
 
+  // Track users with 0 positions to skip for N cycles
+  private emptyUserSkipMap = new Map<string, number>();
+  private readonly EMPTY_USER_SKIP_CYCLES = 6; // Skip for ~3 hours (6 * 30min)
+
   @Cron('*/30 * * * *') // every 30 minutes
   async syncAllUsers(): Promise<void> {
     const enabled = this.config.get<boolean>('POSITION_SYNC_ENABLED', true);
@@ -41,13 +45,29 @@ export class PositionSyncService {
     const users = await this.userRepo.find({ where: {} });
     for (const u of users) {
       if (!u.walletAddress) continue;
+
+      // Skip users with 0 positions for N cycles
+      const skipsLeft = this.emptyUserSkipMap.get(u.id) || 0;
+      if (skipsLeft > 0) {
+        this.emptyUserSkipMap.set(u.id, skipsLeft - 1);
+        continue;
+      }
+
       try {
-        await this.syncUser(u.id, u.walletAddress);
+        const result = await this.syncUser(u.id, u.walletAddress);
+        if (result.upserts === 0) {
+          this.emptyUserSkipMap.set(u.id, this.EMPTY_USER_SKIP_CYCLES);
+        } else {
+          this.emptyUserSkipMap.delete(u.id);
+        }
       } catch (e) {
         this.logger.warn(
           `Position sync failed for userId=${u.id}: ${e instanceof Error ? e.message : String(e)}`,
         );
       }
+
+      // 1s delay between users to avoid overwhelming RPC
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
   }
 

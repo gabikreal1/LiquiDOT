@@ -74,6 +74,18 @@ export class Position {
   @Column({ type: 'timestamp', nullable: true })
   liquidatedAt: Date; // When position was closed
 
+  @Column({ type: 'int', default: 0 })
+  retryCount: number; // Number of liquidation retry attempts
+
+  @Column({ type: 'timestamp', nullable: true })
+  lastFailedAt: Date; // Last time liquidation failed (for exponential backoff)
+
+  @Column({ type: 'varchar', length: 66, nullable: true })
+  assetHubTxHash: string; // Transaction hash on Asset Hub (Phase 1 XCM)
+
+  @Column({ type: 'varchar', length: 66, nullable: true })
+  moonbeamTxHash: string; // Transaction hash on Moonbeam (Phase 2 execution)
+
   @CreateDateColumn()
   createdAt: Date;
 

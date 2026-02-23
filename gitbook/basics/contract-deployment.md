@@ -8,10 +8,18 @@ Deploy LiquiDOT smart contracts on Paseo Asset Hub and Moonbase Alpha testnets.
 
 ## Current Deployments
 
+### Testnet
+
 | Contract | Network | Address |
 |----------|---------|---------|
 | AssetHubVault | Paseo Asset Hub | `0x68e86F267C5C37dd4947ef8e5823eBAeAf93Fde6` |
 | XCMProxy | Moonbase Alpha | `0x7f4b3620d6Ffcc15b11ca8679c57c076DCE109d1` |
+
+### Mainnet
+
+| Contract | Network | Address |
+|----------|---------|---------|
+| XCMProxy | Moonbeam (1284) | `0x0cfb7CE7D66C7CdAe5827074C5f5A62223a0c230` |
 
 ## Prerequisites
 
@@ -92,8 +100,7 @@ npx hardhat test test/XCMProxy/testnet/1.config-check.test.js --network moonbase
 | Precompile | Network | Address |
 |------------|---------|---------|
 | IXcm | Asset Hub | `0x00000000000000000000000000000000000a0000` |
-| IXTokens | Moonbeam | `0x0000000000000000000000000000000000000804` |
-| IXCMTransactor | Moonbeam | `0x0000000000000000000000000000000000000806` |
+| IPalletXcm | Moonbeam | `0x000000000000000000000000000000000000081A` |
 
 ## Troubleshooting
 

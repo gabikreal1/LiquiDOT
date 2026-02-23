@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Position } from './entities/position.entity';
 import { PositionsService } from './positions.service';
 import { PositionsController } from './positions.controller';
+import { PositionsSseController } from './positions-sse.controller';
 import { BlockchainModule } from '../blockchain/blockchain.module';
 
 @Module({
@@ -10,7 +11,7 @@ import { BlockchainModule } from '../blockchain/blockchain.module';
     TypeOrmModule.forFeature([Position]),
     BlockchainModule,
   ],
-  controllers: [PositionsController],
+  controllers: [PositionsController, PositionsSseController],
   providers: [PositionsService],
   exports: [TypeOrmModule, PositionsService],
 })

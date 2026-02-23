@@ -92,9 +92,21 @@ npx hardhat test test/XCMProxy/testnet/3.execute-position.test.js --network moon
 
 ## Test Results
 
-Latest test run (January 2026):
-- **AssetHubVault**: 61 passing, 5 pending
-- **XCMProxy**: 57 passing, 0 failing
+Latest test run (February 2026):
+
+### Smart Contracts
+- **AssetHubVault testnet tests**: 61 passing, 5 pending
+- **XCMProxy testnet tests**: 57 passing, 0 failing
+- **Foundry unit tests**: All passing
+- **XCM adapter unit tests**: 3 passing
+
+### Backend (NestJS)
+- **168 tests** across all modules (Jest)
+- Covers: investment decisions, event persistence, position sync, stop-loss logic, token math, blockchain services, dashboard API
+
+### Frontend (Next.js)
+- **31 tests** across 5 test suites (Jest + React Testing Library)
+- Covers: API client, dashboard components (balance summary, positions list, activity feed, status badges)
 
 ## Test Mode
 
@@ -122,5 +134,24 @@ Some tests take 2-4 minutes. Tests have 120-240s timeouts configured.
 
 ### Missing Environment Variables
 Ensure `ASSETHUB_CONTRACT` and `ASSET_PK` are set in `.env`.
+
+## Backend Tests
+
+```bash
+cd Backend
+pnpm install
+pnpm test                    # Run all 168 unit tests
+pnpm run test:e2e            # E2E tests (SQLite in-memory)
+pnpm test -- path/to/file.spec.ts  # Single test file
+```
+
+## Frontend Tests
+
+```bash
+cd Frontend
+pnpm install
+pnpm test                    # Run all 31 tests
+pnpm run test:watch          # Watch mode
+```
 
 **Next:** [Smart Contracts](smart-contracts.md)

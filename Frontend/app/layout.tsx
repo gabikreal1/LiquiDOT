@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { WagmiProvider } from "@/components/providers/wagmi-provider"
+import { Navigation } from "@/components/navigation"
 import { Toaster } from 'sonner'
 
 const inter = Inter({ subsets: ["latin"] })
@@ -24,6 +25,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <WagmiProvider>
+            <Navigation />
             {children}
             <Toaster position="top-right" richColors />
           </WagmiProvider>

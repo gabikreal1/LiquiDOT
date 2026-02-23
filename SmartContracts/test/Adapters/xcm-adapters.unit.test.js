@@ -16,7 +16,7 @@ describe("XCM Adapter Contracts (unit)", function () {
       "contracts/V1(Current)/xcm/AssetHubXcmSender.sol:AssetHubXcmSender"
     );
 
-    const sender = await Sender.deploy(await mock.getAddress());
+    const sender = await Sender.deploy(await mock.getAddress(), deployer.address);
     await sender.waitForDeployment();
 
     const destination = "0x010203";
@@ -28,6 +28,8 @@ describe("XCM Adapter Contracts (unit)", function () {
   });
 
   it("MoonbeamXTokensSender: requires 32-byte amount", async function () {
+    const [deployer] = await ethers.getSigners();
+
     const Sender = await ethers.getContractFactory(
       "contracts/V1(Current)/xcm/MoonbeamXTokensSender.sol:MoonbeamXTokensSender"
     );
@@ -42,13 +44,15 @@ describe("XCM Adapter Contracts (unit)", function () {
     const token = ethers.Wallet.createRandom().address;
     const destWeight = 123n;
 
-    const sender = await Sender.deploy(await mock.getAddress(), token, destWeight);
+    const sender = await Sender.deploy(await mock.getAddress(), token, destWeight, deployer.address);
     await sender.waitForDeployment();
 
     await expect(sender.sendXcm("0x01", "0x1234")).to.be.revertedWith("amount must be 32 bytes");
   });
 
   it("MoonbeamXTokensSender: decodes amount and forwards to XTokens", async function () {
+    const [deployer] = await ethers.getSigners();
+
     const Sender = await ethers.getContractFactory(
       "contracts/V1(Current)/xcm/MoonbeamXTokensSender.sol:MoonbeamXTokensSender"
     );
@@ -63,7 +67,7 @@ describe("XCM Adapter Contracts (unit)", function () {
     const token = ethers.Wallet.createRandom().address;
     const destWeight = 456n;
 
-    const sender = await Sender.deploy(await mock.getAddress(), token, destWeight);
+    const sender = await Sender.deploy(await mock.getAddress(), token, destWeight, deployer.address);
     await sender.waitForDeployment();
 
     const destination = "0x0a0b0c";

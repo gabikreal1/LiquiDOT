@@ -1,4 +1,5 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { DataSource, DataSourceOptions } from 'typeorm';
 
 export const typeOrmConfig: TypeOrmModuleOptions = {
   type: 'postgres',
@@ -11,5 +12,10 @@ export const typeOrmConfig: TypeOrmModuleOptions = {
   synchronize: process.env.NODE_ENV !== 'production', // Auto-create schema in dev
   logging: process.env.NODE_ENV !== 'production',
   migrations: [__dirname + '/../migrations/*{.ts,.js}'],
-  migrationsRun: false,
+  migrationsRun: process.env.NODE_ENV === 'production', // Auto-run migrations in production
 };
+
+/**
+ * DataSource instance for TypeORM CLI (migration:generate, migration:run, etc.)
+ */
+export default new DataSource(typeOrmConfig as DataSourceOptions);

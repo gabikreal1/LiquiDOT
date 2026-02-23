@@ -25,8 +25,11 @@ Built on Asset Hub for custody and using XCM for execution across parachains, Li
 
 - ✅ MVP deployed on testnets (Paseo Asset Hub + Moonbase Alpha)
 - ✅ Smart contracts tested with 61+ passing tests
-- ✅ XCM integration verified with IXcm and IXTokens precompiles
+- ✅ XCM integration verified with IXcm and IPalletXcm precompiles
 - ✅ StellaSwap Pulsar compatible (Algebra Integral v1.2)
+- ✅ Full-stack dashboard with real-time position tracking via SSE
+- ✅ XCM retry with exponential backoff and transaction hash tracking
+- ✅ CI/CD pipeline with GitHub Actions + Terraform on DigitalOcean
 - 🎉 Approved for [Polkadot Fast Grants PR #86](https://github.com/Polkadot-Fast-Grants/apply/pull/86)
 
 ### 🎯 Target Audience
@@ -99,7 +102,7 @@ LiquiDOT follows a **hub-and-spoke model** designed for scalable cross-chain liq
 │  │  • LP mint/burn via Algebra NFPM                        │    │
 │  │  • Swap execution                                       │    │
 │  │  • Operator-triggered liquidations                      │    │
-│  │  • XCM returns (IXTokens @ 0x...0804)                   │    │
+│  │  • XCM returns (IPalletXcm @ 0x...0810)                 │    │
 │  └─────────────────────────────────────────────────────────┘    │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -115,8 +118,10 @@ LiquiDOT follows a **hub-and-spoke model** designed for scalable cross-chain liq
 ```
 LiquiDOT/
 ├── Backend/                 # NestJS API + decision engine + chain services
-├── Frontend/                # Next.js app
+│   └── terraform-do/        # Terraform config for DigitalOcean deployment
+├── Frontend/                # Next.js dashboard + investment form
 ├── SmartContracts/          # Solidity contracts + deployment/test scripts
+├── .github/workflows/       # CI (build+test) + CD (Terraform deploy)
 ├── gitbook/                 # Published documentation source
 ├── images/                  # Docs/media assets
 └── WhitePaper.md            # Project white paper
@@ -129,14 +134,17 @@ The backend is the "brains" of LiquiDOT:
 
 | Service | Description |
 |---------|-------------|
-| **REST API** | Pools, user preferences, positions, investment decisions |
+| **REST API** | Pools, user preferences, positions, investment decisions, dashboard |
 | **Decision Engine** | Deterministic, testable logic for strategy execution |
 | **LP Data Aggregator** | Pool analytics from Algebra subgraph |
-| **Stop-Loss Worker** | 24/7 position monitoring |
+| **Stop-Loss Worker** | 24/7 position monitoring with batch pool state optimization |
+| **Dashboard API** | Pre-aggregated portfolio view (balance, P&L, positions, activity) |
+| **SSE Events** | Real-time position status updates via Server-Sent Events |
+| **XCM Retry** | Automatic retry with exponential backoff for cross-chain operations |
 
-On-chain integration via `ethers`:
-- Asset Hub: `AssetHubVault` for custody
-- Moonbeam: `XCMProxy` for DEX execution
+On-chain integration via `ethers` + `polkadot-api`:
+- Asset Hub: `AssetHubVault` for custody + XCM orchestration
+- Moonbeam: `XCMProxy` for DEX execution + liquidation returns
 
 See **[Backend/README.md](./Backend/README.md)** for full details.
 
@@ -177,7 +185,8 @@ See **[SmartContracts/README.md](./SmartContracts/README.md)** for full deployme
 | **Contracts** | Solidity, Hardhat, Foundry, OpenZeppelin |
 | **DEX** | Algebra Integral (StellaSwap Pulsar compatible) |
 | **Backend** | NestJS, TypeScript, PostgreSQL, ethers.js, P-API (polkadot-api) |
-| **Frontend** | Next.js, Wagmi, Tailwind CSS |
+| **Frontend** | Next.js 15, React Query, Wagmi, Tailwind CSS, shadcn/ui, recharts |
+| **CI/CD** | GitHub Actions, Terraform, DigitalOcean App Platform |
 
 ### 📄 License
 

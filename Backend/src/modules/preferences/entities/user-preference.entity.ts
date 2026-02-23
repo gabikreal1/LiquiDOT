@@ -84,6 +84,14 @@ export class UserPreference {
   @Column({ type: 'int', default: 14400 })
   investmentCheckIntervalSeconds: number; // How often to check (default 4 hours = 14400s)
 
+  // === Rebalance Tracking (persisted across restarts) ===
+
+  @Column({ type: 'date', nullable: true })
+  lastRebalanceDate: string; // 'YYYY-MM-DD' UTC — resets rebalanceCountToday when date changes
+
+  @Column({ type: 'int', default: 0 })
+  rebalanceCountToday: number; // Number of rebalances today (lazy-reset on read)
+
   // === Legacy fields (kept for backward compatibility) ===
 
   @Column({ type: 'int', nullable: true })

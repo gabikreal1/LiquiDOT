@@ -14,6 +14,7 @@ LiquiDOT uses two production-focused contracts that coordinate via XCM to create
 | ----------------- | --------- | -------------- | -------------------------------------------- |
 | **AssetHubVault** | Asset Hub | Paseo Testnet  | `0x68e86F267C5C37dd4947ef8e5823eBAeAf93Fde6` |
 | **XCMProxy**      | Moonbeam  | Moonbase Alpha | `0x7f4b3620d6Ffcc15b11ca8679c57c076DCE109d1` |
+| **XCMProxy**      | Moonbeam  | Mainnet (1284) | `0x0cfb7CE7D66C7CdAe5827074C5f5A62223a0c230` |
 
 ### Contract Roles
 
@@ -121,18 +122,30 @@ AmountMismatch(), AssetMismatch()
 
 ### Overview
 
-Execution engine on Moonbeam. Receives assets and instructions via XCM, performs swaps and LP mint/burn with Algebra's NFPM, tracks positions, and returns proceeds to Asset Hub. Uses the IXTokens precompile at `0x0000000000000000000000000000000000000804` for cross-chain transfers.
+Execution engine on Moonbeam. Receives assets and instructions via XCM, performs swaps and LP mint/burn with Algebra's NFPM, tracks positions, and returns proceeds to Asset Hub. Uses the IPalletXcm precompile at `0x000000000000000000000000000000000000081A` for cross-chain transfers via `transferAssetsUsingTypeAndThenAddress` with DestinationReserve transfer type.
 
 ### XCM Interface (Moonbeam)
 
 ```solidity
-// IXTokens precompile for cross-chain transfers
-interface IXTokens {
-    function transfer(
-        address currencyAddress,
-        uint256 amount,
-        Multilocation memory destination,
-        uint64 weight
+// IPalletXcm precompile for cross-chain transfers
+interface IPalletXcm {
+    struct Location {
+        uint8 parents;
+        bytes[] interior;
+    }
+
+    struct AssetAddressInfo {
+        address asset;
+        uint256 amount;
+    }
+
+    function transferAssetsUsingTypeAndThenAddress(
+        Location calldata dest,
+        AssetAddressInfo[] calldata assets,
+        uint8 assetsTransferType,
+        uint8 remoteFeesIdIndex,
+        uint8 feesTransferType,
+        bytes calldata customXcmOnDest
     ) external;
 }
 ```
@@ -170,9 +183,7 @@ DEXNotConfigured(), NFPMNotSet()
 | `quoterContract`            | `address`                             | Algebra Quoter for price quotes                                                                              |
 | `swapRouterContract`        | `address`                             | Algebra SwapRouter for token swaps                                                                           |
 | `nfpmContract`              | `address`                             | Algebra NFPM for LP position management                                                                      |
-| `xTokensPrecompile`         | `address`                             | XTokens precompile for cross-chain transfers                                                                 |
-| `xcmTransactorPrecompile`   | `address`                             | XCM Transactor for remote calls                                                                              |
-| `defaultDestWeight`         | `uint64`                              | Default XCM destination weight                                                                               |
+| `xcmPrecompile`             | `address`                             | IPalletXcm precompile (`0x081A`) for cross-chain transfers                                                   |
 | `assetHubParaId`            | `uint32`                              | Asset Hub parachain ID                                                                                       |
 | `trustedXcmCaller`          | `address`                             | Authorized XCM message sender                                                                                |
 | `xcmConfigFrozen`           | `bool`                                | Freeze flag to prevent further XCM config changes                                                            |
@@ -184,7 +195,7 @@ DEXNotConfigured(), NFPMNotSet()
 * AssetsReceived, PendingPositionCreated, PositionExecuted, PositionCreated, LiquidityAdded
 * PositionLiquidated, LiquidationCompleted, PendingPositionCancelled
 * AssetsReturned, ProceedsSwapped
-* Config events: XTokensPrecompileSet, DefaultDestWeightSet, AssetHubParaIdSet, TrustedXcmCallerSet, XcmConfigFrozen, XcmTransactorPrecompileSet, DefaultSlippageSet, OperatorUpdated
+* Config events: XcmPrecompileSet, AssetHubParaIdSet, TrustedXcmCallerSet, XcmConfigFrozen, DefaultSlippageSet, OperatorUpdated
 
 ```solidity
 // DEX Integration
@@ -192,12 +203,10 @@ function setIntegrations(address quoter, address router) external onlyOwner
 function setNFPM(address nfpm) external onlyOwner
 
 // XCM Configuration
-function setXTokensPrecompile(address xTokens) external onlyOwner
-function setDefaultDestWeight(uint64 weight) external onlyOwner
+function setXcmPrecompile(address precompile) external onlyOwner
 function setAssetHubParaId(uint32 paraId) external onlyOwner
 function setTrustedXcmCaller(address caller) external onlyOwner
 function freezeXcmConfig() external onlyOwner
-function setXcmTransactorPrecompile(address xcmTransactor) external onlyOwner
 
 // System Settings
 function setDefaultSlippageBps(uint16 slippageBps) external onlyOwner
@@ -230,10 +239,9 @@ function executePendingInvestment(
     bytes32 assetHubPositionId
 ) external onlyOperator returns (uint256 localPositionId)
 
-// Cancel pending position and return funds
+// Cancel pending position
 function cancelPendingPosition(
-    bytes32 assetHubPositionId,
-    bytes calldata destination
+    bytes32 assetHubPositionId
 ) external onlyOperator
 
 // Full liquidation (burn LP, collect fees)
@@ -250,8 +258,9 @@ function liquidateIfOutOfRange(
 function liquidateSwapAndReturn(
     uint256 positionId,
     address baseAsset,
-    uint256 minAmountOut,
-    bytes calldata destination,
+    address beneficiary,
+    uint256 minAmountOut0,
+    uint256 minAmountOut1,
     bytes32 assetHubPositionId
 ) external onlyOperator
 
@@ -260,7 +269,7 @@ function returnAssets(
     address token,
     address user,
     uint256 amount,
-    bytes calldata destination
+    address beneficiary
 ) external onlyOwner
 ```
 
@@ -312,9 +321,7 @@ function getUserPositions(address user) external view returns (uint256[] memory)
 
 ```solidity
 // XCM precompile configuration
-function setXTokensPrecompile(address precompile) external onlyOwner
-function setXcmTransactorPrecompile(address precompile) external onlyOwner
-function setDefaultDestWeight(uint64 weight) external onlyOwner
+function setXcmPrecompile(address precompile) external onlyOwner
 function setAssetHubParaId(uint32 paraId) external onlyOwner
 function setTrustedXcmCaller(address caller) external onlyOwner
 function freezeXcmConfig() external onlyOwner
@@ -482,5 +489,5 @@ Comprehensive test suites available:
 
 This documentation mirrors the current codebase. As features evolve (additional chains, new DEX integrations), this page will be updated to track function signatures and events from the Solidity sources referenced above.
 
-**Last Updated:** January 2026\
+**Last Updated:** February 2026\
 **Contract Version:** V1 (Current)

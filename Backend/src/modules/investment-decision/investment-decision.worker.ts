@@ -16,9 +16,15 @@ import { ConfigService } from '@nestjs/config';
 import { InvestmentDecisionService } from './investment-decision.service';
 import { User } from '../users/entities/user.entity';
 import { UserPreference } from '../preferences/entities/user-preference.entity';
+import { Pool } from '../pools/entities/pool.entity';
+import { Position, PositionStatus } from '../positions/entities/position.entity';
+import { ActivityLog, ActivityType, ActivityStatus } from '../activity-logs/entities/activity-log.entity';
 import { MoonbeamService } from '../blockchain/services/moonbeam.service';
 import { AssetHubService } from '../blockchain/services/asset-hub.service';
 import { XcmBuilderService } from '../blockchain/services/xcm-builder.service';
+import { XcmRetryService } from '../blockchain/services/xcm-retry.service';
+import { PriceService } from '../blockchain/services/price.service';
+import { TokenMathService } from '../blockchain/services/token-math.service';
 import { RebalanceDecision } from './types/investment.types';
 
 @Injectable()
@@ -32,10 +38,19 @@ export class InvestmentDecisionWorker implements OnModuleInit {
     private userRepository: Repository<User>,
     @InjectRepository(UserPreference)
     private preferenceRepository: Repository<UserPreference>,
+    @InjectRepository(Pool)
+    private poolRepository: Repository<Pool>,
+    @InjectRepository(Position)
+    private positionRepository: Repository<Position>,
+    @InjectRepository(ActivityLog)
+    private activityLogRepository: Repository<ActivityLog>,
     private investmentDecisionService: InvestmentDecisionService,
     private moonbeamService: MoonbeamService,
     private assetHubService: AssetHubService,
     private xcmBuilderService: XcmBuilderService,
+    private xcmRetryService: XcmRetryService,
+    private priceService: PriceService,
+    private tokenMath: TokenMathService,
     private configService: ConfigService,
   ) {
     this.enabled = this.configService.get<boolean>('ENABLE_INVESTMENT_WORKER', true);
@@ -85,7 +100,7 @@ export class InvestmentDecisionWorker implements OnModuleInit {
     }
 
     const balance = await this.assetHubService.getUserBalance(user.walletAddress);
-    const availableCapitalUsd = this.weiToUsd(balance);
+    const availableCapitalUsd = await this.tokenMath.dotPlanckToUsd(balance);
 
     // Evaluate decision
     const decision = await this.investmentDecisionService.evaluateInvestmentDecision(
@@ -140,7 +155,7 @@ export class InvestmentDecisionWorker implements OnModuleInit {
     let availableCapitalUsd: number;
     try {
       const balance = await this.assetHubService.getUserBalance(walletAddress);
-      availableCapitalUsd = this.weiToUsd(balance);
+      availableCapitalUsd = await this.tokenMath.dotPlanckToUsd(balance);
     } catch (error) {
       this.logger.warn(`Could not fetch balance for user ${userId}, skipping`);
       return;
@@ -221,14 +236,22 @@ export class InvestmentDecisionWorker implements OnModuleInit {
       try {
         this.logger.log(`Adding to pool ${action.poolId}, amount: $${action.differenceUsd.toFixed(2)}`);
 
-        const amount = BigInt(Math.floor(action.differenceUsd)) * BigInt(10 ** 18);
+        // Resolve pool address from DB (action.poolId is a DB UUID, contract needs address)
+        const pool = await this.poolRepository.findOne({ where: { id: action.poolId } });
+        if (!pool) {
+          this.logger.warn(`Pool not found for id=${action.poolId}, skipping investment`);
+          continue;
+        }
+
+        // Convert USD to DOT planck
+        const amount = await this.tokenMath.usdToDotPlanck(action.differenceUsd);
         const baseAsset = this.configService.get<string>('DEFAULT_BASE_ASSET', '');
 
         // Phase 1: XCM transfer — deposits xcDOT to XCMProxy on Moonbeam
         const { positionId, moonbeamCalldata } = await this.assetHubService.dispatchInvestmentWithXcm({
           user: user.walletAddress,
           chainId,
-          poolId: action.poolId,
+          poolId: pool.poolAddress,
           baseAsset,
           amount,
           lowerRangePercent: preferences?.defaultLowerRangePercent ?? -5,
@@ -237,44 +260,80 @@ export class InvestmentDecisionWorker implements OnModuleInit {
 
         this.logger.log(`Phase 1 done for pool ${action.poolId}, position: ${positionId}`);
 
-        // Wait for XCM to settle on Moonbeam (~30s for XCMP relay)
-        await this.sleep(30000);
-
-        // Phase 2: Backend calls receiveAssets() on Moonbeam
+        // Store assetHubTxHash immediately
         try {
-          await this.moonbeamService.callReceiveAssets(moonbeamCalldata);
-          this.logger.log(`Phase 2 done: receiveAssets() called for ${positionId}`);
-        } catch (phase2Error) {
-          this.logger.error(
-            `Phase 2 failed for ${positionId} (xcDOT at XCMProxy, retry manually):`,
-            phase2Error,
+          await this.positionRepository.update(
+            { assetHubPositionId: positionId },
+            { assetHubTxHash: positionId }, // positionId comes from the AH tx
           );
+        } catch (dbErr) {
+          this.logger.warn(`Could not persist assetHubTxHash for ${positionId}: ${dbErr}`);
+        }
+
+        // Poll for XCM arrival: check if pending position exists on Moonbeam
+        let xcmArrived = false;
+        for (let pollAttempt = 0; pollAttempt < 12; pollAttempt++) {
+          await this.sleep(5000); // Poll every 5s, up to 60s
+          try {
+            const pending = await this.moonbeamService.getPendingPosition(positionId);
+            if (pending && pending.amount > 0n) {
+              xcmArrived = true;
+              this.logger.log(`XCM arrived for ${positionId} after ${(pollAttempt + 1) * 5}s`);
+              break;
+            }
+          } catch {
+            // Not yet arrived, continue polling
+          }
+        }
+
+        if (!xcmArrived) {
+          this.logger.warn(`XCM not confirmed on Moonbeam after 60s for ${positionId}, attempting receiveAssets anyway`);
+        }
+
+        // Phase 2: Backend calls receiveAssets() on Moonbeam (with retry)
+        const phase2Result = await this.xcmRetryService.executeWithRetry(
+          () => this.moonbeamService.callReceiveAssets(moonbeamCalldata),
+          { maxAttempts: 5, baseDelayMs: 3000 },
+        );
+
+        if (phase2Result.success) {
+          this.logger.log(`Phase 2 done: receiveAssets() called for ${positionId} (${phase2Result.attempts} attempt(s))`);
+        } else {
+          this.logger.error(`Phase 2 failed for ${positionId} after ${phase2Result.attempts} attempts: ${phase2Result.error?.message}`);
+          // Mark position as FAILED and create error ActivityLog
+          try {
+            await this.positionRepository.update(
+              { assetHubPositionId: positionId },
+              { status: PositionStatus.FAILED, lastFailedAt: new Date() },
+            );
+            const pos = await this.positionRepository.findOne({ where: { assetHubPositionId: positionId } });
+            if (pos) {
+              await this.activityLogRepository.save(this.activityLogRepository.create({
+                userId: pos.userId,
+                type: ActivityType.ERROR,
+                status: ActivityStatus.FAILED,
+                positionId,
+                details: {
+                  error: phase2Result.error?.message,
+                  operation: 'receiveAssets_phase2',
+                  attempts: phase2Result.attempts,
+                  moonbeamCalldata,
+                },
+              }));
+            }
+          } catch (dbErr) {
+            this.logger.error(`Failed to persist Phase 2 failure for ${positionId}: ${dbErr}`);
+          }
         }
       } catch (error) {
         this.logger.error(`Failed to add position to pool ${action.poolId}:`, error);
       }
     }
 
-    // 3. Increment rebalance counter
-    this.investmentDecisionService.incrementRebalanceCount(userId);
+    // 3. Increment rebalance counter (persisted to DB)
+    await this.investmentDecisionService.incrementRebalanceCount(userId);
 
     this.logger.log(`Rebalance execution completed for user ${userId}`);
-  }
-
-  /**
-   * Convert wei to USD (simplified - would need actual price feeds)
-   */
-  private weiToUsd(weiAmount: bigint): number {
-    // Simplified conversion - assumes 18 decimals and 1:1 with USD for stables
-    // In production, this would use price feeds
-    return Number(weiAmount / BigInt(10 ** 18));
-  }
-
-  /**
-   * Convert USD to wei
-   */
-  private usdToWei(usdAmount: number): string {
-    return (BigInt(Math.floor(usdAmount)) * BigInt(10 ** 18)).toString();
   }
 
   /**

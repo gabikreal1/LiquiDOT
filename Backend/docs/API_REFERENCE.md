@@ -786,7 +786,127 @@ This returns results 41-60.
 
 ---
 
+## Dashboard Endpoints
+
+### GET /dashboard/:userId
+
+Pre-aggregated dashboard for a user. Returns all data needed for the frontend dashboard in a single call.
+
+**Parameters:**
+- `userId` (path) - User UUID
+
+**Response:** `200 OK`
+```json
+{
+  "user": {
+    "id": "uuid",
+    "walletAddress": "0x...",
+    "balanceDot": 150.5,
+    "balanceUsd": 1053.50
+  },
+  "positions": [
+    {
+      "id": "uuid",
+      "poolName": "xcDOT/WGLMR",
+      "status": "ACTIVE",
+      "amountDot": 50.0,
+      "currentValueUsd": 375.00,
+      "pnlUsd": 25.00,
+      "pnlPercent": 7.14,
+      "assetHubTxHash": "0x123...",
+      "moonbeamTxHash": "0x456...",
+      "createdAt": "2026-02-01T12:00:00.000Z",
+      "executedAt": "2026-02-01T12:05:00.000Z"
+    }
+  ],
+  "recentActivity": [
+    {
+      "type": "INVESTMENT",
+      "status": "SUCCESS",
+      "txHash": "0x789...",
+      "details": { "amount": "50000000000" },
+      "createdAt": "2026-02-01T12:00:00.000Z"
+    }
+  ],
+  "pools": [
+    {
+      "id": "uuid",
+      "name": "xcDOT/WGLMR",
+      "apr": "18.50",
+      "tvl": "1500000.00",
+      "userAllocationUsd": 375.00
+    }
+  ],
+  "summary": {
+    "totalInvestedUsd": 350.00,
+    "totalCurrentValueUsd": 375.00,
+    "totalPnlUsd": 25.00,
+    "totalPnlPercent": 7.14,
+    "activePositionCount": 1,
+    "pendingPositionCount": 0
+  }
+}
+```
+
+**Notes:**
+- All data comes from DB (no live RPC calls). Balance uses cached value.
+- P&L calculated per position from entry amount vs current/returned value.
+
+---
+
+## Position SSE (Server-Sent Events)
+
+### GET /positions/user/:userId/events
+
+Real-time stream of position status changes via Server-Sent Events.
+
+**Parameters:**
+- `userId` (path) - User UUID
+
+**Connection:**
+```javascript
+const es = new EventSource('/api/positions/user/{userId}/events');
+es.addEventListener('CREATED', (e) => console.log(JSON.parse(e.data)));
+es.addEventListener('EXECUTED', (e) => console.log(JSON.parse(e.data)));
+es.addEventListener('LIQUIDATED', (e) => console.log(JSON.parse(e.data)));
+es.addEventListener('FAILED', (e) => console.log(JSON.parse(e.data)));
+```
+
+**Event Payload:**
+```json
+{
+  "type": "EXECUTED",
+  "positionId": "uuid",
+  "status": "ACTIVE",
+  "txHash": "0x456...",
+  "timestamp": "2026-02-01T12:05:00.000Z"
+}
+```
+
+**Event Types:**
+| Type | Description |
+|------|-------------|
+| `CREATED` | New position created on Asset Hub |
+| `EXECUTED` | Position executed on Moonbeam (LP minted) |
+| `LIQUIDATED` | Position liquidated and funds returned |
+| `FAILED` | Position execution or liquidation failed |
+| `STATUS_CHANGE` | Generic status update |
+
+**Notes:**
+- Reconnects automatically via EventSource built-in behavior.
+- Frontend invalidates React Query dashboard cache on any event for instant UI updates.
+
+---
+
 ## Changelog
+
+### v1.1.0 (February 2026)
+- Dashboard aggregate endpoint (`GET /dashboard/:userId`)
+- SSE real-time position events (`GET /positions/user/:userId/events`)
+- XCM retry with exponential backoff on all orchestration paths
+- Transaction hash tracking (`assetHubTxHash`, `moonbeamTxHash`) on positions
+- Batch pool state optimization in stop-loss worker
+- RPC concurrency limiting (semaphore-based)
 
 ### v1.0.0 (January 2026)
 - Initial release

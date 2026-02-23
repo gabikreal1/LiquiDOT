@@ -77,11 +77,11 @@ The **Investment Decision Worker** continuously:
 
 ### 4. Investment Execution
 
-When an optimal opportunity is found:
+When an optimal opportunity is found, investment executes in two phases:
 
-1. The worker calls `investInPool()` on the Asset Hub Vault
-2. The vault transfers assets + instructions via XCM to Moonbeam
-3. The **XCM Proxy Contract** receives both assets and investment parameters
+**Phase 1 (XCM):** The worker calls `dispatchInvestment()` on the Asset Hub Vault, which sends a `WithdrawAsset → BuyExecution → DepositReserveAsset` XCM message. This deposits xcDOT to the XCM Proxy on Moonbeam (~0.05 DOT total XCM overhead).
+
+**Phase 2 (EVM):** The backend relayer calls `receiveAssets()` on the XCM Proxy directly via ethers.js, then `executePendingInvestment()` to create the LP position.
 
 ### 5. Liquidity Position Creation
 
@@ -100,9 +100,9 @@ The XCM Proxy on Moonbeam:
 
 ### 6. Position Monitoring
 
-The **Stop-Loss Worker** runs continuously:
+The **Stop-Loss Worker** runs continuously (every 30 seconds):
 
-* Queries all active positions every block
+* Queries all active positions with batch pool state optimization
 * Checks current pool prices against user-defined ranges
 * Validates position health
 * Prepares liquidation when thresholds are breached
@@ -117,11 +117,11 @@ The **Stop-Loss Worker** runs continuously:
 
 When a trigger condition is met:
 
-1. Worker calls `executeFullLiquidation()` on XCM Proxy
+1. Worker calls `liquidateSwapAndReturn()` on XCM Proxy with the user's beneficiary address
 2. Contract validates position is truly out of range (security check)
 3. Burns LP position to reclaim tokens
-4. Swaps both tokens back to user's base asset
-5. Initiates XCM transfer back to Asset Hub
+4. Swaps both tokens back to user's base asset (DOT)
+5. Calls `IPalletXcm.transferAssetsUsingTypeAndThenAddress()` to return DOT to Asset Hub via DestinationReserve transfer (contract handles H160→AccountId32 address conversion internally)
 6. Asset Hub credits user's balance
 
 ### 8. Continuous Optimization

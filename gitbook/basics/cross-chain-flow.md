@@ -15,7 +15,7 @@ XCM is Polkadot's universal messaging format enabling parachains, smart contract
 | Precompile | Network | Address | Purpose |
 |------------|---------|---------|---------|
 | **IXcm** | Asset Hub | `0x00000000000000000000000000000000000a0000` | Send/execute XCM messages |
-| **IXTokens** | Moonbeam | `0x0000000000000000000000000000000000000804` | Cross-chain token transfers |
+| **IPalletXcm** | Moonbeam | `0x000000000000000000000000000000000000081A` | Cross-chain token transfers |
 
 ### IXcm Interface (Asset Hub)
 
@@ -31,18 +31,32 @@ interface IXcm {
 }
 ```
 
-### IXTokens Interface (Moonbeam)
+### IPalletXcm Interface (Moonbeam)
 
 ```solidity
-interface IXTokens {
-    function transfer(
-        address currencyAddress,
-        uint256 amount,
-        Multilocation memory destination,
-        uint64 weight
+interface IPalletXcm {
+    struct Location {
+        uint8 parents;
+        bytes[] interior;
+    }
+
+    struct AssetAddressInfo {
+        address asset;
+        uint256 amount;
+    }
+
+    function transferAssetsUsingTypeAndThenAddress(
+        Location calldata dest,
+        AssetAddressInfo[] calldata assets,
+        uint8 assetsTransferType,
+        uint8 remoteFeesIdIndex,
+        uint8 feesTransferType,
+        bytes calldata customXcmOnDest
     ) external;
 }
 ```
+
+The XCMProxy contract uses `transferAssetsUsingTypeAndThenAddress` with `DestinationReserve` transfer type (value `2`) to send DOT back to Asset Hub. The contract handles EE-padding of Moonbeam H160 addresses to Asset Hub AccountId32 format internally.
 
 ## Investment Flow
 
@@ -164,10 +178,10 @@ async function monitorPositions() {
 
 ### 7. Liquidation & Return
 
-**Operator calls `liquidateSwapAndReturn()`:**
+**Operator calls `liquidateSwapAndReturn(positionId, baseAsset, beneficiary, ...)`:**
 1. Burn NFPM position and collect fees
-2. Swap all tokens to base asset
-3. Send assets back via XCM (if not test mode)
+2. Swap all tokens to base asset (DOT)
+3. Call `IPalletXcm.transferAssetsUsingTypeAndThenAddress()` with DestinationReserve type to send assets back to Asset Hub (contract handles H160→AccountId32 conversion internally)
 4. Emit `LiquidationCompleted` event
 
 ### 8. Liquidation Settlement
@@ -189,10 +203,12 @@ await assetHubVault.settleLiquidation(
 
 ## XCM Fee Handling
 
+Total XCM overhead is approximately ~0.05 DOT per cross-chain operation:
+
 | Direction | Initial | Fee | Received |
 |-----------|---------|-----|----------|
-| **Outbound** (Asset Hub → Moonbeam) | 100 DOT | ~0.01 DOT | 99.99 DOT |
-| **Inbound** (Moonbeam → Asset Hub) | 105 DOT | ~0.01 DOT | 104.99 DOT |
+| **Outbound** (Asset Hub → Moonbeam) | 100 DOT | ~0.03 DOT (AH) + ~0.02 DOT (MB) | ~99.95 DOT |
+| **Inbound** (Moonbeam → Asset Hub) | 105 DOT | ~0.05 DOT | ~104.95 DOT |
 
 ## Error Handling
 

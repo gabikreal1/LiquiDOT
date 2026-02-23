@@ -15,9 +15,12 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan, In, MoreThanOrEqual } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { ConfigService } from '@nestjs/config';
 import { AssetHubService } from '../blockchain/services/asset-hub.service';
 import { MoonbeamService } from '../blockchain/services/moonbeam.service';
 import { XcmBuilderService } from '../blockchain/services/xcm-builder.service';
+import { PriceService } from '../blockchain/services/price.service';
+import { TokenMathService } from '../blockchain/services/token-math.service';
 import { Pool } from '../pools/entities/pool.entity';
 import { Position, PositionStatus } from '../positions/entities/position.entity';
 import { User } from '../users/entities/user.entity';
@@ -42,8 +45,8 @@ import {
 export class InvestmentDecisionService implements OnModuleInit {
   private readonly logger = new Logger(InvestmentDecisionService.name);
 
-  // Track daily rebalances per user (resets at midnight UTC)
-  private userRebalanceCounts: Map<string, { count: number; date: string }> = new Map();
+  // Rebalance counts are now persisted in DB (UserPreference entity).
+  // The in-memory Map is kept as a write-through cache for fast reads within a single process.
 
   constructor(
     @InjectRepository(Pool)
@@ -57,6 +60,9 @@ export class InvestmentDecisionService implements OnModuleInit {
     private readonly assetHubService: AssetHubService,
     private readonly moonbeamService: MoonbeamService,
     private readonly xcmBuilderService: XcmBuilderService,
+    private readonly priceService: PriceService,
+    private readonly tokenMath: TokenMathService,
+    private readonly configService: ConfigService,
   ) { }
 
   async onModuleInit() {
@@ -86,20 +92,14 @@ export class InvestmentDecisionService implements OnModuleInit {
             continue;
           }
 
-          // Count rebalances today
-          const rebalancesToday = await this.positionRepository.count({
-            where: {
-              userId: user.id,
-              executedAt: MoreThanOrEqual(today) as any,
-            }
-          });
+          // Count rebalances today (from DB-backed counter)
+          const rebalancesToday = await this.getRebalancesToday(user.id);
 
           // Fetch balance from Asset Hub
           let availableCapitalUsd = 0;
           try {
             const balance = await this.assetHubService.getUserBalance(user.walletAddress);
-            const DOT_PRICE_USD = 5.0; // Mock price
-            availableCapitalUsd = (Number(balance) / 1e10) * DOT_PRICE_USD;
+            availableCapitalUsd = await this.tokenMath.dotPlanckToUsd(balance);
           } catch (e) {
             this.logger.error(`Failed to fetch balance for ${user.id}: ${e.message}`);
             continue;
@@ -116,11 +116,11 @@ export class InvestmentDecisionService implements OnModuleInit {
             await this.executeDecision({
               decision,
               userWalletAddress: user.walletAddress,
-              baseAssetAddress: pref.preferredTokens?.[0] || '0x0000000000000000000000000000000000000000',
-              amountWei: BigInt(0), // Placeholder amount, real amount calculated inside or passed differently
+              baseAssetAddress: this.configService.get<string>('DEFAULT_BASE_ASSET', ''),
+              amountWei: BigInt(0),
               lowerRangePercent: pref.defaultLowerRangePercent,
               upperRangePercent: pref.defaultUpperRangePercent,
-              chainId: 2004,
+              chainId: this.configService.get<number>('MOONBEAM_EVM_CHAIN_ID', 1284),
             });
           }
 
@@ -150,7 +150,7 @@ export class InvestmentDecisionService implements OnModuleInit {
     const botState = await this.getBotState(userId, availableCapitalUsd);
 
     // 3. Check rate limiting
-    const rebalancesToday = this.getRebalancesToday(userId);
+    const rebalancesToday = await this.getRebalancesToday(userId);
     if (rebalancesToday >= config.dailyRebalanceLimit) {
       return this.createNoOpDecision(`Daily rebalance limit reached (${rebalancesToday}/${config.dailyRebalanceLimit})`);
     }
@@ -257,6 +257,14 @@ export class InvestmentDecisionService implements OnModuleInit {
 
     const dispatchedPositionIds: string[] = [];
 
+    // Resolve user once for DB position creation
+    const user = await this.userRepository.findOne({
+      where: { walletAddress: params.userWalletAddress.toLowerCase() },
+    });
+    if (!user) {
+      throw new Error(`User not found for wallet ${params.userWalletAddress}`);
+    }
+
     // Liquidations
     for (const w of params.decision.toWithdraw) {
       try {
@@ -292,11 +300,76 @@ export class InvestmentDecisionService implements OnModuleInit {
       }
     }
 
-    // Investments
+    // Investments — two-phase: XCM transfer (AH) + EVM call (Moonbeam)
     for (const a of params.decision.toAdd) {
-      // Implementation of investment dispatch
-      // This would call assetHubService logic similar to legacy runDecision
-      this.logger.log(`Would dispatch investment for pool ${a.poolId} amount $${a.targetAllocationUsd}`);
+      try {
+        this.logger.log(`Dispatching investment for pool ${a.poolId}, amount $${a.targetAllocationUsd}`);
+
+        // Resolve pool address from DB (a.poolId is a DB UUID, contract needs address)
+        const pool = await this.poolRepository.findOne({ where: { id: a.poolId } });
+        if (!pool) {
+          this.logger.warn(`Pool not found for id=${a.poolId}, skipping investment`);
+          continue;
+        }
+
+        // Convert USD allocation to DOT planck
+        const amount = await this.tokenMath.usdToDotPlanck(a.targetAllocationUsd);
+
+        // Phase 1: XCM transfer — deposits xcDOT to XCMProxy on Moonbeam
+        const { positionId, moonbeamCalldata } = await this.assetHubService.dispatchInvestmentWithXcm({
+          user: params.userWalletAddress,
+          chainId: params.chainId,
+          poolId: pool.poolAddress,
+          baseAsset: params.baseAssetAddress,
+          amount,
+          lowerRangePercent: params.lowerRangePercent,
+          upperRangePercent: params.upperRangePercent,
+        });
+
+        this.logger.log(`Phase 1 done for pool ${a.poolId}, positionId=${positionId}`);
+
+        // Create DB Position entry (upsert: EventPersistenceService may have already
+        // created it from the InvestmentInitiated event)
+        let dbPosition = await this.positionRepository.findOne({
+          where: { assetHubPositionId: positionId },
+        });
+        if (!dbPosition) {
+          dbPosition = this.positionRepository.create({
+            assetHubPositionId: positionId,
+            userId: user.id,
+            poolId: a.poolId,
+            baseAsset: params.baseAssetAddress,
+            amount: amount.toString(),
+            lowerRangePercent: params.lowerRangePercent,
+            upperRangePercent: params.upperRangePercent,
+            chainId: params.chainId,
+            status: PositionStatus.PENDING_EXECUTION,
+          });
+          dbPosition = await this.positionRepository.save(dbPosition);
+        }
+        dispatchedPositionIds.push(dbPosition.id);
+
+        // Wait for XCM to settle on Moonbeam (~30s for XCMP relay)
+        await new Promise(resolve => setTimeout(resolve, 30000));
+
+        // Phase 2: Backend calls receiveAssets() on Moonbeam
+        try {
+          await this.moonbeamService.callReceiveAssets(moonbeamCalldata);
+          this.logger.log(`Phase 2 done: receiveAssets() called for ${positionId}`);
+        } catch (phase2Error) {
+          this.logger.error(
+            `Phase 2 failed for ${positionId} (xcDOT at XCMProxy, retry manually): ${phase2Error instanceof Error ? phase2Error.message : String(phase2Error)}`,
+          );
+        }
+      } catch (error) {
+        this.logger.error(`Failed to dispatch investment for pool ${a.poolId}: ${error instanceof Error ? error.message : String(error)}`);
+        // Continue with next investment — don't let one failure stop others
+      }
+    }
+
+    // Increment rebalance counter so daily limit is enforced
+    if (dispatchedPositionIds.length > 0) {
+      await this.incrementRebalanceCount(user.id);
     }
 
     return { dispatchedPositionIds };
@@ -804,11 +877,13 @@ export class InvestmentDecisionService implements OnModuleInit {
       relations: ['pool'],
     });
 
+    // Convert planck amounts to USD
+    const dotPrice = await this.priceService.getDotPriceUsd();
     const currentPositions: CurrentPosition[] = positions.map(pos => ({
       poolId: pos.poolId,
       dex: pos.pool?.dex?.name || 'Unknown',
       pair: `${pos.pool?.token0Symbol}/${pos.pool?.token1Symbol}`,
-      allocationUsd: parseFloat(pos.amount) / 1e18, // Assuming 18 decimals, convert to USD
+      allocationUsd: this.tokenMath.smallestUnitToUsd(pos.amount, 10, dotPrice),
       currentApy: parseFloat(pos.pool?.apr || '0'),
       positionId: pos.id,
       entryTimestamp: pos.executedAt,
@@ -817,36 +892,45 @@ export class InvestmentDecisionService implements OnModuleInit {
     return {
       totalCapitalUsd,
       currentPositions,
-      rebalancesToday: this.getRebalancesToday(userId),
+      rebalancesToday: await this.getRebalancesToday(userId),
     };
   }
 
   /**
-   * Get rebalances today counter (resets at midnight UTC)
+   * Get rebalances today from DB (lazy-resets at midnight UTC)
    */
-  private getRebalancesToday(userId: string): number {
-    const today = new Date().toISOString().split('T')[0];
-    const record = this.userRebalanceCounts.get(userId);
+  private async getRebalancesToday(userId: string): Promise<number> {
+    const pref = await this.preferenceRepository.findOne({ where: { userId } });
+    if (!pref) return 0;
 
-    if (!record || record.date !== today) {
+    const today = new Date().toISOString().split('T')[0];
+    if (pref.lastRebalanceDate !== today) {
+      // New day — reset counter
+      pref.rebalanceCountToday = 0;
+      pref.lastRebalanceDate = today;
+      await this.preferenceRepository.save(pref);
       return 0;
     }
 
-    return record.count;
+    return pref.rebalanceCountToday;
   }
 
   /**
-   * Increment rebalance counter
+   * Increment rebalance counter (persisted to DB)
    */
-  incrementRebalanceCount(userId: string): void {
-    const today = new Date().toISOString().split('T')[0];
-    const record = this.userRebalanceCounts.get(userId);
+  async incrementRebalanceCount(userId: string): Promise<void> {
+    const pref = await this.preferenceRepository.findOne({ where: { userId } });
+    if (!pref) return;
 
-    if (!record || record.date !== today) {
-      this.userRebalanceCounts.set(userId, { count: 1, date: today });
+    const today = new Date().toISOString().split('T')[0];
+    if (pref.lastRebalanceDate !== today) {
+      pref.rebalanceCountToday = 1;
+      pref.lastRebalanceDate = today;
     } else {
-      record.count++;
+      pref.rebalanceCountToday++;
     }
+
+    await this.preferenceRepository.save(pref);
   }
 
   /**
@@ -949,21 +1033,34 @@ export class InvestmentDecisionService implements OnModuleInit {
   }
 
   /**
-   * Get user balance by user ID (from blockchain service or cache)
+   * Get user balance by user ID (from AssetHubVault contract)
+   * Returns balance in USD (DOT amount × live price)
    */
   async getUserBalance(userId: string): Promise<number> {
-    // TODO: Integrate with AssetHubService to get actual balance
-    // For now, return 0 as placeholder
-    this.logger.warn(`getUserBalance not fully implemented - returning 0 for user ${userId}`);
-    return 0;
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      this.logger.debug(`getUserBalance: user ${userId} not found`);
+      return 0;
+    }
+    return this.getUserBalanceByWallet(user.walletAddress);
   }
 
   /**
-   * Get user balance by wallet address
+   * Get user balance by wallet address (from AssetHubVault contract)
+   * Returns balance in USD (DOT amount × live price)
    */
   async getUserBalanceByWallet(walletAddress: string): Promise<number> {
-    // TODO: Integrate with AssetHubService to get actual balance
-    this.logger.warn(`getUserBalanceByWallet not fully implemented - returning 0 for ${walletAddress}`);
-    return 0;
+    if (!this.assetHubService.isInitialized()) {
+      this.logger.debug('AssetHubService not initialized — returning 0 balance');
+      return 0;
+    }
+
+    try {
+      const balancePlanck = await this.assetHubService.getUserBalance(walletAddress);
+      return await this.tokenMath.dotPlanckToUsd(balancePlanck);
+    } catch (error) {
+      this.logger.error(`Failed to fetch balance for ${walletAddress}: ${error instanceof Error ? error.message : String(error)}`);
+      return 0;
+    }
   }
 }

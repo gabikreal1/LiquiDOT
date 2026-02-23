@@ -12,6 +12,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { AssetHubService } from '../blockchain/services/asset-hub.service';
+import { TokenMathService } from '../blockchain/services/token-math.service';
 
 export interface UserBalance {
   userId: string;
@@ -32,6 +33,7 @@ export class UsersService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private assetHubService: AssetHubService,
+    private tokenMath: TokenMathService,
   ) { }
 
   /**
@@ -145,11 +147,12 @@ export class UsersService {
     try {
       const balanceWei = await this.assetHubService.getUserBalance(user.walletAddress);
 
+      const balanceUsd = await this.tokenMath.dotPlanckToUsd(balanceWei);
       const balance: UserBalance = {
         userId,
         walletAddress: user.walletAddress,
         balanceWei,
-        balanceUsd: this.weiToUsd(balanceWei),
+        balanceUsd,
         lastSyncedAt: new Date(),
       };
 
@@ -169,13 +172,14 @@ export class UsersService {
    */
   updateCachedBalance(walletAddress: string, balanceWei: bigint): void {
     // Find user ID by wallet
-    this.findByWallet(walletAddress).then(user => {
+    this.findByWallet(walletAddress).then(async (user) => {
       if (user) {
+        const balanceUsd = await this.tokenMath.dotPlanckToUsd(balanceWei);
         const balance: UserBalance = {
           userId: user.id,
           walletAddress: user.walletAddress,
           balanceWei,
-          balanceUsd: this.weiToUsd(balanceWei),
+          balanceUsd,
           lastSyncedAt: new Date(),
         };
         this.balanceCache.set(user.id, balance);
@@ -221,14 +225,4 @@ export class UsersService {
     return this.findOne(userId);
   }
 
-  /**
-   * Convert wei to USD (simplified - assumes stablecoin 1:1)
-   */
-  private weiToUsd(weiAmount: bigint): number {
-    try {
-      return Number(weiAmount / BigInt(10 ** 18));
-    } catch {
-      return 0;
-    }
-  }
 }

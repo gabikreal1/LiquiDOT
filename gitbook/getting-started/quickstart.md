@@ -87,10 +87,10 @@ Your funds will be securely held in the Asset Hub Vault Contract.
 
 Once your strategy is configured, LiquiDOT will automatically:
 
-* Analyze available liquidity pools across parachains
+* Analyze available liquidity pools every 4 hours
 * Execute optimal LP positions based on your preferences
-* Monitor positions in real-time
-* Trigger stop-loss or take-profit when thresholds are met
+* Monitor positions every 30 seconds for stop-loss/take-profit triggers
+* Trigger automated liquidation when thresholds are met
 * Rebalance positions to maximize returns
 
 You can track everything from your **Dashboard**:

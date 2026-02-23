@@ -179,6 +179,7 @@ export class AssetHubService implements OnModuleInit {
   private wallet: ethers.Wallet;
   private provider: ethers.Provider;
   private readonly xcmProxyAddress: string;
+  private readonly rpcLimiter: import('../../../common/concurrency-limiter').ConcurrencyLimiter;
 
   constructor(
     private configService: ConfigService,
@@ -186,6 +187,10 @@ export class AssetHubService implements OnModuleInit {
     private logsService: ActivityLogsService,
   ) {
     this.xcmProxyAddress = this.configService.get<string>('XCM_PROXY_ADDRESS', '');
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { ConcurrencyLimiter } = require('../../../common/concurrency-limiter');
+    const maxConcurrent = this.configService.get<number>('ASSETHUB_MAX_CONCURRENT_RPC', 10);
+    this.rpcLimiter = new ConcurrencyLimiter(maxConcurrent);
   }
 
   /**
@@ -547,12 +552,14 @@ export class AssetHubService implements OnModuleInit {
    * Calls: AssetHubVault.getUserBalance()
    */
   async getUserBalance(userAddress: string): Promise<bigint> {
-    try {
-      return await this.readOnlyContract.getUserBalance(userAddress);
-    } catch (error) {
-      this.logger.error(`Failed to get user balance: ${error.message}`);
-      throw error;
-    }
+    return this.rpcLimiter.execute(async () => {
+      try {
+        return await this.readOnlyContract.getUserBalance(userAddress);
+      } catch (error) {
+        this.logger.error(`Failed to get user balance: ${error.message}`);
+        throw error;
+      }
+    });
   }
 
   // ============================================================

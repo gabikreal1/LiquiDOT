@@ -33,18 +33,19 @@ In simple terms, LiquiDOT helps users earn yield on their crypto by automaticall
 │                           LiquiDOT Backend                               │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
-│  ┌─────────────┐  ┌─────────────────────┐  ┌──────────────────────────┐ │
-│  │   Users     │  │  Investment Engine  │  │     Stop-Loss Worker     │ │
-│  │   Module    │  │  (Decision Making)  │  │   (Position Monitoring)  │ │
-│  └─────────────┘  └─────────────────────┘  └──────────────────────────┘ │
-│         │                   │                          │                 │
-│         ▼                   ▼                          ▼                 │
+│  ┌───────────┐ ┌───────────────────┐ ┌────────────────────┐ ┌──────────┐│
+│  │  Users    │ │ Investment Engine │ │  Stop-Loss Worker  │ │Dashboard ││
+│  │  Module   │ │ (Decision Making) │ │ (Position Monitor) │ │  API     ││
+│  └───────────┘ └───────────────────┘ └────────────────────┘ └──────────┘│
+│       │                 │                       │                │       │
+│       ▼                 ▼                       ▼                ▼       │
 │  ┌─────────────────────────────────────────────────────────────────────┐│
 │  │                      Blockchain Module                               ││
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌────────────┐ ││
-│  │  │ AssetHub    │  │  Moonbeam   │  │   Event     │  │    XCM     │ ││
-│  │  │  Service    │  │  Service    │  │  Listener   │  │   Retry    │ ││
-│  │  └─────────────┘  └─────────────┘  └─────────────┘  └────────────┘ ││
+│  │  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌──────────┐ ┌────────┐ ││
+│  │  │ AssetHub  │ │ Moonbeam  │ │  Event    │ │   XCM    │ │Position│ ││
+│  │  │ Service   │ │ Service   │ │ Listener  │ │  Retry   │ │EventBus│ ││
+│  │  │(RPC limit)│ │(RPC limit)│ │(retry-wrap│ │          │ │ (SSE)  │ ││
+│  │  └───────────┘ └───────────┘ └───────────┘ └──────────┘ └────────┘ ││
 │  └─────────────────────────────────────────────────────────────────────┘│
 │                                                                          │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -83,12 +84,15 @@ Tracks available liquidity pools from Moonbeam DEXes.
 - Filters pools based on user criteria
 
 ### 4. Positions Module
-Manages the lifecycle of LP positions.
+Manages the lifecycle of LP positions with real-time tracking.
 
 **Key Features:**
-- Tracks positions from creation to liquidation
+- Tracks positions from creation to liquidation with tx hash linking (`assetHubTxHash`, `moonbeamTxHash`)
 - Stores on-chain IDs from both Asset Hub and Moonbeam
 - Calculates P&L for each position
+- SSE endpoint (`GET /positions/user/:userId/events`) for real-time position status updates
+- PositionEventBusService: In-memory rxjs Subject per userId
+- PositionSyncService: Periodic on-chain sync every 30min with smart skip (empty users skipped for ~3 hours)
 
 ### 5. Investment Decision Module
 The brain of the system - decides when and where to invest.
@@ -97,25 +101,38 @@ The brain of the system - decides when and where to invest.
 - Implements the mathematical model from `defi_investment_bot_spec.md`
 - Runs every 4 hours to evaluate portfolio
 - Uses utility function to optimize allocation
+- Phase 2 recovery: Polls for XCM arrival (5s intervals, 60s timeout) + retry with exponential backoff
+- Persists assetHubTxHash immediately after Phase 1; marks FAILED with calldata on final failure
 
 ### 6. Stop-Loss Worker
 Protects users from losses by monitoring positions.
 
 **Key Features:**
 - Checks positions every 30 seconds
+- Batch pool state optimization: one RPC call per unique pool with 15s in-memory cache
 - Triggers liquidation when price moves out of range
 - Take-profit at upper bound, stop-loss at lower bound
+- Falls back to per-position RPC if tick data unavailable
 
-### 7. Blockchain Module
-Handles all smart contract interactions.
+### 7. Dashboard Module
+Pre-aggregated portfolio view for the frontend.
 
 **Key Features:**
-- AssetHubService: Deposits, withdrawals, position creation
-- MoonbeamService: LP management, swaps, liquidations
-- EventListenerService: Listens for on-chain events
-- EventPersistenceService: Persists events to database
+- Single endpoint (`GET /dashboard/:userId`) returns everything the frontend needs
+- Balance, positions with P&L, recent activity (last 20), pool allocations, portfolio summary
+- All data from DB (no live RPC calls) for fast response times
+
+### 8. Blockchain Module
+Handles all smart contract interactions with reliability features.
+
+**Key Features:**
+- AssetHubService: Deposits, withdrawals, position creation (with RPC concurrency limiting)
+- MoonbeamService: LP management, swaps, liquidations (with RPC concurrency limiting)
+- EventListenerService: Listens for on-chain events, wraps all orchestration with XCM retry
+- EventPersistenceService: Persists events to database with tx hashes, emits to PositionEventBus
 - TestModeService: Manages test mode synchronization
-- XcmRetryService: Handles XCM failures with retry logic
+- XcmRetryService: Exponential backoff retry with error classification (transient/permanent)
+- ConcurrencyLimiter: Semaphore-based RPC rate limiting (configurable via env vars)
 
 ## Tech Stack
 
@@ -124,31 +141,33 @@ Handles all smart contract interactions.
 | Framework | NestJS 10.x |
 | Language | TypeScript 5.x |
 | Database | PostgreSQL + TypeORM |
-| Blockchain | ethers.js 6.x |
+| Blockchain | ethers.js 6.x + polkadot-api (P-API) |
+| Real-time | SSE (Server-Sent Events) via rxjs |
 | Scheduling | @nestjs/schedule |
 | HTTP | @nestjs/axios |
 | Testing | Jest + Supertest |
+| Infrastructure | Terraform + DigitalOcean App Platform |
 
 ## Quick Start
 
 ```bash
 # Install dependencies
 cd Backend
-npm install
+pnpm install
 
 # Copy environment config
 cp .env.example .env
 # Edit .env with your values
 
 # Generate TypeChain types (if contracts changed)
-npm run typechain
+pnpm run typechain
 
 # Run in development
-npm run start:dev
+pnpm run start:dev
 
 # Run in production
-npm run build
-npm run start:prod
+pnpm run build
+pnpm run start:prod
 ```
 
 ## Testing
@@ -157,16 +176,16 @@ The backend includes comprehensive unit and integration tests:
 
 ```bash
 # Run all unit tests
-npm test
+pnpm test
 
 # Run tests in watch mode (development)
-npm run test:watch
+pnpm run test:watch
 
 # Run tests with coverage report
-npm run test:cov
+pnpm run test:cov
 
 # Run end-to-end tests
-npm run test:e2e
+pnpm run test:e2e
 ```
 
 ### Test Coverage
@@ -212,9 +231,11 @@ The backend exposes a REST API for the frontend. See [API_REFERENCE.md](./docs/A
 | `/users/:id/balance` | GET | Get user balance |
 | `/positions` | GET | List positions |
 | `/positions/:id` | GET | Get position details |
+| `/positions/user/:userId/events` | GET (SSE) | Real-time position status stream |
 | `/preferences/:userId` | GET/POST/PATCH | Manage preferences |
 | `/pools` | GET | List available pools |
 | `/pools/top` | GET | Get top pools by APR |
+| `/dashboard/:userId` | GET | Aggregated dashboard (balance, P&L, activity) |
 
 ## Database Schema
 
@@ -231,12 +252,16 @@ The investment decision engine implements a sophisticated portfolio optimization
 
 ## Deployment
 
-See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for production deployment instructions.
+**Production:** DigitalOcean App Platform + Managed PostgreSQL, provisioned via Terraform (`Backend/terraform-do/main.tf`).
 
-**Options:**
-- Docker Compose (development/staging)
-- AWS ECS (production)
-- Kubernetes (coming soon)
+**CI/CD:**
+- `.github/workflows/ci.yml` — lint + build + test on PRs and pushes to main
+- `.github/workflows/deploy.yml` — Terraform plan (PRs) / apply (main) for infrastructure
+- DO `deploy_on_push: true` handles application code deploys automatically
+
+**Local development:**
+- `docker-compose up -d db` for PostgreSQL
+- `pnpm run start:dev` for the backend
 
 ## Contributing
 

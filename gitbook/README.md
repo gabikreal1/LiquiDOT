@@ -30,7 +30,15 @@ With support for multiple DEXes and leveraging Polkadot's cross-chain capabiliti
 * **Customizable Strategies** - Tailor your LP positions to your risk tolerance
 * **User-Friendly Interface** - No constant manual oversight required
 
-## 📍 Current Deployment (Testnets)
+## 📍 Current Deployments
+
+### Mainnet
+
+| Contract | Network | Address |
+|----------|---------|---------|
+| XCMProxy | Moonbeam (1284) | `0x0cfb7CE7D66C7CdAe5827074C5f5A62223a0c230` |
+
+### Testnets
 
 | Contract | Network | Address |
 |----------|---------|---------|

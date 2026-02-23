@@ -34,6 +34,9 @@ variable "moonbeam_xcm_proxy_address" {}
 variable "relayer_private_key" {
   sensitive = true
 }
+variable "jwt_secret" {
+  sensitive = true
+}
 
 provider "digitalocean" {
   token = var.do_token
@@ -66,9 +69,10 @@ resource "digitalocean_database_user" "liquidot" {
 # ------------------------------------------------------
 resource "digitalocean_app" "backend" {
   spec {
-    name   = "liquidot-backend"
+    name   = "liquidot"
     region = "nyc"
 
+    # --- Backend API service ---
     service {
       name               = "backend"
       dockerfile_path    = "Backend/Dockerfile"
@@ -81,6 +85,10 @@ resource "digitalocean_app" "backend" {
         repo           = var.github_repo
         branch         = var.github_branch
         deploy_on_push = true
+      }
+
+      routes {
+        path = "/api"
       }
 
       # Database connection
@@ -164,10 +172,45 @@ resource "digitalocean_app" "backend" {
         value = var.relayer_private_key
         type  = "SECRET"
       }
+      env {
+        key   = "JWT_SECRET"
+        value = var.jwt_secret
+        type  = "SECRET"
+      }
 
       # Health check
       health_check {
         http_path = "/api/health"
+      }
+    }
+
+    # --- Frontend service ---
+    service {
+      name               = "frontend"
+      dockerfile_path    = "Frontend/Dockerfile"
+      source_dir         = "Frontend"
+      instance_size_slug = "basic-xxs"
+      instance_count     = 1
+      http_port          = 3000
+
+      github {
+        repo           = var.github_repo
+        branch         = var.github_branch
+        deploy_on_push = true
+      }
+
+      routes {
+        path = "/"
+      }
+
+      # Empty string → relative URLs (/api/...) → same-domain path routing
+      env {
+        key   = "NEXT_PUBLIC_API_URL"
+        value = ""
+      }
+
+      health_check {
+        http_path = "/"
       }
     }
   }
@@ -177,8 +220,8 @@ resource "digitalocean_app" "backend" {
 # PROJECT
 # ------------------------------------------------------
 resource "digitalocean_project" "liquidot" {
-  name        = "liquidot-backend"
-  description = "Liquidot Backend Infrastructure"
+  name        = "liquidot"
+  description = "LiquiDOT Infrastructure"
   purpose     = "Web Application"
   environment = "Production"
 }

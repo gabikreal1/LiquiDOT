@@ -6,10 +6,15 @@ import { Pool } from '../pools/entities/pool.entity';
 import { Position, PositionStatus } from '../positions/entities/position.entity';
 import { User } from '../users/entities/user.entity';
 import { UserPreference } from '../preferences/entities/user-preference.entity';
+import { ActivityLog } from '../activity-logs/entities/activity-log.entity';
 import { RebalanceDecision } from './types/investment.types';
 import { AssetHubService } from '../blockchain/services/asset-hub.service';
 import { MoonbeamService } from '../blockchain/services/moonbeam.service';
 import { XcmBuilderService } from '../blockchain/services/xcm-builder.service';
+import { XcmRetryService } from '../blockchain/services/xcm-retry.service';
+import { PriceService } from '../blockchain/services/price.service';
+import { TokenMathService } from '../blockchain/services/token-math.service';
+import { ConfigService } from '@nestjs/config';
 
 describe('InvestmentDecisionService', () => {
   let service: InvestmentDecisionService;
@@ -50,6 +55,9 @@ describe('InvestmentDecisionService', () => {
     minPositionSizeUsd: '50',
     autoInvestEnabled: true,
     investmentCheckIntervalSeconds: 14400,
+    // Rebalance tracking
+    lastRebalanceDate: null,
+    rebalanceCountToday: 0,
     // Legacy fields
     minApr: null,
     minTvl: null,
@@ -170,6 +178,47 @@ describe('InvestmentDecisionService', () => {
         {
           provide: XcmBuilderService,
           useValue: {},
+        },
+        {
+          provide: PriceService,
+          useValue: { getDotPriceUsd: jest.fn().mockResolvedValue(7.5) },
+        },
+        {
+          provide: TokenMathService,
+          useValue: {
+            dotPlanckToUsd: jest.fn().mockImplementation(async (planck: bigint | string) => {
+              const raw = typeof planck === 'string' ? BigInt(planck) : planck;
+              return (Number(raw) / 1e10) * 7.5;
+            }),
+            usdToDotPlanck: jest.fn().mockImplementation(async (usd: number) => {
+              return BigInt(Math.floor((usd / 7.5) * 1e10));
+            }),
+            planckToDot: jest.fn().mockImplementation((planck: bigint | string) => {
+              const raw = typeof planck === 'string' ? BigInt(planck) : planck;
+              return Number(raw) / 1e10;
+            }),
+            dotToPlanck: jest.fn().mockImplementation((dot: number) => {
+              return BigInt(Math.floor(dot * 1e10));
+            }),
+            smallestUnitToUsd: jest.fn().mockImplementation(
+              (unit: bigint | string, decimals: number, price: number) => {
+                const raw = typeof unit === 'string' ? BigInt(unit) : unit;
+                return (Number(raw) / (10 ** decimals)) * price;
+              },
+            ),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string, defaultValue?: any) => {
+              const config: Record<string, any> = {
+                DEFAULT_BASE_ASSET: '0xFfFFfFff1FcaCBd218EDc0EbA20Fc2308C778080',
+                MOONBEAM_EVM_CHAIN_ID: 1284,
+              };
+              return config[key] ?? defaultValue;
+            }),
+          },
         },
       ],
     }).compile();

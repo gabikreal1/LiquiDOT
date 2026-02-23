@@ -1232,13 +1232,27 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
             return (0, totalAmount);
         }
 
+        // The ideal ratio is computed at the pre-swap price, but the swap itself
+        // moves the price AND loses value to slippage.  If we swap the "ideal"
+        // amount we over-deplete the held token and under-receive the other.
+        //
+        // Fix: swap LESS than the ideal by a slippage-sized margin.  The NFPM
+        // mint accepts `amount{0,1}Desired` and refunds unused tokens, so a
+        // slight surplus of the held token is harmless.  A deficit of the
+        // swapped-into token would revert the mint — so we'd rather keep more
+        // of the held token than risk too little of the swapped token.
+        uint256 bps = slippageBps > 0 ? slippageBps : defaultSlippageBps;
+
         uint256 amountToSwap;
         if (tokenToUse == token0) {
             // We hold token0, swap some to get token1
-            amountToSwap = FullMath.mulDiv(totalAmount, ratio1, totalValue);
+            uint256 idealSwap = FullMath.mulDiv(totalAmount, ratio1, totalValue);
+            // Reduce swap by slippage margin so we keep enough token0
+            amountToSwap = FullMath.mulDiv(idealSwap, 10_000 - bps, 10_000);
         } else if (tokenToUse == token1) {
             // We hold token1, swap some to get token0
-            amountToSwap = FullMath.mulDiv(totalAmount, ratio0InToken1, totalValue);
+            uint256 idealSwap = FullMath.mulDiv(totalAmount, ratio0InToken1, totalValue);
+            amountToSwap = FullMath.mulDiv(idealSwap, 10_000 - bps, 10_000);
         } else {
             revert BaseAssetNotSupported();
         }

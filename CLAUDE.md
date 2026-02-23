@@ -106,12 +106,21 @@ pnpm run lint                        # ESLint
 
 Key NestJS modules under `src/modules/`:
 
-- `blockchain/` — Core chain integration: `asset-hub.service.ts` (ethers + P-API), `moonbeam.service.ts`, `xcm-builder.service.ts` (P-API / XCM V5), `event-listener.service.ts`
-- `investment-decision/` — Deterministic optimization in `decision.logic.ts`, runs every 4h
-- `stop-loss-worker/` — Monitors positions every 30s, triggers liquidations
+- `blockchain/` — Core chain integration: `asset-hub.service.ts` (ethers + P-API), `moonbeam.service.ts`, `xcm-builder.service.ts` (P-API / XCM V5), `event-listener.service.ts`, `event-persistence.service.ts`, `xcm-retry.service.ts`, `price.service.ts`, `token-math.service.ts`
+- `investment-decision/` — Deterministic optimization in `decision.logic.ts`, runs every 4h. Worker uses XCM retry with Phase 2 polling recovery.
+- `stop-loss-worker/` — Monitors positions every 30s with batch pool state optimization (one RPC per unique pool, 15s cache). Triggers liquidations.
 - `pools/` — Syncs DEX pool data from Algebra subgraph
+- `dashboard/` — Pre-aggregated dashboard API (`GET /dashboard/:userId`) with balance, positions, P&L, activity, pool allocations
+- `positions/` — Position CRUD + SSE endpoint (`GET /positions/user/:userId/events`) via `PositionEventBusService` for real-time updates
 - `auth/` — JWT auth with SIWE + SIWS (Sign-In with Ethereum/Substrate)
-- `positions/`, `preferences/`, `users/`, `activity-logs/`
+- `preferences/`, `users/`, `activity-logs/`
+
+**Common utilities** under `src/common/`:
+- `concurrency-limiter.ts` — Semaphore-based RPC rate limiting (applied to MoonbeamService and AssetHubService, configurable via `MOONBEAM_MAX_CONCURRENT_RPC` / `ASSETHUB_MAX_CONCURRENT_RPC`)
+
+**XCM reliability**: `event-listener.service.ts` wraps all three orchestration paths (executePendingInvestment, confirmExecution, settleLiquidation) with `XcmRetryService.executeWithRetry()` — exponential backoff, error classification (transient/permanent), failure logging + FAILED status marking.
+
+**Transaction hash tracking**: Position entity has `assetHubTxHash` and `moonbeamTxHash` columns. EventPersistenceService persists tx hashes from blockchain events. ActivityLog entries include `txHash`.
 
 **TypeChain bridge**: Contract ABIs from `SmartContracts/artifacts-evm/` generate typed bindings via `pnpm run typechain` (runs automatically as prebuild). Bindings live in `src/types/contracts/`.
 
@@ -121,10 +130,13 @@ Workers are toggled via env vars: `ENABLE_INVESTMENT_WORKER`, `ENABLE_STOP_LOSS_
 
 ## Infrastructure
 
-- **Production**: DigitalOcean App Platform + Managed PostgreSQL (`Backend/terraform-do/`)
-- **CI/CD**: GitHub Actions deploys via Terraform on push to `main` (only `Backend/terraform-do/**` changes)
-- **Docker**: `Backend/docker-compose.yml` runs PostgreSQL 15 + Backend service
+- **Production**: DigitalOcean App Platform (Backend + Frontend services) + Managed PostgreSQL (`Backend/terraform-do/`)
+- **CI pipeline**: `.github/workflows/ci.yml` — runs backend lint+build+test and frontend lint+build on every PR and push to main
+- **CD pipeline**: `.github/workflows/deploy.yml` — Terraform plan (PRs) / apply (main) for infrastructure changes. App code deploys automatically via DO `deploy_on_push: true`.
+- **Path-based routing**: Both services share one DO App — `/api` routes to backend (port 3001), `/` routes to frontend (port 3000)
+- **Docker**: `Backend/Dockerfile` (pnpm, multi-stage), `Frontend/Dockerfile` (Next.js standalone, multi-stage), `Backend/docker-compose.yml` for local PostgreSQL
 - **Local subgraph**: `Backend/local-dev/graph-node/docker-compose.yml` for local Algebra subgraph indexing
+- **DB migrations**: Auto-run on production startup via `migrationsRun: true` in TypeORM config
 
 ## XCM Investment Pipeline
 

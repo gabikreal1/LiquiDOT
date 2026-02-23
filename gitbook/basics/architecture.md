@@ -120,14 +120,20 @@ The frontend provides the user interface for:
 * Current market conditions
 * Existing position exposure
 
-**Technology:** NestJS, TypeORM, PolkadotJS
+**Technology:** NestJS, TypeORM, polkadot-api (P-API) + @polkadot/api
+
+**Additional Features:**
+* Pre-aggregated Dashboard API (`GET /api/dashboard/:userId`)
+* Real-time position updates via Server-Sent Events (SSE)
+* XCM retry with exponential backoff and error classification
+* RPC concurrency limiter (configurable per chain)
 
 #### C. Stop-Loss/Take-Profit Worker
 
 **Purpose:** Monitor positions 24/7 and trigger automated liquidations
 
-**Monitoring Loop:**
-1. Query all active positions from XCM Proxy
+**Monitoring Loop (every 30 seconds):**
+1. Query all active positions with batch pool state optimization (one RPC per unique pool, 15s cache)
 2. Fetch current pool prices from DEXes
 3. Calculate position health vs. user ranges
 4. Detect threshold breaches (stop-loss or take-profit)
@@ -140,7 +146,7 @@ The frontend provides the user interface for:
 * Take-profit target reached
 * Emergency liquidation signal
 
-**Technology:** Node.js, PolkadotJS, Web3.js
+**Technology:** NestJS, ethers.js, polkadot-api
 
 #### D. PostgreSQL Database
 
@@ -315,8 +321,11 @@ Stop-Loss Worker → XCM Proxy
 * **Foundry** - Testing framework
 
 ### Infrastructure
-* **Docker** - Containerization
-* **AWS ECS** - Container orchestration
+* **Docker** - Containerization (multi-stage builds for Backend and Frontend)
+* **DigitalOcean App Platform** - Backend + Frontend with path-based routing
+* **Managed PostgreSQL** - DigitalOcean database
+* **Terraform** - Infrastructure as Code
+* **GitHub Actions** - CI/CD pipeline
 * **XCM** - Cross-chain messaging
 
 ## Design Patterns
@@ -378,6 +387,5 @@ Asset Hub as central hub, parachains as execution spokes.
 Explore specific components in detail:
 
 * [Smart Contracts](smart-contracts.md) - Contract documentation
-* [Data Models](data-models.md) - Database schema
 * [Cross-Chain Flow](cross-chain-flow.md) - XCM message details
 * [Testing Guide](testing-guide.md) - How to test the system

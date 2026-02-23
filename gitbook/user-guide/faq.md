@@ -195,9 +195,7 @@ Multiple safety layers:
 
 ### Are the smart contracts audited?
 
-[Audit status to be updated]
-
-All contracts follow industry best practices:
+Contracts have been developed following industry best practices and are undergoing review. All contracts implement:
 - Access control (roles-based permissions)
 - Reentrancy protection
 - Overflow/underflow protection
@@ -261,10 +259,11 @@ Yes, as long as your hardware wallet supports Polkadot/Moonbeam transactions. Te
 
 ### Is there an API?
 
-API documentation coming soon for advanced users who want to:
-- Query positions programmatically
-- Set strategies via API
-- Build custom integrations
+Yes! The backend provides a REST API with Swagger documentation at `/api/docs`. Key endpoints:
+- `GET /api/dashboard/:userId` - Pre-aggregated dashboard data (balance, positions, P&L, activity)
+- `GET /api/positions/user/:userId/events` - Real-time position updates via Server-Sent Events (SSE)
+- `GET /api/pools` - Available liquidity pools
+- `GET /api/health` - Service health check
 
 ## Roadmap Questions
 

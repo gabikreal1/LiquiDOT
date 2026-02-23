@@ -106,11 +106,14 @@ Backend/src/
     │   ├── users.controller.ts
     │   └── users.module.ts
     │
-    ├── positions/             # Position tracking
+    ├── positions/             # Position tracking + real-time events
     │   ├── entities/
-    │   │   └── position.entity.ts
+    │   │   └── position.entity.ts        # Includes assetHubTxHash, moonbeamTxHash
     │   ├── positions.service.ts
     │   ├── positions.controller.ts
+    │   ├── positions-sse.controller.ts    # SSE endpoint for real-time position events
+    │   ├── position-event-bus.service.ts  # In-memory rxjs Subject per userId
+    │   ├── position-sync.service.ts       # Periodic on-chain sync (every 30min)
     │   └── positions.module.ts
     │
     ├── preferences/           # User preferences
@@ -125,13 +128,18 @@ Backend/src/
     │   │   └── investment.types.ts
     │   ├── investment-decision.controller.ts  # REST API
     │   ├── investment-decision.service.ts     # Core logic
-    │   ├── investment-decision.worker.ts      # Scheduled task
+    │   ├── investment-decision.worker.ts      # Scheduled task (XCM retry + Phase 2 polling)
     │   └── investment-decision.module.ts
+    │
+    ├── dashboard/             # Aggregated dashboard API
+    │   ├── dashboard.controller.ts   # GET /dashboard/:userId
+    │   ├── dashboard.service.ts      # Pre-aggregated portfolio data
+    │   └── dashboard.module.ts
     │
     └── stop-loss-worker/      # Position monitoring
         ├── types/
         │   └── stop-loss.types.ts
-        ├── stop-loss.service.ts
+        ├── stop-loss.service.ts       # Batch pool state optimization (15s cache)
         └── stop-loss.module.ts
 ```
 
@@ -327,11 +335,12 @@ try {
 
 ### XCM Errors
 
-XCM operations use the `XcmRetryService` for resilience:
-- Automatic retries (3 attempts)
-- Exponential backoff
-- Detailed error logging
-- Fallback mechanisms where possible
+XCM operations use `XcmRetryService.executeWithRetry()` for resilience:
+- Error classification: `TRANSIENT` (retryable) vs `PERMANENT` (fail immediately)
+- Configurable retry policy (default: 3 attempts with exponential backoff)
+- All three event-listener orchestration paths are wrapped (executePendingInvestment, confirmExecution, settleLiquidation)
+- Investment worker Phase 2 uses dedicated retry (5 attempts, 3s base delay) with XCM arrival polling
+- On exhausted retries: position marked FAILED, error ActivityLog created with calldata for manual recovery
 
 ### Database Errors
 
@@ -421,12 +430,16 @@ The `EventPersistenceService` bridges blockchain events to database state:
 │                                                                     │
 │  ┌────────────────────────────────────────────────────────────────┐│
 │  │                    Event Handlers                               ││
-│  │  handleDeposit()           → Create/update User                ││
-│  │  handleInvestmentInitiated() → Create Position (PENDING)       ││
+│  │  handleDeposit()           → Create/update User + ActivityLog  ││
+│  │  handleInvestmentInitiated() → Create Position + assetHubTxHash││
 │  │  handleExecutionConfirmed()  → Update Position (ACTIVE)        ││
+│  │  handleMoonbeamPositionExecuted() → Set moonbeamTxHash         ││
 │  │  handlePositionLiquidated()  → Update Position (LIQUIDATED)    ││
+│  │  handleLiquidationSettled()  → Create ActivityLog + txHash     ││
 │  │  handlePendingPositionCancelled() → Update Position (FAILED)   ││
 │  └────────────────────────────────────────────────────────────────┘│
+│                            │                                        │
+│                            ├──► PositionEventBusService (SSE)       │
 │                            │                                        │
 └────────────────────────────┼────────────────────────────────────────┘
                              │ TypeORM Repositories
@@ -437,15 +450,16 @@ The `EventPersistenceService` bridges blockchain events to database state:
                     │  │   Users   │  │
                     │  │ Positions │  │
                     │  │   Pools   │  │
+                    │  │ActivityLog│  │
                     │  └───────────┘  │
                     └─────────────────┘
 ```
 
 **Position State Machine:**
 ```
-  PENDING ──► ACTIVE ──► LIQUIDATED
-     │                        ▲
-     └──► FAILED ─────────────┘
+  PENDING ──► ACTIVE ──► LIQUIDATION_PENDING ──► LIQUIDATED
+     │                                               ▲
+     └──► FAILED ────────────────────────────────────┘
 ```
 
 ---
@@ -465,9 +479,9 @@ The `EventPersistenceService` bridges blockchain events to database state:
 
 **Run Tests:**
 ```bash
-npm test           # Unit tests
-npm run test:cov   # With coverage
-npm run test:e2e   # End-to-end tests
+pnpm test           # Unit tests
+pnpm run test:cov   # With coverage
+pnpm run test:e2e   # End-to-end tests
 ```
 - Worker execution paths
 

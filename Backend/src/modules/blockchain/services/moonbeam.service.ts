@@ -196,6 +196,7 @@ export class MoonbeamService implements OnModuleInit {
   private readOnlyContract: ethers.Contract;
   private wallet: ethers.Wallet;
   private provider: ethers.Provider;
+  private readonly rpcLimiter: import('../../../common/concurrency-limiter').ConcurrencyLimiter;
 
   // Cached allowlist snapshot (because enumeration requires an input list)
   private supportedTokenDiscoveryCache?: {
@@ -203,7 +204,12 @@ export class MoonbeamService implements OnModuleInit {
     result: Array<{ address: string; symbol: string; name?: string; decimals?: number }>;
   };
 
-  constructor(private configService: ConfigService) {}
+  constructor(private configService: ConfigService) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { ConcurrencyLimiter } = require('../../../common/concurrency-limiter');
+    const maxConcurrent = this.configService.get<number>('MOONBEAM_MAX_CONCURRENT_RPC', 10);
+    this.rpcLimiter = new ConcurrencyLimiter(maxConcurrent);
+  }
 
   /**
    * Initialize contract connections on module startup
@@ -260,7 +266,7 @@ export class MoonbeamService implements OnModuleInit {
    * Resolve token metadata (name/symbol/decimals) for a given ERC20 address.
    * Best-effort: some tokens may not implement all optional views.
    */
-  private async getErc20Metadata(tokenAddress: string): Promise<{ address: string; symbol: string; name?: string; decimals?: number }> {
+  async getErc20Metadata(tokenAddress: string): Promise<{ address: string; symbol: string; name?: string; decimals?: number }> {
     const token = new ethers.Contract(tokenAddress, ERC20_ABI, this.provider);
 
     const [nameRes, symbolRes, decimalsRes] = await Promise.allSettled([
@@ -411,16 +417,18 @@ export class MoonbeamService implements OnModuleInit {
     outOfRange: boolean;
     currentPrice: bigint;
   }> {
-    try {
-      const result = await this.contract.isPositionOutOfRange(positionId);
-      return {
-        outOfRange: result.outOfRange,
-        currentPrice: result.currentPrice,
-      };
-    } catch (error) {
-      this.logger.error(`Failed to check position range: ${error.message}`);
-      throw error;
-    }
+    return this.rpcLimiter.execute(async () => {
+      try {
+        const result = await this.contract.isPositionOutOfRange(positionId);
+        return {
+          outOfRange: result.outOfRange,
+          currentPrice: result.currentPrice,
+        };
+      } catch (error) {
+        this.logger.error(`Failed to check position range: ${error.message}`);
+        throw error;
+      }
+    });
   }
 
   /**
@@ -525,31 +533,33 @@ export class MoonbeamService implements OnModuleInit {
    * Calls: XCMProxy.positions(positionId)
    */
   async getPosition(positionId: number): Promise<MoonbeamPosition | null> {
-    try {
-      const p = await this.readOnlyContract.positions(positionId);
-      if (!p.active && p.liquidity === 0n) {
-        return null;
+    return this.rpcLimiter.execute(async () => {
+      try {
+        const p = await this.readOnlyContract.positions(positionId);
+        if (!p.active && p.liquidity === 0n) {
+          return null;
+        }
+        return {
+          assetHubPositionId: p.assetHubPositionId,
+          pool: p.pool,
+          token0: p.token0,
+          token1: p.token1,
+          bottomTick: Number(p.bottomTick),
+          topTick: Number(p.topTick),
+          liquidity: p.liquidity,
+          tokenId: Number(p.tokenId),
+          owner: p.owner,
+          lowerRangePercent: Number(p.lowerRangePercent),
+          upperRangePercent: Number(p.upperRangePercent),
+          entryPrice: p.entryPrice,
+          timestamp: p.timestamp,
+          active: p.active,
+        };
+      } catch (error) {
+        this.logger.error(`Failed to get position ${positionId}: ${error.message}`);
+        throw error;
       }
-      return {
-        assetHubPositionId: p.assetHubPositionId,
-        pool: p.pool,
-        token0: p.token0,
-        token1: p.token1,
-        bottomTick: Number(p.bottomTick),
-        topTick: Number(p.topTick),
-        liquidity: p.liquidity,
-        tokenId: Number(p.tokenId),
-        owner: p.owner,
-        lowerRangePercent: Number(p.lowerRangePercent),
-        upperRangePercent: Number(p.upperRangePercent),
-        entryPrice: p.entryPrice,
-        timestamp: p.timestamp,
-        active: p.active,
-      };
-    } catch (error) {
-      this.logger.error(`Failed to get position ${positionId}: ${error.message}`);
-      throw error;
-    }
+    });
   }
 
   /**
@@ -680,27 +690,29 @@ export class MoonbeamService implements OnModuleInit {
     feeOtz: number;
     unlocked: boolean;
   }> {
-    try {
-      const poolContract = new ethers.Contract(
-        poolAddress,
-        ALGEBRA_POOL_ABI,
-        this.provider,
-      );
+    return this.rpcLimiter.execute(async () => {
+      try {
+        const poolContract = new ethers.Contract(
+          poolAddress,
+          ALGEBRA_POOL_ABI,
+          this.provider,
+        );
 
-      // Use safelyGetStateOfAMM which is available in Algebra Integral
-      const state = await poolContract.safelyGetStateOfAMM();
+        // Use safelyGetStateOfAMM which is available in Algebra Integral
+        const state = await poolContract.safelyGetStateOfAMM();
 
-      return {
-        sqrtPriceX96: BigInt(state.sqrtPrice),
-        currentTick: Number(state.tick),
-        feeZto: Number(state.lastFee), // Fee for zero-to-one swaps
-        feeOtz: Number(state.lastFee), // Fee for one-to-zero swaps (same in Algebra v1.2)
-        unlocked: true, // safelyGetStateOfAMM doesn't return this, assume unlocked
-      };
-    } catch (error) {
-      this.logger.error(`Failed to get pool state: ${error.message}`);
-      throw error;
-    }
+        return {
+          sqrtPriceX96: BigInt(state.sqrtPrice),
+          currentTick: Number(state.tick),
+          feeZto: Number(state.lastFee), // Fee for zero-to-one swaps
+          feeOtz: Number(state.lastFee), // Fee for one-to-zero swaps (same in Algebra v1.2)
+          unlocked: true, // safelyGetStateOfAMM doesn't return this, assume unlocked
+        };
+      } catch (error) {
+        this.logger.error(`Failed to get pool state: ${error.message}`);
+        throw error;
+      }
+    });
   }
 
   /**

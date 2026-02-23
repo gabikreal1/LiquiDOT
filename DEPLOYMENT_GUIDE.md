@@ -1,6 +1,8 @@
-# 🚀 LiquiDOT Deployment Guide
+# LiquiDOT Deployment Guide
 
-Complete guide for deploying LiquiDOT to production on AWS.
+> **Note:** LiquiDOT production infrastructure has migrated from AWS to **DigitalOcean App Platform**. The current deployment is managed via Terraform in `Backend/terraform-do/main.tf` with CI/CD through GitHub Actions (`.github/workflows/`). See the [Backend README](./Backend/README.md#deployment--cicd) for the current setup.
+
+The below guide is the legacy AWS deployment reference.
 
 ---
 

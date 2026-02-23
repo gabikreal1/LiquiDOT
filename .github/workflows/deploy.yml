@@ -58,6 +58,7 @@ jobs:
           TF_VAR_xcm_proxy_address: ${{ secrets.XCM_PROXY_ADDRESS }}
           TF_VAR_moonbeam_xcm_proxy_address: ${{ secrets.MOONBEAM_XCM_PROXY_ADDRESS }}
           TF_VAR_relayer_private_key: ${{ secrets.RELAYER_PRIVATE_KEY }}
+          TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET }}
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -75,6 +76,7 @@ jobs:
           TF_VAR_xcm_proxy_address: ${{ secrets.XCM_PROXY_ADDRESS }}
           TF_VAR_moonbeam_xcm_proxy_address: ${{ secrets.MOONBEAM_XCM_PROXY_ADDRESS }}
           TF_VAR_relayer_private_key: ${{ secrets.RELAYER_PRIVATE_KEY }}
+          TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET }}
 
       - name: Show App URL
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'

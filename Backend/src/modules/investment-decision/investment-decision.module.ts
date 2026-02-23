@@ -8,11 +8,12 @@ import { Pool } from '../pools/entities/pool.entity';
 import { Position } from '../positions/entities/position.entity';
 import { User } from '../users/entities/user.entity';
 import { UserPreference } from '../preferences/entities/user-preference.entity';
+import { ActivityLog } from '../activity-logs/entities/activity-log.entity';
 import { BlockchainModule } from '../blockchain/blockchain.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Pool, Position, User, UserPreference]),
+    TypeOrmModule.forFeature([Pool, Position, User, UserPreference, ActivityLog]),
     ScheduleModule.forRoot(),
     BlockchainModule,
   ],

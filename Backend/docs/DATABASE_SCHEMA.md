@@ -146,6 +146,8 @@ Stores liquidity positions created by the system.
 | `entryPrice` | DECIMAL | Yes | null | Entry price (wei) |
 | `status` | ENUM | No | PENDING | Position status |
 | `chainId` | INT | No | - | Target chain ID |
+| `assetHubTxHash` | VARCHAR(66) | Yes | null | Transaction hash on Asset Hub (Phase 1 XCM) |
+| `moonbeamTxHash` | VARCHAR(66) | Yes | null | Transaction hash on Moonbeam (Phase 2 execution) |
 | `returnedAmount` | DECIMAL | Yes | null | Amount returned on exit |
 | `executedAt` | TIMESTAMP | Yes | null | When position was opened |
 | `liquidatedAt` | TIMESTAMP | Yes | null | When position was closed |
@@ -155,11 +157,12 @@ Stores liquidity positions created by the system.
 **Position Status Enum:**
 ```typescript
 enum PositionStatus {
-  PENDING_EXECUTION = 'PENDING_EXECUTION',  // Awaiting XCM execution
-  ACTIVE = 'ACTIVE',                        // Position is active
-  OUT_OF_RANGE = 'OUT_OF_RANGE',           // Price outside LP range
-  LIQUIDATED = 'LIQUIDATED',               // Position closed
-  FAILED = 'FAILED'                        // Execution failed
+  PENDING_EXECUTION = 'PENDING_EXECUTION',    // Awaiting XCM execution
+  ACTIVE = 'ACTIVE',                          // Position is active
+  OUT_OF_RANGE = 'OUT_OF_RANGE',             // Price outside LP range
+  LIQUIDATION_PENDING = 'LIQUIDATION_PENDING', // Liquidation initiated, awaiting settlement
+  LIQUIDATED = 'LIQUIDATED',                  // Position closed, funds returned
+  FAILED = 'FAILED'                           // Execution failed
 }
 ```
 
@@ -247,14 +250,16 @@ TypeORM manages migrations. To create and run migrations:
 
 ```bash
 # Generate a new migration from entity changes
-npm run migration:generate -- -n MigrationName
+pnpm run migration:generate -- -n MigrationName
 
 # Run pending migrations
-npm run migration:run
+pnpm run migration:run
 
 # Revert last migration
-npm run migration:revert
+pnpm run migration:revert
 ```
+
+**Note:** In production, migrations run automatically on app startup (`migrationsRun: true` in TypeORM config).
 
 ---
 
