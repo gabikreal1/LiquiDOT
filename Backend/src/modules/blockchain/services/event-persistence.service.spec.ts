@@ -8,6 +8,7 @@ import { Position, PositionStatus } from '../../positions/entities/position.enti
 import { Pool } from '../../pools/entities/pool.entity';
 import { ActivityLog } from '../../activity-logs/entities/activity-log.entity';
 import { PositionEventBusService } from '../../positions/position-event-bus.service';
+import { UsersService } from '../../users/users.service';
 
 describe('EventPersistenceService', () => {
   let service: EventPersistenceService;
@@ -73,6 +74,10 @@ describe('EventPersistenceService', () => {
         {
           provide: PositionEventBusService,
           useValue: { emit: jest.fn() },
+        },
+        {
+          provide: UsersService,
+          useValue: { updateCachedBalance: jest.fn().mockResolvedValue(undefined) },
         },
       ],
     }).compile();

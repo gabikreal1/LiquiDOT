@@ -67,6 +67,14 @@ contract AssetHubVault is ReentrancyGuard {
     error PositionIdCollision();
     error NoPendingAdminTransfer();
     error NotPendingAdmin();
+    // M-4: Custom errors replacing require strings
+    error AlreadyFrozen();
+    error PositionNotFound();
+    error PositionNotPending();
+    error ChainAlreadySupported();
+    error ChainNotRegistered();
+    error InvalidXcmDestination();
+    error TransferFailed();
 
     modifier onlyAdmin() { if (msg.sender != admin) revert NotAdmin(); _; }
     modifier onlyOperator() { if (msg.sender != operator) revert NotOperator(); _; }
@@ -160,6 +168,7 @@ contract AssetHubVault is ReentrancyGuard {
         PositionStatus status;
         uint256 amount;
         bytes32 remotePositionId;      // Generic remote position identifier (could be uint256, tokenId, etc.)
+        uint256 settledAmount;         // H-4: Amount actually settled (set in settleLiquidation)
     }
     // Polkadot XCM precompile (PolkaVM) configurable address; depends on runtime
     address public XCM_PRECOMPILE;
@@ -204,7 +213,7 @@ contract AssetHubVault is ReentrancyGuard {
     event XcmSenderSet(address indexed sender);
 
     function setXcmPrecompile(address precompile) external onlyAdmin {
-        require(!xcmPrecompileFrozen, "xcm precompile frozen");
+        if (xcmPrecompileFrozen) revert AlreadyFrozen();
         XCM_PRECOMPILE = precompile;
         emit XcmPrecompileSet(precompile);
     }
@@ -212,7 +221,7 @@ contract AssetHubVault is ReentrancyGuard {
     /// @notice Sets the XCM sender adapter used by this vault.
     /// @dev If set (non-zero), the vault will prefer this over XCM_PRECOMPILE.
     function setXcmSender(address sender) external onlyAdmin {
-        require(!xcmSenderFrozen, "xcm sender frozen");
+        if (xcmSenderFrozen) revert AlreadyFrozen();
         XCM_SENDER = sender;
         emit XcmSenderSet(sender);
     }
@@ -224,46 +233,51 @@ contract AssetHubVault is ReentrancyGuard {
     
 
     function freezeXcmPrecompile() external onlyAdmin {
-        require(!xcmPrecompileFrozen, "already frozen");
+        if (xcmPrecompileFrozen) revert AlreadyFrozen();
         xcmPrecompileFrozen = true;
     }
 
     function freezeXcmSender() external onlyAdmin {
-        require(!xcmSenderFrozen, "already frozen");
+        if (xcmSenderFrozen) revert AlreadyFrozen();
         xcmSenderFrozen = true;
     }
 
     function setTestMode(bool _testMode) external onlyAdmin {
-        require(!testModeFrozen, "test mode frozen");
+        if (testModeFrozen) revert AlreadyFrozen();
         testMode = _testMode;
     }
 
     event TestModeFrozen();
 
     function freezeTestMode() external onlyAdmin {
-        require(!testModeFrozen, "already frozen");
+        if (testModeFrozen) revert AlreadyFrozen();
         testModeFrozen = true;
         testMode = false;
         emit TestModeFrozen();
     }
 
     function setTrustedSettlementCaller(address caller) external onlyAdmin {
-        require(!trustedSettlementCallerFrozen, "trusted settlement frozen");
+        if (trustedSettlementCallerFrozen) revert AlreadyFrozen();
         if (caller == address(0)) revert ZeroAddress();
         trustedSettlementCaller = caller;
         emit TrustedSettlementCallerSet(caller);
     }
 
     function freezeTrustedSettlementCaller() external onlyAdmin {
-        require(!trustedSettlementCallerFrozen, "already frozen");
+        if (trustedSettlementCallerFrozen) revert AlreadyFrozen();
         trustedSettlementCallerFrozen = true;
     }
 
+    // M-2: Event for settlement multiplier changes
+    event MaxSettlementMultiplierUpdated(uint16 bps);
+    error MultiplierOutOfRange();
+
     /// @notice Set the maximum settlement amount as a multiplier of the original position amount.
-    /// @param bps Multiplier in thousandths (1000 = 1x, 10000 = 10x)
+    /// @param bps Multiplier in thousandths (1000 = 1x, 10000 = 10x, max 20000 = 20x)
     function setMaxSettlementMultiplier(uint16 bps) external onlyAdmin {
-        require(bps >= 1_000, "min 1x"); // At least 1x
+        if (bps < 1_000 || bps > 20_000) revert MultiplierOutOfRange();
         maxSettlementMultiplierBps = bps;
+        emit MaxSettlementMultiplierUpdated(bps);
     }
 
     /// @notice Access control for settlement operations.
@@ -322,8 +336,8 @@ contract AssetHubVault is ReentrancyGuard {
         string calldata chainName,
         address executor
     ) external onlyAdmin {
-        require(!supportedChains[chainId].supported, "Chain already supported");
-        require(xcmDestination.length > 0, "Invalid XCM destination");
+        if (supportedChains[chainId].supported) revert ChainAlreadySupported();
+        if (xcmDestination.length == 0) revert InvalidXcmDestination();
         
         supportedChains[chainId] = ChainConfig({
             supported: true,
@@ -343,7 +357,7 @@ contract AssetHubVault is ReentrancyGuard {
     * @dev Remove support for a chain
     */
     function removeChain(uint32 chainId) external onlyAdmin {
-        require(supportedChains[chainId].supported, "Chain not supported");
+        if (!supportedChains[chainId].supported) revert ChainNotRegistered();
         delete supportedChains[chainId];
         delete chainExecutors[chainId];
         emit ChainRemoved(chainId);
@@ -353,7 +367,7 @@ contract AssetHubVault is ReentrancyGuard {
     * @dev Update executor address for a chain
     */
     function updateChainExecutor(uint32 chainId, address executor) external onlyAdmin {
-        require(supportedChains[chainId].supported, "Chain not supported");
+        if (!supportedChains[chainId].supported) revert ChainNotRegistered();
         chainExecutors[chainId] = executor;
         emit ExecutorUpdated(chainId, executor);
     }
@@ -392,7 +406,7 @@ contract AssetHubVault is ReentrancyGuard {
 
         userBalances[msg.sender] -= amount;
         (bool success, ) = payable(msg.sender).call{value: amount}("");
-        require(success, "TRANSFER_FAILED");
+        if (!success) revert TransferFailed();
 
         emit Withdrawal(msg.sender, amount);
     }
@@ -444,7 +458,8 @@ contract AssetHubVault is ReentrancyGuard {
             timestamp: uint64(block.timestamp),
             status: PositionStatus.PendingExecution,
             amount: amount,
-            remotePositionId: bytes32(0)  // Will be set when execution confirms
+            remotePositionId: bytes32(0),  // Will be set when execution confirms
+            settledAmount: 0
         });
 
 		userPositions[user].push(positionId);
@@ -488,8 +503,8 @@ contract AssetHubVault is ReentrancyGuard {
         uint128 liquidity
     ) external nonReentrant {
         Position storage position = positions[positionId];
-        require(position.amount > 0, "Position not found");
-        require(position.status == PositionStatus.PendingExecution, "Position not pending");
+        if (position.amount == 0) revert PositionNotFound();
+        if (position.status != PositionStatus.PendingExecution) revert PositionNotPending();
 
         // Access control: allow operator OR authorized executor for the target chain
         if (msg.sender != operator) {
@@ -560,7 +575,7 @@ contract AssetHubVault is ReentrancyGuard {
         if (receivedAmount == 0) revert AmountZero();
 
         Position storage position = positions[positionId];
-        require(position.status == PositionStatus.Active, "Position not active");
+        if (position.status != PositionStatus.Active) revert PositionNotActive();
 
         // Sanity cap: receivedAmount must not exceed maxSettlementMultiplierBps of the
         // original invested amount. This bounds damage from a compromised operator/relayer
@@ -571,6 +586,9 @@ contract AssetHubVault is ReentrancyGuard {
 
         // Mark as liquidated FIRST — prevents double-settlement (replay attack protection)
         position.status = PositionStatus.Liquidated;
+
+        // H-4: Record settled amount for on-chain auditability
+        position.settledAmount = receivedAmount;
 
         // Credit user balance with the Moonbeam-computed amount
         userBalances[position.user] += receivedAmount;
@@ -589,7 +607,7 @@ contract AssetHubVault is ReentrancyGuard {
         bytes32 positionId
     ) external payable onlyEmergency {
         Position storage position = positions[positionId];
-        require(position.status == PositionStatus.Active, "Position not active");
+        if (position.status != PositionStatus.Active) revert PositionNotActive();
         if (position.chainId != chainId) revert ChainIdMismatch();
 
 		position.status = PositionStatus.Liquidated;
@@ -610,7 +628,7 @@ contract AssetHubVault is ReentrancyGuard {
         bytes32 positionId
     ) external onlyEmergency {
         Position storage position = positions[positionId];
-        require(position.status == PositionStatus.PendingExecution, "Position not pending");
+        if (position.status != PositionStatus.PendingExecution) revert PositionNotPending();
 
         position.status = PositionStatus.Liquidated;
         // Refund the original amount back to user's vault balance
@@ -790,6 +808,9 @@ contract AssetHubVault is ReentrancyGuard {
         return positions[positionId];
     }
 
+    // M-1: Track native ETH received for auditability
+    event NativeReceived(address indexed sender, uint256 amount);
+
     /**
     * @dev Receive function to accept ETH transfers (for XCM returns and testing)
     * @notice Only accepts ETH - no other functions can be called via this interface
@@ -797,8 +818,7 @@ contract AssetHubVault is ReentrancyGuard {
     *         The trusted settler (backend) is authoritative for settlement amounts.
     */
     receive() external payable {
-        // Accept ETH transfers for XCM returns and testing.
-        // NOTE: Settlement accounting does not depend on this — the trusted caller provides the amount.
+        emit NativeReceived(msg.sender, msg.value);
     }
 
 } 

@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Inject, Logger, OnModuleInit, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BlockchainEventListenerService } from './event-listener.service';
@@ -7,6 +7,7 @@ import { Position, PositionStatus } from '../../positions/entities/position.enti
 import { Pool } from '../../pools/entities/pool.entity';
 import { ActivityLog, ActivityType, ActivityStatus } from '../../activity-logs/entities/activity-log.entity';
 import { PositionEventBusService } from '../../positions/position-event-bus.service';
+import { UsersService } from '../../users/users.service';
 
 /**
  * EventPersistenceService
@@ -36,6 +37,8 @@ export class EventPersistenceService implements OnModuleInit {
     @InjectRepository(ActivityLog)
     private activityLogRepository: Repository<ActivityLog>,
     private positionEventBus: PositionEventBusService,
+    @Inject(forwardRef(() => UsersService))
+    private usersService: UsersService,
   ) {}
 
   /**
@@ -161,6 +164,9 @@ export class EventPersistenceService implements OnModuleInit {
       }));
 
       this.logger.log(`Deposit recorded: ${event.user} deposited ${event.amount} (tx: ${event.transactionHash})`);
+
+      // Update balance cache and push SSE event to frontend
+      await this.usersService.updateCachedBalance(event.user);
     } catch (error) {
       this.logger.error(`Failed to handle deposit: ${error.message}`, error.stack);
     }
@@ -189,6 +195,9 @@ export class EventPersistenceService implements OnModuleInit {
           txHash: event.transactionHash,
           details: { action: 'withdrawal', amount: event.amount, blockNumber: event.blockNumber },
         }));
+
+        // Update balance cache and push SSE event to frontend
+        await this.usersService.updateCachedBalance(event.user);
       }
     } catch (error) {
       this.logger.error(`Failed to handle withdrawal: ${error.message}`, error.stack);
@@ -385,6 +394,10 @@ export class EventPersistenceService implements OnModuleInit {
             slippageBps: expected > 0n ? Number(((expected - received) * 10000n) / expected) : 0,
           },
         }));
+
+        // Update balance cache and push SSE event to frontend
+        // Settlement credits DOT back to user on Asset Hub
+        await this.usersService.updateCachedBalance(event.user);
       }
     } catch (error) {
       this.logger.error(`Failed to log liquidation settlement: ${error.message}`);

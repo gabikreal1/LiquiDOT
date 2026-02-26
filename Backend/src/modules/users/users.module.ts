@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { UsersService } from './users.service';
@@ -8,7 +8,7 @@ import { BlockchainModule } from '../blockchain/blockchain.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([User]),
-    BlockchainModule,
+    forwardRef(() => BlockchainModule),
   ],
   controllers: [UsersController],
   providers: [UsersService],

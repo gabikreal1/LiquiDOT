@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AssetHubService } from './services/asset-hub.service';
@@ -20,6 +20,7 @@ import { BlockchainController } from './blockchain.controller';
 import { BlockchainDiagnosticsController } from './blockchain-diagnostics.controller';
 import { BlockchainDiagnosticsService } from './blockchain-diagnostics.service';
 import { ActivityLogsModule } from '../activity-logs/activity-logs.module';
+import { UsersModule } from '../users/users.module';
 
 /**
  * BlockchainModule
@@ -61,6 +62,7 @@ import { ActivityLogsModule } from '../activity-logs/activity-logs.module';
     TypeOrmModule.forFeature([User, Position, Pool, ActivityLog]),
     PapiModule,
     ActivityLogsModule,
+    forwardRef(() => UsersModule),
   ],
   controllers: [
     BlockchainController,

@@ -237,7 +237,7 @@ export class PositionsService {
    */
   async liquidate(
     positionId: string,
-    opts?: { baseAsset?: string; recipientAddress?: string },
+    opts?: { baseAsset?: string },
   ): Promise<Position> {
     const position = await this.findOne(positionId);
 
@@ -259,7 +259,8 @@ export class PositionsService {
     }
 
     // Beneficiary address for XCM return (contract handles EE-padding for AccountId32)
-    const beneficiary = opts?.recipientAddress || position.userId;
+    // Always use position owner's wallet — never accept caller-supplied address (C-1 fix)
+    const beneficiary = position.user?.walletAddress || position.userId;
 
     // Lock status to prevent double-liquidation
     const result = await this.positionRepository.update(
