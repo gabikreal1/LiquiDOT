@@ -87,3 +87,12 @@ SmartContracts/artifacts-evm/
 # PAPI generated
 **/.papi/
 **/polkadot-api.json
+
+# Claude-generated docs (AI audit reports, specs, etc.)
+INTEGRATION_SPEC.md
+BACKEND_AUDIT_REPORT.md
+AUDIT_REPORT.md
+DESIGN_DOCUMENT.md
+WALLET_INTEGRATION.md
+IMPLEMENTATION_GUIDE.md
+IMPLEMENTATION_SUMMARY.md
