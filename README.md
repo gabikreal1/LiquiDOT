@@ -1,6 +1,4 @@
-
-
-## LiquiDOT 🌊
+# LiquiDOT 🌊
 
 A customizable liquidity provider (LP) manager designed to simplify and improve participation in DeFi. LiquiDOT allows users to automate their LP strategies, set stop-loss and take-profit levels, and rebalance positions without constant manual oversight.
 
@@ -14,7 +12,16 @@ Built on Asset Hub for custody and using XCM for execution across parachains, Li
 - **Customizable Strategies** - Asymmetric ranges (e.g., -5%/+10%) with automatic tick conversion
 - **User-Friendly Interface** - No constant manual oversight required
 
-### 📍 Current Testnet Deployments
+### 📍 Deployments
+
+**Mainnet**
+
+| Contract | Network | Address |
+|----------|---------|---------|
+| AssetHubVault | Asset Hub (420420419) | `0x0cfb7CE7D66C7CdAe5827074C5f5A62223a0c230` |
+| XCMProxy | Moonbeam (1284) | `0x0cfb7CE7D66C7CdAe5827074C5f5A62223a0c230` |
+
+**Testnet**
 
 | Contract | Network | Address |
 |----------|---------|---------|
@@ -23,13 +30,15 @@ Built on Asset Hub for custody and using XCM for execution across parachains, Li
 
 ### Current Status
 
-- ✅ MVP deployed on testnets (Paseo Asset Hub + Moonbase Alpha)
+- ✅ Smart contracts deployed and verified on mainnet (Asset Hub + Moonbeam)
+- ✅ End-to-end XCM transactions working on mainnet
 - ✅ Smart contracts tested with 61+ passing tests
 - ✅ XCM integration verified with IXcm and IPalletXcm precompiles
 - ✅ StellaSwap Pulsar compatible (Algebra Integral v1.2)
+- ✅ Backend complete — decision engine, stop-loss worker, XCM retry, dashboard API
 - ✅ Full-stack dashboard with real-time position tracking via SSE
-- ✅ XCM retry with exponential backoff and transaction hash tracking
 - ✅ CI/CD pipeline with GitHub Actions + Terraform on DigitalOcean
+- 🚧 Frontend v2 in progress — polishing UI for production deployment
 - 🎉 Approved for [Polkadot Fast Grants PR #86](https://github.com/Polkadot-Fast-Grants/apply/pull/86)
 
 ### 🎯 Target Audience
@@ -39,31 +48,6 @@ Built on Asset Hub for custody and using XCM for execution across parachains, Li
 - **LP newcomers** who want a reliable, automated entry into liquidity provision
 - **Developers and projects** building on parachains who need efficient liquidity management
 
-### 💡 How to Use (Testnet)
-
-**1. Connect Your Wallet**
-- Use Talisman, SubWallet, or Polkadot.js extension
-- Switch to Paseo Asset Hub network
-
-**2. Deposit DOT**
-- Deposits accept **DOT only** (native asset on Asset Hub)
-- Minimum position size: **30 DOT** (~$45 USD for testnet)
-- Funds are held securely in the AssetHubVault contract
-
-**3. Set Your Preferences**
-- Choose risk profile (Conservative/Moderate/Aggressive)
-- Set minimum APY target
-- Select allowed tokens for LP pairs
-- Configure stop-loss and take-profit levels
-
-**4. Automated Management**
-- System analyzes pools on Moonbeam DEXes
-- Optimal LP positions are created via XCM
-- 24/7 monitoring for stop-loss/take-profit triggers
-- Automatic rebalancing when conditions change
-
-> **Testnet Limits:** For testing purposes, minimum position is 30 DOT. Production will use higher minimums to ensure gas efficiency.
-
 ### 📚 Documentation
 
 | Resource | Description |
@@ -72,6 +56,7 @@ Built on Asset Hub for custody and using XCM for execution across parachains, Li
 | [📜 WhitePaper.md](./WhitePaper.md) | Full architecture and scope |
 | [🔧 SmartContracts/README.md](./SmartContracts/README.md) | Contract docs, deployment, testing |
 | [⚙️ Backend/README.md](./Backend/README.md) | API and decision engine |
+| [🖥️ Frontend/README.md](./Frontend/README.md) | Next.js dashboard + DApp |
 
 ### 🏗️ Architecture
 
@@ -127,7 +112,6 @@ LiquiDOT/
 └── WhitePaper.md            # Project white paper
 ```
 
-
 ### ⚙️ Backend
 
 The backend is the "brains" of LiquiDOT:
@@ -150,32 +134,29 @@ See **[Backend/README.md](./Backend/README.md)** for full details.
 
 ### 🚀 Quick Start
 
-**Prerequisites:**
-- Polkadot-compatible wallet (Talisman, SubWallet, Polkadot.js)
-- Testnet tokens: [Moonbase DEV](https://faucet.moonbeam.network/) + [Paseo PAS](https://faucet.polkadot.io/)
+**For Users:**
+- Connect an EVM wallet (MetaMask, Talisman, SubWallet) or a Substrate wallet
+- Deposit DOT on Asset Hub — minimum position size: **10 DOT**
+- Set your preferences (risk profile, APY target, stop-loss/take-profit)
+- The system handles LP management, monitoring, and rebalancing automatically
 
-**Deploy & Test:**
+**For Developers:**
 
 ```bash
-# 1. Deploy AssetHubVault on Paseo (via Remix), then:
-export ASSETHUB_CONTRACT=0x...
+# Smart Contracts
+cd SmartContracts && npm install
+npm run compile:evm && npm run test:evm
 
-# 2. Bootstrap Moonbase (Algebra + XCMProxy + test tokens + pool)
-cd SmartContracts
-npx hardhat run scripts/deploy-moonbase.js --network moonbase
+# Backend
+cd Backend && pnpm install
+pnpm run build && pnpm test
 
-# 3. Link contracts
-npx hardhat run test/helpers/link-contracts.js --network passethub
-npx hardhat run test/helpers/link-contracts.js --network moonbase
-
-# 4. Enable test mode
-npx hardhat run test/helpers/enable-test-mode.js --network passethub
-
-# 5. Run tests
-npx hardhat test test/AssetHubVault/testnet/*.test.js --network passethub
+# Frontend
+cd Frontend && pnpm install
+pnpm run dev
 ```
 
-See **[SmartContracts/README.md](./SmartContracts/README.md)** for full deployment guide.
+See individual READMEs for full setup guides.
 
 ### 🔧 Technologies
 

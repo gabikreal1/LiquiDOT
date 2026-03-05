@@ -36,6 +36,7 @@ With support for multiple DEXes and leveraging Polkadot's cross-chain capabiliti
 
 | Contract | Network | Address |
 |----------|---------|---------|
+| AssetHubVault | Asset Hub (420420419) | `0x0cfb7CE7D66C7CdAe5827074C5f5A62223a0c230` |
 | XCMProxy | Moonbeam (1284) | `0x0cfb7CE7D66C7CdAe5827074C5f5A62223a0c230` |
 
 ### Testnets
@@ -65,15 +66,13 @@ While trading platforms have long supported features like automation, stop loss,
 * **Custom asset preferences** for personalized exposure
 * **Capital control** with allocation limits and APR thresholds
 
-## 💰 Testnet Deposits & Limits
+## 💰 Deposits & Limits
 
-**Deposits accept DOT only** (native asset on Asset Hub). The minimum position size for testnet is:
+**Deposits accept DOT only** (native asset on Asset Hub).
 
-| Limit | DOT | USD Equivalent |
-|-------|-----|----------------|
-| Minimum Position | 30 DOT | ~$45 |
-
-> **Note:** These limits are set low for testnet experimentation. Production values will be higher.
+| Limit | Value |
+|-------|-------|
+| Minimum Position | 10 DOT |
 
 ## 🎯 Target Audience
 
