@@ -19,6 +19,7 @@ Deploy LiquiDOT smart contracts on Paseo Asset Hub and Moonbase Alpha testnets.
 
 | Contract | Network | Address |
 |----------|---------|---------|
+| AssetHubVault | Asset Hub (420420419) | `0x0cfb7CE7D66C7CdAe5827074C5f5A62223a0c230` |
 | XCMProxy | Moonbeam (1284) | `0x0cfb7CE7D66C7CdAe5827074C5f5A62223a0c230` |
 
 ## Prerequisites
@@ -26,7 +27,7 @@ Deploy LiquiDOT smart contracts on Paseo Asset Hub and Moonbase Alpha testnets.
 **Testnet Funds:**
 
 * Paseo PAS: https://faucet.polkadot.io/
-* Moonbase DEV: https://faucet.polkadot.io/
+* Moonbase DEV: https://faucet.moonbeam.network/
 
 **Environment (.env in `SmartContracts/`):**
 

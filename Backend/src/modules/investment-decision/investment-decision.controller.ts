@@ -8,9 +8,14 @@ import {
   HttpStatus,
   Logger,
   BadRequestException,
+  UseGuards,
+  ForbiddenException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { InvestmentDecisionService } from './investment-decision.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { User } from '../users/entities/user.entity';
 import { RebalanceDecision, RebalanceAction } from './types/investment.types';
 
 // ============================================================
@@ -152,7 +157,9 @@ export interface InvestmentDecisionResponse {
 // ============================================================
 
 @ApiTags('investment-decision')
+@ApiBearerAuth()
 @Controller('investmentDecisions')
+@UseGuards(JwtAuthGuard)
 export class InvestmentDecisionController {
   private readonly logger = new Logger(InvestmentDecisionController.name);
 
@@ -171,12 +178,18 @@ export class InvestmentDecisionController {
   @HttpCode(HttpStatus.OK)
   async getInvestmentDecisions(
     @Body() dto: InvestmentDecisionRequestDto,
+    @CurrentUser() currentUser: User,
   ): Promise<InvestmentDecisionResponse> {
     this.logger.log(`Investment decision request for wallet: ${dto.walletAddress}`);
 
     // Validation
     if (!dto.walletAddress) {
       throw new BadRequestException('walletAddress is required');
+    }
+
+    // IDOR: caller can only request decisions for their own wallet
+    if (dto.walletAddress.toLowerCase() !== currentUser.walletAddress.toLowerCase()) {
+      throw new ForbiddenException();
     }
 
     const availableCapitalUsd = dto.depositAmount || 0;
@@ -216,7 +229,11 @@ export class InvestmentDecisionController {
   @Get('wallet/:address')
   async getDecisionsForWallet(
     @Param('address') walletAddress: string,
+    @CurrentUser() currentUser: User,
   ): Promise<InvestmentDecisionResponse> {
+    if (walletAddress.toLowerCase() !== currentUser.walletAddress.toLowerCase()) {
+      throw new ForbiddenException();
+    }
     this.logger.log(`Getting decisions for wallet: ${walletAddress}`);
 
     try {
@@ -266,7 +283,9 @@ export class InvestmentDecisionController {
   @Get('user/:userId')
   async getDecisionsForUser(
     @Param('userId') userId: string,
+    @CurrentUser() currentUser: User,
   ): Promise<InvestmentDecisionResponse> {
+    if (currentUser.id !== userId) throw new ForbiddenException();
     this.logger.log(`Getting decisions for user: ${userId}`);
 
     try {

@@ -35,6 +35,7 @@ export interface XCMProxyInterface extends Interface {
       | "defaultSlippageBps"
       | "emergencyAdmin"
       | "emergencyPause"
+      | "emergencyRecoverToken"
       | "executeFullLiquidation"
       | "executePendingInvestment"
       | "freezeTestMode"
@@ -93,6 +94,7 @@ export interface XCMProxyInterface extends Interface {
       | "AssetsReturned"
       | "DefaultSlippageSet"
       | "EmergencyAdminUpdated"
+      | "EmergencyTokenRecovery"
       | "LiquidationCompleted"
       | "LiquidityAdded"
       | "OperatorUpdated"
@@ -104,6 +106,7 @@ export interface XCMProxyInterface extends Interface {
       | "PositionExecuted"
       | "PositionLiquidated"
       | "ProceedsSwapped"
+      | "RangeAutoWidened"
       | "TestModeFrozen"
       | "TrustedXcmCallerSet"
       | "Unpaused"
@@ -147,6 +150,10 @@ export interface XCMProxyInterface extends Interface {
   encodeFunctionData(
     functionFragment: "emergencyPause",
     values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "emergencyRecoverToken",
+    values: [AddressLike, AddressLike, BigNumberish]
   ): string;
   encodeFunctionData(
     functionFragment: "executeFullLiquidation",
@@ -383,6 +390,10 @@ export interface XCMProxyInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "emergencyPause",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "emergencyRecoverToken",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -638,6 +649,24 @@ export namespace EmergencyAdminUpdatedEvent {
   export type OutputTuple = [emergencyAdmin: string];
   export interface OutputObject {
     emergencyAdmin: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace EmergencyTokenRecoveryEvent {
+  export type InputTuple = [
+    token: AddressLike,
+    to: AddressLike,
+    amount: BigNumberish
+  ];
+  export type OutputTuple = [token: string, to: string, amount: bigint];
+  export interface OutputObject {
+    token: string;
+    to: string;
+    amount: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -909,6 +938,31 @@ export namespace ProceedsSwappedEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
+export namespace RangeAutoWidenedEvent {
+  export type InputTuple = [
+    requestedLower: BigNumberish,
+    requestedUpper: BigNumberish,
+    actualLower: BigNumberish,
+    actualUpper: BigNumberish
+  ];
+  export type OutputTuple = [
+    requestedLower: bigint,
+    requestedUpper: bigint,
+    actualLower: bigint,
+    actualUpper: bigint
+  ];
+  export interface OutputObject {
+    requestedLower: bigint;
+    requestedUpper: bigint;
+    actualLower: bigint;
+    actualUpper: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
 export namespace TestModeFrozenEvent {
   export type InputTuple = [];
   export type OutputTuple = [];
@@ -1041,7 +1095,7 @@ export interface XCMProxy extends BaseContract {
       upperRangePercent: BigNumberish
     ],
     [[bigint, bigint] & { bottomTick: bigint; topTick: bigint }],
-    "view"
+    "nonpayable"
   >;
 
   cancelPendingPosition: TypedContractMethod<
@@ -1061,6 +1115,12 @@ export interface XCMProxy extends BaseContract {
   emergencyAdmin: TypedContractMethod<[], [string], "view">;
 
   emergencyPause: TypedContractMethod<[], [void], "nonpayable">;
+
+  emergencyRecoverToken: TypedContractMethod<
+    [token: AddressLike, to: AddressLike, amount: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
 
   executeFullLiquidation: TypedContractMethod<
     [positionId: BigNumberish],
@@ -1387,7 +1447,7 @@ export interface XCMProxy extends BaseContract {
       upperRangePercent: BigNumberish
     ],
     [[bigint, bigint] & { bottomTick: bigint; topTick: bigint }],
-    "view"
+    "nonpayable"
   >;
   getFunction(
     nameOrSignature: "cancelPendingPosition"
@@ -1408,6 +1468,13 @@ export interface XCMProxy extends BaseContract {
   getFunction(
     nameOrSignature: "emergencyPause"
   ): TypedContractMethod<[], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "emergencyRecoverToken"
+  ): TypedContractMethod<
+    [token: AddressLike, to: AddressLike, amount: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
   getFunction(
     nameOrSignature: "executeFullLiquidation"
   ): TypedContractMethod<
@@ -1753,6 +1820,13 @@ export interface XCMProxy extends BaseContract {
     EmergencyAdminUpdatedEvent.OutputObject
   >;
   getEvent(
+    key: "EmergencyTokenRecovery"
+  ): TypedContractEvent<
+    EmergencyTokenRecoveryEvent.InputTuple,
+    EmergencyTokenRecoveryEvent.OutputTuple,
+    EmergencyTokenRecoveryEvent.OutputObject
+  >;
+  getEvent(
     key: "LiquidationCompleted"
   ): TypedContractEvent<
     LiquidationCompletedEvent.InputTuple,
@@ -1828,6 +1902,13 @@ export interface XCMProxy extends BaseContract {
     ProceedsSwappedEvent.InputTuple,
     ProceedsSwappedEvent.OutputTuple,
     ProceedsSwappedEvent.OutputObject
+  >;
+  getEvent(
+    key: "RangeAutoWidened"
+  ): TypedContractEvent<
+    RangeAutoWidenedEvent.InputTuple,
+    RangeAutoWidenedEvent.OutputTuple,
+    RangeAutoWidenedEvent.OutputObject
   >;
   getEvent(
     key: "TestModeFrozen"
@@ -1926,6 +2007,17 @@ export interface XCMProxy extends BaseContract {
       EmergencyAdminUpdatedEvent.InputTuple,
       EmergencyAdminUpdatedEvent.OutputTuple,
       EmergencyAdminUpdatedEvent.OutputObject
+    >;
+
+    "EmergencyTokenRecovery(address,address,uint256)": TypedContractEvent<
+      EmergencyTokenRecoveryEvent.InputTuple,
+      EmergencyTokenRecoveryEvent.OutputTuple,
+      EmergencyTokenRecoveryEvent.OutputObject
+    >;
+    EmergencyTokenRecovery: TypedContractEvent<
+      EmergencyTokenRecoveryEvent.InputTuple,
+      EmergencyTokenRecoveryEvent.OutputTuple,
+      EmergencyTokenRecoveryEvent.OutputObject
     >;
 
     "LiquidationCompleted(uint256,bytes32,address,address,uint256)": TypedContractEvent<
@@ -2047,6 +2139,17 @@ export interface XCMProxy extends BaseContract {
       ProceedsSwappedEvent.InputTuple,
       ProceedsSwappedEvent.OutputTuple,
       ProceedsSwappedEvent.OutputObject
+    >;
+
+    "RangeAutoWidened(int24,int24,int24,int24)": TypedContractEvent<
+      RangeAutoWidenedEvent.InputTuple,
+      RangeAutoWidenedEvent.OutputTuple,
+      RangeAutoWidenedEvent.OutputObject
+    >;
+    RangeAutoWidened: TypedContractEvent<
+      RangeAutoWidenedEvent.InputTuple,
+      RangeAutoWidenedEvent.OutputTuple,
+      RangeAutoWidenedEvent.OutputObject
     >;
 
     "TestModeFrozen()": TypedContractEvent<

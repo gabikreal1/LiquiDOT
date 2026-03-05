@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import {
   InvestmentDecisionController,
   InvestmentDecisionRequestDto,
@@ -7,6 +7,19 @@ import {
 } from './investment-decision.controller';
 import { InvestmentDecisionService } from './investment-decision.service';
 import { RebalanceDecision, RebalanceAction } from './types/investment.types';
+import { User } from '../users/entities/user.entity';
+
+const MOCK_WALLET = '0x1234567890abcdef1234567890abcdef12345678';
+
+const mockUser = {
+  id: 'user-1',
+  walletAddress: MOCK_WALLET,
+  isActive: true,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  positions: [],
+  preferences: [],
+} as unknown as User;
 
 describe('InvestmentDecisionController', () => {
   let controller: InvestmentDecisionController;
@@ -134,7 +147,7 @@ describe('InvestmentDecisionController', () => {
       investmentDecisionService.evaluateForWallet.mockResolvedValue(mockRebalanceDecision);
 
       // Act
-      const result = await controller.getInvestmentDecisions(dto);
+      const result = await controller.getInvestmentDecisions(dto, mockUser);
 
       // Assert
       expect(result.success).toBe(true);
@@ -156,7 +169,7 @@ describe('InvestmentDecisionController', () => {
       };
 
       // Act & Assert
-      await expect(controller.getInvestmentDecisions(dto)).rejects.toThrow(BadRequestException);
+      await expect(controller.getInvestmentDecisions(dto, mockUser)).rejects.toThrow(BadRequestException);
     });
 
     it('should return error response when depositAmount is 0', async () => {
@@ -167,7 +180,7 @@ describe('InvestmentDecisionController', () => {
       };
 
       // Act
-      const result = await controller.getInvestmentDecisions(dto);
+      const result = await controller.getInvestmentDecisions(dto, mockUser);
 
       // Assert
       expect(result.success).toBe(false);
@@ -183,7 +196,7 @@ describe('InvestmentDecisionController', () => {
       };
 
       // Act
-      const result = await controller.getInvestmentDecisions(dto);
+      const result = await controller.getInvestmentDecisions(dto, mockUser);
 
       // Assert
       expect(result.success).toBe(false);
@@ -202,7 +215,7 @@ describe('InvestmentDecisionController', () => {
       );
 
       // Act
-      const result = await controller.getInvestmentDecisions(dto);
+      const result = await controller.getInvestmentDecisions(dto, mockUser);
 
       // Assert
       expect(result.success).toBe(false);
@@ -220,7 +233,7 @@ describe('InvestmentDecisionController', () => {
       investmentDecisionService.evaluateForWallet.mockResolvedValue(mockRebalanceDecision);
 
       // Act
-      const result = await controller.getInvestmentDecisions(dto);
+      const result = await controller.getInvestmentDecisions(dto, mockUser);
 
       // Assert
       expect(result.success).toBe(true);
@@ -241,7 +254,7 @@ describe('InvestmentDecisionController', () => {
       investmentDecisionService.evaluateForWallet.mockResolvedValue(mockRebalanceDecision);
 
       // Act
-      await controller.getInvestmentDecisions(dto);
+      await controller.getInvestmentDecisions(dto, mockUser);
 
       // Assert - verify service was called with correct lambda
       expect(investmentDecisionService.evaluateForWallet).toHaveBeenCalledWith(
@@ -266,7 +279,7 @@ describe('InvestmentDecisionController', () => {
       investmentDecisionService.evaluateForWallet.mockResolvedValue(mockRebalanceDecision);
 
       // Act
-      await controller.getInvestmentDecisions(dto);
+      await controller.getInvestmentDecisions(dto, mockUser);
 
       // Assert
       expect(investmentDecisionService.evaluateForWallet).toHaveBeenCalledWith(
@@ -288,7 +301,7 @@ describe('InvestmentDecisionController', () => {
       investmentDecisionService.evaluateForWallet.mockResolvedValue(mockRebalanceDecision);
 
       // Act
-      const result = await controller.getInvestmentDecisions(dto);
+      const result = await controller.getInvestmentDecisions(dto, mockUser);
 
       // Assert - verify enhanced fields
       expect(result.decisions[0].ilRiskFactor).toBe(0.05);
@@ -309,7 +322,7 @@ describe('InvestmentDecisionController', () => {
       investmentDecisionService.evaluateForWallet.mockResolvedValue(mockRebalanceDecision);
 
       // Act
-      const result = await controller.getInvestmentDecisions(dto);
+      const result = await controller.getInvestmentDecisions(dto, mockUser);
 
       // Assert
       // Each pool has 500 USD allocation out of 1000 = 50%
@@ -325,7 +338,7 @@ describe('InvestmentDecisionController', () => {
       investmentDecisionService.evaluateForWallet.mockResolvedValue(mockRebalanceDecision);
 
       // Act
-      const result = await controller.getDecisionsForWallet(walletAddress);
+      const result = await controller.getDecisionsForWallet(walletAddress, mockUser);
 
       // Assert
       expect(result.success).toBe(true);
@@ -344,7 +357,7 @@ describe('InvestmentDecisionController', () => {
       investmentDecisionService.evaluateForWallet.mockResolvedValue(mockRebalanceDecision);
 
       // Act
-      const result = await controller.getInvestmentDecisions(dto);
+      const result = await controller.getInvestmentDecisions(dto, mockUser);
 
       // Assert
       expect(result.metadata).toBeDefined();

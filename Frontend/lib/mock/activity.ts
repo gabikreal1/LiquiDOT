@@ -1,0 +1,68 @@
+import type { Activity } from "@/lib/types/activity";
+
+export const mockActivities: Activity[] = [
+  {
+    id: "act-001",
+    type: "INVESTMENT",
+    status: "CONFIRMED",
+    txHash: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+    details: { amount: "50 DOT", pool: "xcDOT/WGLMR" },
+    createdAt: "2026-02-23T21:30:00Z",
+  },
+  {
+    id: "act-002",
+    type: "LIQUIDATION",
+    status: "FAILED",
+    txHash: null,
+    details: { reason: "Position out of range, retry scheduled" },
+    createdAt: "2026-02-23T20:00:00Z",
+  },
+  {
+    id: "act-003",
+    type: "WITHDRAWAL",
+    status: "PENDING",
+    txHash: null,
+    details: { amount: "20 DOT" },
+    createdAt: "2026-02-23T22:00:00Z",
+  },
+  {
+    id: "act-004",
+    type: "AUTO_REBALANCE",
+    status: "CONFIRMED",
+    txHash: "0x5678abcd1234ef5678abcd1234ef5678abcd1234ef5678abcd1234ef5678abcd",
+    details: { from: "xcDOT/USDC", to: "xcDOT/WGLMR" },
+    createdAt: "2026-02-22T12:00:00Z",
+  },
+  {
+    id: "act-005",
+    type: "INVESTMENT",
+    status: "CONFIRMED",
+    txHash: "0xaaaa111122223333444455556666777788889999aaaabbbbccccddddeeeeffff",
+    details: { amount: "30 DOT", pool: "xcDOT/USDC" },
+    createdAt: "2026-02-20T10:30:00Z",
+  },
+  {
+    id: "act-006",
+    type: "ERROR",
+    status: "FAILED",
+    txHash: null,
+    details: { error: "Insufficient gas for XCM transfer" },
+    createdAt: "2026-02-19T15:45:00Z",
+  },
+  {
+    id: "act-007",
+    type: "INVESTMENT",
+    status: "SUBMITTED",
+    txHash: "0xbbbb111122223333444455556666777788889999aaaabbbbccccddddeeeeffff",
+    details: { amount: "40 DOT", pool: "WGLMR/USDC" },
+    createdAt: "2026-02-18T09:00:00Z",
+  },
+  {
+    id: "act-008",
+    type: "WITHDRAWAL",
+    status: "CONFIRMED",
+    txHash: "0xcccc111122223333444455556666777788889999aaaabbbbccccddddeeeeffff",
+    details: { amount: "15 DOT" },
+    createdAt: "2026-02-15T14:20:00Z",
+  },
+];

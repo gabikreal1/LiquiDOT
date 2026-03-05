@@ -1,5 +1,5 @@
 ---
-description: MVP on Testnets - January 2026
+description: MVP with limited mainnet deployment
 icon: bolt
 layout:
   width: default
@@ -23,7 +23,16 @@ Get started with LiquiDOT in minutes. This guide will walk you through setting u
 
 ## Current Status
 
-LiquiDOT is currently deployed on testnets:
+LiquiDOT is in MVP phase with limited mainnet deployment.
+
+**Mainnet**
+
+| Contract | Network | Address |
+|----------|---------|---------|
+| AssetHubVault | Asset Hub (420420419) | `0x0cfb7CE7D66C7CdAe5827074C5f5A62223a0c230` |
+| XCMProxy | Moonbeam (1284) | `0x0cfb7CE7D66C7CdAe5827074C5f5A62223a0c230` |
+
+**Testnet**
 
 | Contract | Network | Address |
 |----------|---------|---------|
@@ -34,14 +43,14 @@ LiquiDOT is currently deployed on testnets:
 
 Before you begin, make sure you have:
 
-* A Polkadot-compatible wallet (e.g., Polkadot.js, Talisman, SubWallet)
+* An EVM wallet (MetaMask, Talisman, SubWallet) or a Substrate wallet
 * Testnet tokens:
   * **Moonbase DEV** - Get from [Moonbeam Faucet](https://faucet.moonbeam.network/)
-  * **Paseo PAS** - Get from [Paseo Faucet](https://faucet.paseo.network/)
+  * **Paseo PAS** - Get from [Paseo Faucet](https://faucet.polkadot.io/)
 * Basic understanding of liquidity provision
 
 {% hint style="info" %}
-LiquiDOT is in MVP phase on testnets. Mainnet deployment is planned for future releases.
+LiquiDOT is in MVP phase with limited mainnet deployment. Smart contracts are live on Asset Hub and Moonbeam.
 {% endhint %}
 
 ## Step 1: Connect Your Wallet
@@ -59,14 +68,14 @@ LiquiDOT is in MVP phase on testnets. Mainnet deployment is planned for future r
 
 1. Go to the **Dashboard**
 2. Click **Deposit**
-3. Enter the amount you want to deposit in **DOT** (minimum: 30 DOT ≈ $45)
+3. Enter the amount you want to deposit in **DOT** (minimum: 10 DOT)
 4. Confirm the transaction in your wallet
 
 Your funds will be securely held in the Asset Hub Vault Contract.
 
-| Testnet Limit | Value |
-|---------------|-------|
-| Minimum Position | 30 DOT (~$45 USD) |
+| Limit | Value |
+|-------|-------|
+| Minimum Position | 10 DOT |
 
 ## Step 3: Configure Your Strategy
 

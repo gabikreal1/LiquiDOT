@@ -216,6 +216,9 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         uint256 refundAmount
     );
 
+    // M-6: Emitted when tick range collapses after spacing snap and is auto-widened
+    event RangeAutoWidened(int24 requestedLower, int24 requestedUpper, int24 actualLower, int24 actualUpper);
+
     // Position lifecycle states
     enum PositionStatus {
         Active,      // LP position exists, can be liquidated
@@ -385,6 +388,8 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
      * @param beneficiary The EVM H160 address to deposit to on Asset Hub
      */
     function _encodeDepositAssetXcm(address beneficiary) internal pure returns (bytes memory) {
+        // H-2: Prevent sending to all-zero AccountId32 (permanent fund loss)
+        if (beneficiary == address(0)) revert InvalidUser();
         // AccountId32 = H160 address + 12 bytes of 0xEE
         bytes memory buf = new bytes(41); // 1+1+1+2+1+1+1+1+32
         uint256 i = 0;
@@ -431,14 +436,19 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         // Approve token spend for the precompile
         IERC20(token).forceApprove(xcmPrecompile, amount);
 
-        IPalletXcm(xcmPrecompile).transferAssetsUsingTypeAndThenAddress(
+        // M-7: Wrap in try/catch for clearer error reporting
+        try IPalletXcm(xcmPrecompile).transferAssetsUsingTypeAndThenAddress(
             dest,
             assets,
             2, // DestinationReserve
             0, // remoteFeesIdIndex
             2, // feesTransferType = DestinationReserve
             xcmOnDest
-        );
+        ) {
+            // success
+        } catch {
+            revert XcmTransferFailed();
+        }
 
         IERC20(token).forceApprove(xcmPrecompile, 0);
     }
@@ -521,6 +531,9 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         int24 upperRangePercent = pending.upperRangePercent;
         address positionOwner = pending.user;
         uint16 slippageBps = pending.slippageBps;
+
+        // M-3: Validate poolId is not zero address
+        if (poolId == address(0)) revert PendingPositionNotFound();
 
         // Step 1: Swap if received token != baseAsset
         address tokenToUse = token;
@@ -674,7 +687,7 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         address pool,
         int24 lowerRangePercent,
         int24 upperRangePercent
-    ) public view returns (int24 bottomTick, int24 topTick) {
+    ) public returns (int24 bottomTick, int24 topTick) {
         // Require factors remain positive: percent must be > -100%
         // Note: Input is scaled by 10000 (1% = 10000). So -100% = -1000000.
         if (lowerRangePercent <= -1000000 || upperRangePercent <= -1000000 || lowerRangePercent >= upperRangePercent) revert RangeOutOfBounds();
@@ -702,10 +715,14 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
 
         // Ensure strictly ordered and non-equal after snapping
         if (bottomTick >= topTick) {
+            int24 requestedLower = bottomTick;
+            int24 requestedUpper = topTick;
             bottomTick = _floorToSpacing(currentTick - spacing, spacing);
             topTick = _ceilToSpacing(currentTick + spacing, spacing);
             if (bottomTick < minAllowed) bottomTick = minAllowed;
             if (topTick > maxAllowed) topTick = maxAllowed;
+            // M-6: Signal that the requested range collapsed and was auto-widened
+            emit RangeAutoWidened(requestedLower, requestedUpper, bottomTick, topTick);
         }
 
         return (bottomTick, topTick);
@@ -927,6 +944,8 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
     ) external onlyOperator whenNotPaused nonReentrant {
         Position storage position = positions[positionId];
         if (position.status != PositionStatus.Active) revert PositionNotActive();
+        // H-1: Ensure beneficiary matches position owner to prevent fund redirection
+        if (beneficiary != position.owner) revert InvalidUser();
         if (!supportedTokens[baseAsset]) revert BaseAssetNotSupported();
 
         address token0 = position.token0;
@@ -1018,12 +1037,18 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
     ) external onlyOperator whenNotPaused nonReentrant {
         Position storage position = positions[positionId];
         if (position.status != PositionStatus.Liquidated) revert PositionNotLiquidated();
+        // H-1: Ensure beneficiary matches position owner to prevent fund redirection
+        if (beneficiary != position.owner) revert InvalidUser();
         if (!supportedTokens[baseAsset]) revert BaseAssetNotSupported();
 
         address token0 = position.token0;
         address token1 = position.token1;
         uint256 amount0 = position.liquidatedAmount0;
         uint256 amount1 = position.liquidatedAmount1;
+
+        // H-3: Zero liquidated amounts (checks-effects-interactions)
+        position.liquidatedAmount0 = 0;
+        position.liquidatedAmount1 = 0;
 
         uint256 totalBase;
 
@@ -1309,6 +1334,15 @@ contract XCMProxy is Ownable, ReentrancyGuard, Pausable, ERC721Holder {
         IERC20(tokenIn).forceApprove(swapRouterContract, amountIn);
         amountOut = _swapExactInputSingle(tokenIn, tokenOut, recipient, amountIn, amountOutMinimum, limitSqrtPrice);
         IERC20(tokenIn).forceApprove(swapRouterContract, 0);
+    }
+
+    // M-5: Emergency token recovery
+    event EmergencyTokenRecovery(address indexed token, address indexed to, uint256 amount);
+
+    function emergencyRecoverToken(address token, address to, uint256 amount) external onlyOwner {
+        if (to == address(0)) revert InvalidUser();
+        IERC20(token).safeTransfer(to, amount);
+        emit EmergencyTokenRecovery(token, to, amount);
     }
 
     /**

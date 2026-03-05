@@ -267,12 +267,9 @@ Yes! The backend provides a REST API with Swagger documentation at `/api/docs`. 
 
 ## Roadmap Questions
 
-### When will mainnet launch?
+### What's the current mainnet status?
 
-We're currently on testnet (Paseo Asset Hub + Moonbase Alpha). Mainnet launch planned after:
-- Complete security audit
-- Extended testnet validation
-- Community feedback integration
+LiquiDOT is in MVP phase with limited mainnet deployment. Smart contracts are live on Asset Hub and Moonbeam, with the backend complete and frontend deployment in progress.
 
 ### Will you support other chains?
 

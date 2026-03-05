@@ -3,11 +3,13 @@ import { Subject, Observable } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
 export interface PositionEvent {
-  type: 'CREATED' | 'EXECUTED' | 'LIQUIDATED' | 'FAILED' | 'STATUS_CHANGE';
+  type: 'CREATED' | 'EXECUTED' | 'LIQUIDATED' | 'FAILED' | 'STATUS_CHANGE' | 'BALANCE_CHANGED';
   positionId: string;
   status: string;
   txHash?: string;
   timestamp: Date;
+  balanceDot?: number;
+  balanceUsd?: number;
 }
 
 @Injectable()

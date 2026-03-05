@@ -7,12 +7,13 @@
  * Decision: Users are registered when frontend calls POST /users on wallet connect.
  */
 
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, Logger, NotFoundException, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { AssetHubService } from '../blockchain/services/asset-hub.service';
 import { TokenMathService } from '../blockchain/services/token-math.service';
+import { PositionEventBusService } from '../positions/position-event-bus.service';
 
 export interface UserBalance {
   userId: string;
@@ -28,12 +29,15 @@ export class UsersService {
 
   // In-memory cache for balances (event-driven updates)
   private balanceCache: Map<string, UserBalance> = new Map();
+  private readonly BALANCE_CACHE_TTL_MS = 60_000; // 60 seconds
 
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private assetHubService: AssetHubService,
     private tokenMath: TokenMathService,
+    @Inject(forwardRef(() => PositionEventBusService))
+    private positionEventBus: PositionEventBusService,
   ) { }
 
   /**
@@ -126,15 +130,13 @@ export class UsersService {
    * Uses event-driven updates from AssetHub events
    */
   async getBalance(userId: string): Promise<UserBalance> {
-    const user = await this.findOne(userId);
-
-    // Check cache first
+    // Check cache with TTL
     const cached = this.balanceCache.get(userId);
-    if (cached) {
+    if (cached && (Date.now() - cached.lastSyncedAt.getTime() < this.BALANCE_CACHE_TTL_MS)) {
       return cached;
     }
 
-    // If not in cache, sync from chain
+    // Cache miss or stale — sync from chain
     return this.syncBalanceFromChain(userId);
   }
 
@@ -168,26 +170,40 @@ export class UsersService {
   }
 
   /**
-   * Update cached balance (called by EventListenerService on deposit/withdrawal events)
+   * Update cached balance and push BALANCE_CHANGED event to SSE stream.
+   * Called by EventPersistenceService on deposit/withdrawal/settlement events.
    */
-  updateCachedBalance(walletAddress: string, balanceWei: bigint): void {
-    // Find user ID by wallet
-    this.findByWallet(walletAddress).then(async (user) => {
-      if (user) {
-        const balanceUsd = await this.tokenMath.dotPlanckToUsd(balanceWei);
-        const balance: UserBalance = {
-          userId: user.id,
-          walletAddress: user.walletAddress,
-          balanceWei,
-          balanceUsd,
-          lastSyncedAt: new Date(),
-        };
-        this.balanceCache.set(user.id, balance);
-        this.logger.debug(`Updated cached balance for ${walletAddress}: $${balance.balanceUsd}`);
-      }
-    }).catch(err => {
-      this.logger.warn(`Could not update cache for ${walletAddress}:`, err);
-    });
+  async updateCachedBalance(walletAddress: string): Promise<void> {
+    const user = await this.findByWallet(walletAddress);
+    if (!user) return;
+
+    try {
+      const balanceWei = await this.assetHubService.getUserBalance(walletAddress);
+      const balanceUsd = await this.tokenMath.dotPlanckToUsd(balanceWei);
+      const balance: UserBalance = {
+        userId: user.id,
+        walletAddress: user.walletAddress,
+        balanceWei,
+        balanceUsd,
+        lastSyncedAt: new Date(),
+      };
+      this.balanceCache.set(user.id, balance);
+
+      // Push to SSE stream — frontend updates balanceDot/balanceUsd in-place
+      const balanceDot = this.tokenMath.planckToDot(balanceWei);
+      this.positionEventBus.emit(user.id, {
+        type: 'BALANCE_CHANGED',
+        positionId: '',
+        status: 'confirmed',
+        timestamp: new Date(),
+        balanceDot,
+        balanceUsd,
+      });
+
+      this.logger.debug(`Updated balance for ${walletAddress}: ${balanceDot} DOT ($${balanceUsd})`);
+    } catch (err) {
+      this.logger.warn(`Could not update balance for ${walletAddress}: ${err.message}`);
+    }
   }
 
   /**

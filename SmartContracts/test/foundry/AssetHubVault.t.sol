@@ -82,7 +82,8 @@ contract AssetHubVaultTest is TestBase {
             uint64 storedTimestamp,
             AssetHubVault.PositionStatus status,
             ,
-            
+            ,
+
         ) = vault.positions(positionId);
 
         assertEq(storedUser, USER, "position user");
@@ -129,7 +130,8 @@ contract AssetHubVaultTest is TestBase {
             uint64 storedTimestamp,
             AssetHubVault.PositionStatus status,
             ,
-            bytes32 remoteId
+            bytes32 remoteId,
+
         ) = vault.positions(positionId);
 
         assertEq(uint256(status), uint256(AssetHubVault.PositionStatus.Active), "status active");
@@ -166,7 +168,8 @@ contract AssetHubVaultTest is TestBase {
             ,
             AssetHubVault.PositionStatus status,
             ,
-            
+            ,
+
         ) = vault.positions(positionId);
         assertEq(uint256(status), uint256(AssetHubVault.PositionStatus.Liquidated), "status liquidated");
         assertEq(vault.userBalances(USER), 1.5 ether, "user credited");
@@ -218,7 +221,7 @@ contract AssetHubVaultTest is TestBase {
         vm.prank(executor);
         vault.confirmExecution(positionId, bytes32(uint256(12345)), 999);
 
-        (, , , , , , , AssetHubVault.PositionStatus status, , bytes32 remoteId) = vault.positions(positionId);
+        (, , , , , , , AssetHubVault.PositionStatus status, , bytes32 remoteId,) = vault.positions(positionId);
         assertEq(uint256(status), uint256(AssetHubVault.PositionStatus.Active), "status active by executor");
         assertEq(uint256(remoteId), uint256(12345), "remote id set by executor");
     }
@@ -337,8 +340,8 @@ contract AssetHubVaultTest is TestBase {
         bytes32 positionId2 = keccak256(abi.encodePacked(USER, MOONBEAM, pool2, BASE_ASSET, block.timestamp));
 
         // Verify both positions exist
-        (address user1,,,,,,,,,) = vault.positions(positionId1);
-        (address user2,,,,,,,,,) = vault.positions(positionId2);
+        (address user1,,,,,,,,,,) = vault.positions(positionId1);
+        (address user2,,,,,,,,,,) = vault.positions(positionId2);
         assertEq(user1, USER, "position 1 user");
         assertEq(user2, USER, "position 2 user");
     }
@@ -384,7 +387,7 @@ contract AssetHubVaultTest is TestBase {
         vault.dispatchInvestment(USER, MOONBEAM, POOL, BASE_ASSET, 1 ether, -1000, -500, hex"01", hex"02");
 
         bytes32 positionId = keccak256(abi.encodePacked(USER, MOONBEAM, POOL, BASE_ASSET, block.timestamp));
-        (,,,, int24 lower, int24 upper,,,,) = vault.positions(positionId);
+        (,,,, int24 lower, int24 upper,,,,,) = vault.positions(positionId);
         assertEq(int256(lower), int256(-1000), "negative lower range");
         assertEq(int256(upper), int256(-500), "negative upper range");
     }
@@ -398,7 +401,7 @@ contract AssetHubVaultTest is TestBase {
         vault.dispatchInvestment(USER, MOONBEAM, POOL, BASE_ASSET, 1 ether, 100, 500, hex"01", hex"02");
 
         bytes32 positionId = keccak256(abi.encodePacked(USER, MOONBEAM, POOL, BASE_ASSET, block.timestamp));
-        (,,,, int24 lower, int24 upper,,,,) = vault.positions(positionId);
+        (,,,, int24 lower, int24 upper,,,,,) = vault.positions(positionId);
         assertEq(int256(lower), int256(100), "positive lower range");
         assertEq(int256(upper), int256(500), "positive upper range");
     }

@@ -54,6 +54,7 @@ export declare namespace AssetHubVault {
     status: BigNumberish;
     amount: BigNumberish;
     remotePositionId: BytesLike;
+    settledAmount: BigNumberish;
   };
 
   export type PositionStructOutput = [
@@ -66,7 +67,8 @@ export declare namespace AssetHubVault {
     timestamp: bigint,
     status: bigint,
     amount: bigint,
-    remotePositionId: string
+    remotePositionId: string,
+    settledAmount: bigint
   ] & {
     user: string;
     poolId: string;
@@ -78,6 +80,7 @@ export declare namespace AssetHubVault {
     status: bigint;
     amount: bigint;
     remotePositionId: string;
+    settledAmount: bigint;
   };
 }
 
@@ -151,6 +154,8 @@ export interface AssetHubVaultInterface extends Interface {
       | "ExecutorUpdated"
       | "InvestmentInitiated"
       | "LiquidationSettled"
+      | "MaxSettlementMultiplierUpdated"
+      | "NativeReceived"
       | "PositionExecutionConfirmed"
       | "PositionLiquidated"
       | "TestModeFrozen"
@@ -697,6 +702,31 @@ export namespace LiquidationSettledEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
+export namespace MaxSettlementMultiplierUpdatedEvent {
+  export type InputTuple = [bps: BigNumberish];
+  export type OutputTuple = [bps: bigint];
+  export interface OutputObject {
+    bps: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace NativeReceivedEvent {
+  export type InputTuple = [sender: AddressLike, amount: BigNumberish];
+  export type OutputTuple = [sender: string, amount: bigint];
+  export interface OutputObject {
+    sender: string;
+    amount: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
 export namespace PositionExecutionConfirmedEvent {
   export type InputTuple = [
     positionId: BytesLike,
@@ -1052,7 +1082,8 @@ export interface AssetHubVault extends BaseContract {
         bigint,
         bigint,
         bigint,
-        string
+        string,
+        bigint
       ] & {
         user: string;
         poolId: string;
@@ -1064,6 +1095,7 @@ export interface AssetHubVault extends BaseContract {
         status: bigint;
         amount: bigint;
         remotePositionId: string;
+        settledAmount: bigint;
       }
     ],
     "view"
@@ -1353,7 +1385,8 @@ export interface AssetHubVault extends BaseContract {
         bigint,
         bigint,
         bigint,
-        string
+        string,
+        bigint
       ] & {
         user: string;
         poolId: string;
@@ -1365,6 +1398,7 @@ export interface AssetHubVault extends BaseContract {
         status: bigint;
         amount: bigint;
         remotePositionId: string;
+        settledAmount: bigint;
       }
     ],
     "view"
@@ -1514,6 +1548,20 @@ export interface AssetHubVault extends BaseContract {
     LiquidationSettledEvent.InputTuple,
     LiquidationSettledEvent.OutputTuple,
     LiquidationSettledEvent.OutputObject
+  >;
+  getEvent(
+    key: "MaxSettlementMultiplierUpdated"
+  ): TypedContractEvent<
+    MaxSettlementMultiplierUpdatedEvent.InputTuple,
+    MaxSettlementMultiplierUpdatedEvent.OutputTuple,
+    MaxSettlementMultiplierUpdatedEvent.OutputObject
+  >;
+  getEvent(
+    key: "NativeReceived"
+  ): TypedContractEvent<
+    NativeReceivedEvent.InputTuple,
+    NativeReceivedEvent.OutputTuple,
+    NativeReceivedEvent.OutputObject
   >;
   getEvent(
     key: "PositionExecutionConfirmed"
@@ -1666,6 +1714,28 @@ export interface AssetHubVault extends BaseContract {
       LiquidationSettledEvent.InputTuple,
       LiquidationSettledEvent.OutputTuple,
       LiquidationSettledEvent.OutputObject
+    >;
+
+    "MaxSettlementMultiplierUpdated(uint16)": TypedContractEvent<
+      MaxSettlementMultiplierUpdatedEvent.InputTuple,
+      MaxSettlementMultiplierUpdatedEvent.OutputTuple,
+      MaxSettlementMultiplierUpdatedEvent.OutputObject
+    >;
+    MaxSettlementMultiplierUpdated: TypedContractEvent<
+      MaxSettlementMultiplierUpdatedEvent.InputTuple,
+      MaxSettlementMultiplierUpdatedEvent.OutputTuple,
+      MaxSettlementMultiplierUpdatedEvent.OutputObject
+    >;
+
+    "NativeReceived(address,uint256)": TypedContractEvent<
+      NativeReceivedEvent.InputTuple,
+      NativeReceivedEvent.OutputTuple,
+      NativeReceivedEvent.OutputObject
+    >;
+    NativeReceived: TypedContractEvent<
+      NativeReceivedEvent.InputTuple,
+      NativeReceivedEvent.OutputTuple,
+      NativeReceivedEvent.OutputObject
     >;
 
     "PositionExecutionConfirmed(bytes32,uint32,bytes32,uint128)": TypedContractEvent<
